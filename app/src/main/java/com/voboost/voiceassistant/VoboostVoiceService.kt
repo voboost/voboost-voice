@@ -446,7 +446,6 @@ class VoboostVoiceService : Service() {
                 isWaitingConfirmation = false
                 
                 // Отменить подтверждение если есть
-                confirmationContinuation?.cancel()
                 confirmationContinuation = null
                 
                 // Остановить распознавание

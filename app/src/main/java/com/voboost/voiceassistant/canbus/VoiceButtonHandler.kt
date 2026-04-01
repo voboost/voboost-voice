@@ -2,7 +2,6 @@ package com.voboost.voiceassistant.canbus
 
 import android.util.Log
 import com.qinggan.canbus.CanBusListener
-import com.qinggan.canbus.SWCAngle
 /**
  * Обработчик кнопки голосового помощника на руле
  *
@@ -24,8 +23,6 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
 
     companion object {
         private const val TAG = "VoiceButtonHandler"
-        private const val SWC_VOICE_BUTTON_ANGLE_MIN = 100
-        private const val SWC_VOICE_BUTTON_ANGLE_MAX = 200
         private const val DEBOUNCE_DELAY_MS = 500L
         private var lastPressTime = 0L
         
@@ -34,26 +31,6 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
     }
 
     private var isCallbackRegistered = false
-
-    // Вынесли логику обработки в отдельный метод класса
-    private fun handleAngleChanged(swcAngle: SWCAngle?) {
-        swcAngle ?: return
-        Log.d(TAG,
-              "SWC Angle changed: direction=${swcAngle.mWheelDirection}, angle=${swcAngle.mWheelAngle}")
-
-        if (isVoiceButtonPress(swcAngle)) {
-            Log.i(TAG, "Voice button pressed on steering wheel!")
-
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastPressTime < DEBOUNCE_DELAY_MS) {
-                Log.d(TAG, "Debounce: ignoring rapid press")
-                return
-            }
-
-            lastPressTime = currentTime
-            voiceAssistantCallback.onVoiceButtonPressed()
-        }
-    }
 
     private fun handleCarKeyChanged(keycode: Int, keyStatus: Int) {
         // keycode 16, status 1 = нажатие кнопки голосового помощника
@@ -71,10 +48,6 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
         } else {
             Log.d(TAG, "handleCarKeyChanged keycode: $keycode, status: $keyStatus")
         }
-    }
-
-    private fun isVoiceButtonPress(swcAngle: SWCAngle): Boolean {
-        return swcAngle.mWheelAngle in SWC_VOICE_BUTTON_ANGLE_MIN..SWC_VOICE_BUTTON_ANGLE_MAX || swcAngle.mWheelDirection == SWCAngle.SWC_DIR_CENTER
     }
 
     fun register(): Boolean {
