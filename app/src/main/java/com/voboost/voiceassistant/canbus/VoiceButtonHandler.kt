@@ -17,9 +17,6 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
 
     // ✅ Создаем слушатель как анонимный объект внутри класса
     private val mCanBusListener = object : CanBusListener() {
-        override fun onSWCAngleChanged(swcAngle: SWCAngle?) { //this@VoiceButtonHandler.handleAngleChanged(swcAngle)
-        }
-
         override fun onCarKeyChanged(keycode: Int, keyStatus: Int) {
             this@VoiceButtonHandler.handleCarKeyChanged(keycode, keyStatus)
         } // Если нужны другие методы, переопределяем их здесь же

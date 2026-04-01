@@ -414,10 +414,64 @@ class VoboostVoiceService : Service() {
      */
     private fun activateVoiceAssistant() {
         if (isCommandMode) {
-            Log.w(TAG, "Already in command mode, ignoring activate request")
+            // Уже активен — отменяем команду и возвращаемся к ожиданию
+            Log.i(TAG, "Already in command mode - CANCEL command")
+            cancelCurrentCommand()
             return
         }
 
+        activateVoiceAssistantInternal()
+    }
+    
+    /**
+     * Отменить текущую команду и вернуться к ожиданию ключевого слова
+     */
+    private fun cancelCurrentCommand() {
+        serviceScope.launch {
+            try {
+                // 🗣️ Сказать "Отмена"
+                withContext(Dispatchers.Main) {
+                    ttsEngine.speak("Отмена")
+                }
+                
+                // Пауза для воспроизведения
+                delay(500)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during cancel", e)
+            } finally {
+                // Сброс всех флагов
+                isCommandMode = false
+                isListening = false
+                isWaitingConfirmation = false
+                
+                // Отменить подтверждение если есть
+                confirmationContinuation?.cancel()
+                confirmationContinuation = null
+                
+                // Остановить распознавание
+                cancelRecognition()
+                
+                // Скрыть анимацию
+                withContext(Dispatchers.Main) {
+                    overlayManager.hideAnimation()
+                }
+                
+                // Очистить очередь TTS
+                ttsEngine.clearQueue()
+                
+                // 🎵 Звук окончания
+                soundEffectManager.playEndSound()
+                
+                Log.i(TAG, "✅ Command cancelled, returning to keyword spotting")
+            }
+        }
+    }
+    
+    /**
+     * Внутренняя активация (без проверок)
+     */
+    private fun activateVoiceAssistantInternal() {
         isCommandMode = true
         isListening = true
 
