@@ -31,6 +31,9 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
         private const val SWC_VOICE_BUTTON_ANGLE_MAX = 200
         private const val DEBOUNCE_DELAY_MS = 500L
         private var lastPressTime = 0L
+        
+        // Кнопка активации голосового помощника (keycode 16)
+        const val VOICE_BUTTON_KEYCODE = 16
     }
 
     private var isCallbackRegistered = false
@@ -56,7 +59,21 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
     }
 
     private fun handleCarKeyChanged(keycode: Int, keyStatus: Int) {
-        Log.i(TAG, "handleCarKeyChanged keycode: $keycode, status: $keyStatus")
+        // keycode 16, status 1 = нажатие кнопки голосового помощника
+        if (keycode == VOICE_BUTTON_KEYCODE && keyStatus == 1) {
+            Log.i(TAG, "🎤 VOICE BUTTON PRESSED (keycode=$keycode, status=$keyStatus)")
+            
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastPressTime < DEBOUNCE_DELAY_MS) {
+                Log.d(TAG, "Debounce: ignoring rapid press")
+                return
+            }
+            
+            lastPressTime = currentTime
+            voiceAssistantCallback.onVoiceButtonPressed()
+        } else {
+            Log.d(TAG, "handleCarKeyChanged keycode: $keycode, status: $keyStatus")
+        }
     }
 
     private fun isVoiceButtonPress(swcAngle: SWCAngle): Boolean {
