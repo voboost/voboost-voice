@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class DoorStatus implements Parcelable {
     public static final int CLOSED = 0;
     public static final Parcelable.Creator<DoorStatus> CREATOR = new Parcelable.Creator<DoorStatus>() { // from class: com.qinggan.canbus.DoorStatus.1

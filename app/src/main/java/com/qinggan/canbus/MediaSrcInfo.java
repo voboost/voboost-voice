@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class MediaSrcInfo implements Parcelable {
     public static final Parcelable.Creator<MediaSrcInfo> CREATOR = new Parcelable.Creator<MediaSrcInfo>() { // from class: com.qinggan.canbus.MediaSrcInfo.1
         /* JADX WARN: Can't rename method to resolve collision */

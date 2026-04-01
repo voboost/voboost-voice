@@ -1,6 +1,7 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
 
-/* loaded from: classes.dex */
+import com.qinggan.canbus.VehicleState;
+
 public class H6NVehicleState {
     public static final int AEB_FCW_OFF = 1;
     public static final int AEB_FCW_ON = 0;

@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class MediaPlayProgressInfo implements Parcelable {
     public static final Parcelable.Creator<MediaPlayProgressInfo> CREATOR = new Parcelable.Creator<MediaPlayProgressInfo>() { // from class: com.qinggan.canbus.MediaPlayProgressInfo.1
         /* JADX WARN: Can't rename method to resolve collision */

@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public class RealityWarningInfo implements Parcelable {
     public static final String ACU_DRY_SEATBELT_BUCKLE_STATUS_SPEEK_CONTENT = "为了您的安全请帮自己系好安全带";
     public static final int ACU_DRY_SEATBELT_BUCKLE_STATUS_SPEEK_CONTENT_ID = 4106;

@@ -1,6 +1,5 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
 
-/* loaded from: classes.dex */
 public interface BAPCmdCommType {
     public static final int FUNCTION_INVALID = 0;
     public static final int FUNCTION_VALID = 1;

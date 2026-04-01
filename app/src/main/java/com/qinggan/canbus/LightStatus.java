@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class LightStatus implements Parcelable {
     public static final Parcelable.Creator<LightStatus> CREATOR = new Parcelable.Creator<LightStatus>() { // from class: com.qinggan.canbus.LightStatus.1
         /* JADX WARN: Can't rename method to resolve collision */

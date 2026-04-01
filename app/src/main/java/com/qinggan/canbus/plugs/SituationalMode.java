@@ -1,6 +1,5 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
 
-/* loaded from: classes.dex */
 public class SituationalMode {
     public static final int SITUATIONALMODE_BASE = 0;
     public static final int SITUATIONALMODE_CARE_BABY = 5;

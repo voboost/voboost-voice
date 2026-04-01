@@ -19,7 +19,6 @@ import com.qinggan.canbus.RadarData;
 import com.qinggan.canbus.MediaSrcInfo;
 import com.qinggan.canbus.MediaPlayInfo;
 import com.qinggan.canbus.MediaPlayMode;
-import com.qinggan.canbus.NaviInfo;
 import com.qinggan.canbus.GearState;
 import com.qinggan.canbus.WindowStatus;
 import com.qinggan.canbus.VehicleState;
@@ -94,7 +93,7 @@ interface ICanBusService {
     void updateMediaSeqType(int seqtype);
     void updateMediaPlayMode(in MediaPlayMode mode);
     void updateMediaVolume(int volume);
-    void updateNaviInfo(in NaviInfo info);
+    void updateNaviInfo(in Bundle naviBundle);
     void updateNaviLaneInfo(boolean showLane,in Bundle laneData);
     void updatePhoneInfo(in PhoneInfo info);
     void updateCallListInfo(in Bundle airBundle);

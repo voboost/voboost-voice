@@ -1,4 +1,6 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
+
+import com.qinggan.canbus.VehicleState;
 
 /* loaded from: classes.dex */
 public class BAICVehicleState {

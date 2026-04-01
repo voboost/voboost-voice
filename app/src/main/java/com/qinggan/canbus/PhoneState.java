@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public enum PhoneState implements Parcelable {
     NOTHING(0),
     COMING_CALL(1),

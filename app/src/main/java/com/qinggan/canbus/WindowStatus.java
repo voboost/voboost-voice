@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class WindowStatus implements Parcelable {
     public static final int ANTIPINCH = 5;
     public static final int ANTIPINCH_IN_PARTIALLT_SLIDE = 4;

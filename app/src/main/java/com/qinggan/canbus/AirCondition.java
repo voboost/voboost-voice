@@ -4,7 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
-/* loaded from: classes.dex */
 public final class AirCondition implements Parcelable {
     public static final int AC_DOR_MODE_DEEP = 1;
     public static final int AC_DOR_MODE_STANDARD = 0;

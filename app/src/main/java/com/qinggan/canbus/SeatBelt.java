@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class SeatBelt implements Parcelable {
     public static final Parcelable.Creator<SeatBelt> CREATOR = new Parcelable.Creator<SeatBelt>() { // from class: com.qinggan.canbus.SeatBelt.1
         /* JADX WARN: Can't rename method to resolve collision */

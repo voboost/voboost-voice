@@ -1,0 +1,107 @@
+package com.qinggan.canbus;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public enum AirConditionState implements Parcelable {
+
+    AC_BLOWER(1),               //风量(step0~step15)
+    HVAC_VD_MODE(2),				//空调吹风模式（9种模式）
+    AC_LEFT_TEMP(3),            //左侧温度(step0~step17)
+    AC_RIGHT_TEMP(4),           //右侧温度(step0~step17)
+    AC_SWITCH(5),               //AC开关
+    AC_MAX_SWITCH(6),//开关控制
+    AC_AUTO(7),                 //自动按钮 0 and 1
+    AC_POWER_SWITCH(8),//空调开关   HVAC_SWITCH(8),			//压缩机开关
+	AC_FRONT_DEFROST_SWITCH(9),             //前除霜
+	AC_REAR_DEFROST_SWITCH(10) ,           //后除霜
+    AC_RECIRC_AIR(11),          //内循环按钮；当内外循环只用一个按钮时，用此来切换内外循环
+    AC_DUAL(12),                //切换单双区0 and 1
+	AC_FLOW_MODE(13);           //吹风模式切换
+
+	/**
+	 * SWITCH
+	 */
+	public static final int SWITCH_OFF =0;
+	public static final int SWITCH_ON =1;
+
+	/**
+	 * AC_FLOW_MODE
+	 */
+	public static final int FLOW_MODE_FACE =0;
+	public static final int FLOW_MODE_FACE_LEG =1;
+	public static final int FLOW_MODE_LEG =2;
+	public static final int FLOW_MODE_LEG_DEF =3;
+
+	/**
+	 * LEVEL
+	 */
+	public static final int LEVEL_NO = 0;
+	public static final int LEVEL_1 = 1;
+	public static final int LEVEL_2 = 2;
+	public static final int LEVEL_3 = 3;
+	public static final int LEVEL_4 = 4;
+	public static final int LEVEL_5 = 5;
+	public static final int LEVEL_6 = 6;
+	public static final int LEVEL_7 = 7;
+	
+	/**
+	 * HVAC_VD_MODE
+	 */
+	public static final int AUTO_BLOWING_IN = 0;//自动送风
+	public static final int FRONT_GLASS_BLOWING_IN = 1;//前挡风玻璃窗送风
+	public static final int TO_DOWN_BLOWING_IN = 2;//向下送风
+	public static final int PARALLEL_BLOWING_IN = 4;//平行送风
+	public static final int TO_DOWN_AND_PARALLEL_BLOWING_IN = 6;//向上和平行送风
+	public static final int TO_UP_BLOWING_IN = 8;//向上送风
+	public static final int TO_UP_AND_TO_DOWN_BLOWING_IN = 10;//向上和向下送风
+	public static final int PARALLEL_AND_TO_UP_BLOWING_IN = 12;//平行和向上送风
+	public static final int TO_UP_AND_PARALLEL_AND_TO_DOWN_BLOWING_IN = 14;//向上平行向下送风
+	public static final int DEFORST_AND_TO_DOWN_BLOWING_IN = 18;//向下送风和除雾
+
+	
+	/**
+	 * AC_RECIRC_AIR
+	 */
+	public static final int DEFAULT_LOOP = 0; 
+	public static final int INTERNAL_LOOP = 1;
+	public static final int EXTERNAL_LOOP = 2;
+	public static final int INVAILD_LOOP = 3;
+	
+	private int state;
+	
+	AirConditionState(int state) {
+		this.state = state;
+	}
+	
+	public int getState() {
+		return this.state;
+	}
+	
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		dest.writeInt(ordinal());
+        dest.writeInt(state);
+	}
+	
+	public static final Creator<AirConditionState> CREATOR = new Creator<AirConditionState>() {
+		@Override  
+		public AirConditionState createFromParcel(final Parcel source) {
+			AirConditionState state = AirConditionState.values()[source.readInt()];
+			state.state = source.readInt();
+			return state;
+		}  
+		@Override  
+		public AirConditionState[] newArray(final int size) {
+			return new AirConditionState[size];
+		}  
+	}; 
+
+}

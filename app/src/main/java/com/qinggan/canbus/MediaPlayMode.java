@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public enum MediaPlayMode implements Parcelable {
     Sequence(0),
     Preview(1),

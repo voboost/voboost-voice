@@ -1,6 +1,7 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
 
-/* loaded from: classes.dex */
+import com.qinggan.canbus.VehicleState;
+
 public class Q3VehicleState {
     public static final int CLOSE_DOOR = 0;
     public static final int OPEN_DOOR = 1;

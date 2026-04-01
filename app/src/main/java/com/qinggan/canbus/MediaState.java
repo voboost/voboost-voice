@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public enum MediaState implements Parcelable {
     CLEAN(0),
     PLAY(1),

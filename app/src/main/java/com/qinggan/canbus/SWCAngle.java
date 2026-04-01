@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class SWCAngle implements Parcelable {
     public static final Parcelable.Creator<SWCAngle> CREATOR = new Parcelable.Creator<SWCAngle>() { // from class: com.qinggan.canbus.SWCAngle.1
         /* JADX WARN: Can't rename method to resolve collision */

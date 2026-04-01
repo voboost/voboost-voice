@@ -1,4 +1,4 @@
-package com.qinggan.canbus;
+package com.qinggan.canbus.plugs;
 
 /* loaded from: classes.dex */
 public interface CanBoxCommType {

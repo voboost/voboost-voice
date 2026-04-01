@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class WheelCount implements Parcelable {
     public static final Parcelable.Creator<WheelCount> CREATOR = new Parcelable.Creator<WheelCount>() { // from class: com.qinggan.canbus.WheelCount.1
         /* JADX WARN: Can't rename method to resolve collision */

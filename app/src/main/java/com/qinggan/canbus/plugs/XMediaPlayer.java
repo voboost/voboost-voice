@@ -1,0 +1,44 @@
+package com.qinggan.canbus.plugs;
+
+public class XMediaPlayer  {
+    private static final int MEDIA_BUFFERING_UPDATE = 3;
+    private static final int MEDIA_ERROR = 100;
+    public static final int MEDIA_ERROR_ARCH_UNSUPPORTED = -1011;
+    public static final int MEDIA_ERROR_IO = -1004;
+    public static final int MEDIA_ERROR_MALFORMED = -1007;
+    public static final int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;
+    public static final int MEDIA_ERROR_SERVER_DIED = 100;
+    public static final int MEDIA_ERROR_TIMED_OUT = -110;
+    public static final int MEDIA_ERROR_UNKNOWN = 1;
+    public static final int MEDIA_ERROR_UNSUPPORTED = -1010;
+    private static final int MEDIA_INFO = 200;
+    public static final int MEDIA_INFO_BUFFERING_END = 702;
+    public static final int MEDIA_INFO_BUFFERING_START = 701;
+    public static final int MEDIA_INFO_DOWNLOAD_RATE_CHANGED = 901;
+    public static final int MEDIA_INFO_NOT_SEEKABLE = 801;
+    public static final int MEDIA_INFO_VIDEO_TRACK_LAGGING = 700;
+    private static final int MEDIA_NOP = 0;
+    private static final int MEDIA_PAUSED = 7;
+    private static final int MEDIA_PLAYBACK_COMPLETE = 2;
+    private static final int MEDIA_PREPARED = 1;
+    private static final int MEDIA_SEEK_COMPLETE = 4;
+    private static final int MEDIA_SET_VIDEO_SIZE = 5;
+    private static final int MEDIA_SKIPPED = 9;
+    private static final int MEDIA_STARTED = 6;
+    private static final int MEDIA_STOPPED = 8;
+    private static final int MEDIA_SUBTITLE_DATA = 201;
+    private static final int MEDIA_TIMED_CHANGE = 202;
+    private static final int MEDIA_TIMED_TEXT = 99;
+    private static final int MSG_COMPLETE = 9;
+    private static final int MSG_INCREMENTAL_PREPARE = 2;
+    private static final int MSG_INIT = 10;
+    private static final int MSG_PAUSE = 3;
+    private static final int MSG_PREPARE = 1;
+    private static final int MSG_RELEASE = 5;
+    private static final int MSG_RESET = 7;
+    private static final int MSG_SEEK_TO = 6;
+    private static final int MSG_SET_DATA_SOURCE = 8;
+    private static final int MSG_SET_PRE_BUFFER_URL = 11;
+    private static final int MSG_START = 0;
+    private static final int MSG_STOP = 4;
+}

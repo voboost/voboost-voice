@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public class PreChargeInfo implements Parcelable {
     public static final Parcelable.Creator<PreChargeInfo> CREATOR = new Parcelable.Creator<PreChargeInfo>() { // from class: com.qinggan.canbus.PreChargeInfo.1
         /* JADX WARN: Can't rename method to resolve collision */

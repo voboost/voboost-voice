@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class SeatAdjustState implements Parcelable {
     public static int STATE_NO_PRESS = 0;
     public static int STATE_UP = 1;

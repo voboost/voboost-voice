@@ -2,7 +2,6 @@ package com.qinggan.canbus;
 
 import android.os.Bundle;
 import android.os.RemoteException;
-import com.qinggan.canbus.ICanBusServiceCallback;
 
 /* loaded from: classes.dex */
 public class CanBusListener extends ICanBusServiceCallback.Stub {

@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class RadarData implements Parcelable {
     private static final int GRAY = 1;
     private static final int RADAR_CLEAN_HINT = 13;

@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class PowerLevel implements Parcelable {
     public static final Parcelable.Creator<PowerLevel> CREATOR = new Parcelable.Creator<PowerLevel>() { // from class: com.qinggan.canbus.PowerLevel.1
         /* JADX WARN: Can't rename method to resolve collision */

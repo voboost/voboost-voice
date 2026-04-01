@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public enum MediaType implements Parcelable {
     Tuner(1),
     SimpleAudio(16),

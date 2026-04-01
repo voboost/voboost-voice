@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public enum RealityWarningItemPlayState implements Parcelable {
     ALWAY_PLAY(1),
     THIRTY_SECONDS_PLAY(2),

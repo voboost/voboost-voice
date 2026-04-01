@@ -4,17 +4,15 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.core.view.PointerIconCompat;
 import com.google.zxing.pdf417.PDF417Common;
-import com.qinggan.canbus.CanBoxCommType;
-import com.qinggan.qinglink.api.hu.IVideoConfiguration;
-import com.qinggan.speech.SceneID;
-import com.qinggan.speech.VoiceActionID;
-import com.qinggan.system.QGSpeechSystem;
-import com.ximalaya.ting.android.opensdk.constants.DTransferConstants;
-import com.ximalaya.ting.android.opensdk.player.service.XmPlayerException;
-import com.ximalaya.ting.android.player.XMediaPlayer;
-import com.ximalaya.ting.android.xmpayordersdk.IXmPayOrderListener;
+import com.qinggan.canbus.plugs.CanBoxCommType;
+import com.qinggan.canbus.plugs.DTransferConstants;
+import com.qinggan.canbus.plugs.IVideoConfiguration;
+import com.qinggan.canbus.plugs.IXmPayOrderListener;
+import com.qinggan.canbus.plugs.QGSpeechSystem;
+import com.qinggan.canbus.plugs.SceneID;
+import com.qinggan.canbus.plugs.VoiceActionID;
+import com.qinggan.canbus.plugs.XMediaPlayer;
 
-/* loaded from: classes.dex */
 public enum VehicleState implements Parcelable {
     ASR(39),
     TyresSpeedWarning(40),

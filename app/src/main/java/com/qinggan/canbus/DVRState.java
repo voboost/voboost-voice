@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public class DVRState implements Parcelable {
     public static final Parcelable.Creator<DVRState> CREATOR = new Parcelable.Creator<DVRState>() { // from class: com.qinggan.canbus.DVRState.1
         /* JADX WARN: Can't rename method to resolve collision */

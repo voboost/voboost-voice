@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public final class WheelSpeed implements Parcelable {
     public static final Parcelable.Creator<WheelSpeed> CREATOR = new Parcelable.Creator<WheelSpeed>() { // from class: com.qinggan.canbus.WheelSpeed.1
         /* JADX WARN: Can't rename method to resolve collision */

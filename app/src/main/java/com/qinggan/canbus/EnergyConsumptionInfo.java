@@ -3,7 +3,6 @@ package com.qinggan.canbus;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/* loaded from: classes.dex */
 public class EnergyConsumptionInfo implements Parcelable {
     public static final Parcelable.Creator<EnergyConsumptionInfo> CREATOR = new Parcelable.Creator<EnergyConsumptionInfo>() { // from class: com.qinggan.canbus.EnergyConsumptionInfo.1
         /* JADX WARN: Can't rename method to resolve collision */
