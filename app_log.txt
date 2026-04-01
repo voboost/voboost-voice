@@ -1,0 +1,386 @@
+--------- beginning of main
+03-31 23:27:11.642 13231 13231 W Zygote  : Unable to open libbeluga.so: dlopen failed: library "libbeluga.so" not found.
+03-31 23:27:11.645 13231 13231 I Zygote  : seccomp disabled by force
+03-31 23:27:11.653 13231 13231 I .voiceassistan: Late-enabling -Xcheck:jni
+03-31 23:27:11.682 13231 13231 I .voiceassistan: Unquickening 18 vdex files!
+03-31 23:27:11.688 13231 13231 I com.voboost.voiceassistant: type=1400 audit(0.0:28680): avc: denied { connectto } for comm=4144422D4A44575020436F6E6E6563 path=006A6477702D636F6E74726F6C scontext=u:r:priv_app:s0:c512,c768 tcontext=u:r:su:s0 tclass=unix_stream_socket permissive=1 app=com.voboost.voiceassistant
+03-31 23:27:11.728 13231 13231 I .voiceassistant: type=1400 audit(0.0:28681): avc: denied { write } for name="VoboostVoiceAssistant" dev="vda" ino=8070 scontext=u:r:priv_app:s0:c512,c768 tcontext=u:object_r:system_file:s0 tclass=dir permissive=1 app=com.voboost.voiceassistant
+03-31 23:27:12.299 13231 13231 W .voiceassistan: JIT profile information will not be recorded: profile file does not exist.
+03-31 23:27:12.313 13231 13231 D NetworkSecurityConfig: No Network Security Config specified, using platform default
+03-31 23:27:12.314 13231 13231 D NetworkSecurityConfig: No Network Security Config specified, using platform default
+03-31 23:27:12.394 13231 13231 D VoboostVoiceService: onCreate
+03-31 23:27:12.402 13231 13231 D VoboostVoiceService: Foreground service started
+03-31 23:27:12.421 13231 13231 I ConfigManager: Found external config: /storage/emulated/0/Android/data/com.voboost.voiceassistant/files/config.json
+03-31 23:27:12.416 13231 13231 I .voiceassistant: type=1400 audit(0.0:28686): avc: denied { read } for name="config.json" dev="vdb" ino=769342 scontext=u:r:priv_app:s0:c512,c768 tcontext=u:object_r:storage_file:s0 tclass=file permissive=1 app=com.voboost.voiceassistant
+03-31 23:27:12.487 13231 13231 I ConfigManager: External config loaded successfully, version: 1.0
+03-31 23:27:12.487 13231 13231 I ConfigManager: Configuration loaded from external storage
+03-31 23:27:12.487 13231 13231 I VoboostVoiceService: Config loaded: version 1.0
+03-31 23:27:12.511 13231 13231 D VoboostVoiceService: onStartCommand: action=null
+03-31 23:27:12.518 13231 13231 D VoboostVoiceService: Service started, keyword spotting active
+03-31 23:27:12.522 13231 13268 I TextToSpeech: Sucessfully bound to com.qinggan.ttsservice
+03-31 23:27:12.523 13231 13231 I TextToSpeech: Connected to ComponentInfo{com.qinggan.ttsservice/com.qinggan.ttsservice.TtsService}
+03-31 23:27:12.524 13231 13268 W TextToSpeech: isLanguageAvailable failed: TTS engine connection not fully set up
+03-31 23:27:12.530 13231 13268 I SpeechEngineFactory: Recommended: Vosk ASR only (no TTS available)
+03-31 23:27:12.530 13231 13268 I VoboostVoiceService: Recommended config: ASR=VOSK, TTS=SYSTEM
+03-31 23:27:12.531 13231 13268 I SpeechEngineFactory: Creating Sherpa TTS engine
+03-31 23:27:12.540 13231 13268 I SherpaSynthesis: Using TTS model from internal storage: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model
+03-31 23:27:12.540 13231 13268 I SherpaSynthesis: Sherpa TTS model path: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model
+03-31 23:27:12.544 13231 13268 I SherpaSynthesis: Initializing Sherpa-ONNX TTS...
+03-31 23:27:12.544 13231 13268 I SherpaSynthesis: Model path: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model
+03-31 23:27:12.544 13231 13268 I SherpaSynthesis: Speaker ID: 0
+03-31 23:27:12.612 13231 13268 D SherpaSynthesis: TTS model path: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/ru_RU-ruslan-medium.onnx
+03-31 23:27:12.612 13231 13268 D SherpaSynthesis: Model dir: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model
+03-31 23:27:12.613 13231 13268 D SherpaSynthesis: Tokens file: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/tokens.txt, exists: true
+03-31 23:27:12.613 13231 13268 D SherpaSynthesis: eSpeak dir: /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/espeak-ng-data, exists: true
+03-31 23:27:12.635 13231 13268 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/jni/offline-tts.cc:operator():481
+03-31 23:27:12.635 13231 13268 W sherpa-onnx: config:
+03-31 23:27:12.635 13231 13268 W sherpa-onnx: OfflineTtsConfig(model=OfflineTtsModelConfig(vits=OfflineTtsVitsModelConfig(model="/data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/ru_RU-ruslan-medium.onnx", lexicon="", tokens="/data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/tokens.txt", data_dir="/data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model/espeak-ng-data", noise_scale=0.667, noise_scale_w=0.8, length_scale=1), matcha=OfflineTtsMatchaModelConfig(acoustic_model="", vocoder="", lexicon="", tokens="", data_dir="", noise_scale=1, length_scale=1), kokoro=OfflineTtsKokoroModelConfig(model="", voices="", tokens="", lexicon="", data_dir="", length_scale=1, lang=""), zipvoice=OfflineTtsZipvoiceModelConfig(tokens="", encoder="", decoder="", vocoder="", data_dir="", lexicon="", feat_scale=0.1, t_shift=0.5, target_rms=0.1, guidance_scale=1), kitten=OfflineTtsKittenModelConfig(model="", voices="", tokens="", data_dir="", length_scale=1), pocket=OfflineTtsPocketModelConfig(lm_flow="", 
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/csrc/offline-tts-vits-model.cc:Init:152
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: ---vits model---
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: sample_rate=22050
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: has_espeak=1
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: n_speakers=1
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: voice=ru
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: model_type=vits
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: language=Russian
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: comment=piper
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: ----------input names----------
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: 0 input
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: 1 input_lengths
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: 2 scales
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: ----------output names----------
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: 0 output
+03-31 23:27:17.096 13231 13268 W sherpa-onnx: 
+03-31 23:27:17.104 13231 13268 I SherpaSynthesis: Sherpa-ONNX TTS initialized successfully! (sample rate: 22050)
+03-31 23:27:17.104 13231 13273 I VoboostVoiceService: TTS engine initialized
+03-31 23:27:17.108 13231 13273 D AudioPolicyManager: [getInstance] new AuidoPolicyManager:com.voboost.voiceassistant, listener:null
+03-31 23:27:17.111 13231 13273 D AudioPolicyManager: getInstance: return instance
+03-31 23:27:17.117 13231 13273 V AudioTrack: AudioTrack create
+03-31 23:27:17.118 13231 13273 V AudioTrack: AudioTrack create
+03-31 23:27:17.118 13231 13273 V AudioTrack: set(): streamType -1, sampleRate 0, format 0x1, channelMask 0x1, frameCount 960, flags #4, notificationFrames 0, sessionId 0, transferType 1, uid -1, pid -1
+03-31 23:27:17.118 13231 13273 V AudioTrack: set(): streamType -1 frameCount 960 flags 0004
+03-31 23:27:17.118 13231 13273 V AudioTrack: set(): Building AudioTrack with attributes: usage=1 content=0 flags=0x0 tags=[]
+03-31 23:27:17.118 13231 13273 V AudioTrack: op_package_name[com.voboost.voiceassistant], binary_name[com.voboost.voiceassistant], streamType[-1], isBrlink[False], USAGE[1]
+03-31 23:27:17.129 13231 13273 D AudioTrack: createTrack_l(63): AUDIO_OUTPUT_FLAG_FAST denied by server; frameCount 960 -> 3844
+03-31 23:27:17.131 13231 13273 D SoundEffectManager: ToneGenerator initialized
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;-><init>()V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setName(Ljava/lang/String;)V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setPhoneNum(Ljava/lang/String;)V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/PhoneState;->GOING_CALL:Lcom/qinggan/canbus/PhoneState; (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setPhoneState(Lcom/qinggan/canbus/PhoneState;)V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setDuration(I)V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setConnectedStatus(I)V (blacklist, linking, allowed)
+03-31 23:27:17.132 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/PhoneInfo;->setVehicleCall(I)V (blacklist, linking, allowed)
+03-31 23:27:17.133 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/VehicleState;->ALL_WINDOW_CONTROL:Lcom/qinggan/canbus/VehicleState; (blacklist, linking, allowed)
+03-31 23:27:17.133 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->getAirCondition()Lcom/qinggan/canbus/AirCondition; (blacklist, linking, allowed)
+03-31 23:27:17.133 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->getVehicleSpeed()I (blacklist, linking, allowed)
+03-31 23:27:17.133 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->getVehicleState(Lcom/qinggan/canbus/VehicleState;)I (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->getWindowStatus()Lcom/qinggan/canbus/WindowStatus; (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->addCallback(Lcom/qinggan/canbus/ICanBusServiceCallback;)Z (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->setAirConditionState(Lcom/qinggan/canbus/AirConditionState;I)V (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->setVehicleSceneMode(I)I (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->setVehicleState(Lcom/qinggan/canbus/VehicleState;I)V (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_POWER_SWITCH:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->removeCallback(Lcom/qinggan/canbus/ICanBusServiceCallback;)Z (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService;->updatePhoneInfo(Lcom/qinggan/canbus/PhoneInfo;)V (blacklist, linking, allowed)
+03-31 23:27:17.134 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/ICanBusService$Stub;->asInterface(Landroid/os/IBinder;)Lcom/qinggan/canbus/ICanBusService; (blacklist, linking, allowed)
+03-31 23:27:17.137 13231 13273 D CanBusServiceManager: bindService result: true
+03-31 23:27:17.137 13231 13273 I VoboostVoiceService: CanBusServiceManager initialized
+03-31 23:27:17.137 13231 13231 I CanBusServiceManager: Connected to CanBusService
+03-31 23:27:17.137 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/SWCAngle;->mWheelDirection:I (blacklist, linking, allowed)
+03-31 23:27:17.137 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/SWCAngle;->mWheelAngle:I (blacklist, linking, allowed)
+03-31 23:27:17.138 13231 13273 W .voiceassistan: Accessing hidden method Lcom/qinggan/canbus/CanBusListener;-><init>()V (blacklist, linking, allowed)
+03-31 23:27:17.144 13231 13273 I CanBusServiceManager: Callback registered: 
+03-31 23:27:17.144 13231 13273 I VoiceButtonHandler: Voice button handler registered: true
+03-31 23:27:17.144 13231 13273 I VoboostVoiceService: Voice button handler registered
+03-31 23:27:17.145 13231 13273 I VehicleCommandFactory: Creating HybridVehicleCommandExecutor (RECOMMENDED)
+03-31 23:27:17.145 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_DRIVER_TEMP_INCRE_TC:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_DRIVER_TEMP_DECRE_TC:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_FRONT_BLOWER_INCRE_TC:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_FRONT_BLOWER_DECRE_TC:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/AirConditionState;->AC_FRONT_DEFROST_SWITCH:Lcom/qinggan/canbus/AirConditionState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/VehicleState;->IVI_CHRG_PORT_CAP:Lcom/qinggan/canbus/VehicleState; (blacklist, linking, allowed)
+03-31 23:27:17.146 13231 13273 W .voiceassistan: Accessing hidden field Lcom/qinggan/canbus/VehicleState;->IVI_FUEL_PORT_CAP:Lcom/qinggan/canbus/VehicleState; (blacklist, linking, allowed)
+03-31 23:27:17.147 13231 13273 I CommandExecutor: Initialized with execution method: Hybrid (Intent for phone, AIDL for vehicle)
+03-31 23:27:17.147 13231 13273 I SpeechEngineFactory: Creating Vosk recognition engine
+03-31 23:27:17.148 13231 13273 I VoskRecognition: Using Vosk model from internal storage: /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22
+03-31 23:27:17.148 13231 13273 I VoskRecognition: Model directory contents: README, conf, ivector, am, graph
+03-31 23:27:17.148 13231 13273 I VoskRecognition: Vosk model path: /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22
+03-31 23:27:17.151 13231 13273 I SpeechRecognition: Initializing Vosk with model: vosk-model-small-ru-0.22, path: /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22
+03-31 23:27:17.187 13231 13273 I VoskAPI : ReadDataFiles():model.cc:213) Decoding params beam=10 max-active=3000 lattice-beam=2
+03-31 23:27:17.188 13231 13273 I VoskAPI : ReadDataFiles():model.cc:216) Silence phones 1:2:3:4:5:6:7:8:9:10
+03-31 23:27:17.275 13231 13273 I VoskAPI : RemoveOrphanNodes():nnet-nnet.cc:948) Removed 0 orphan nodes.
+03-31 23:27:17.275 13231 13273 I VoskAPI : RemoveOrphanComponents():nnet-nnet.cc:847) Removing 0 orphan components.
+03-31 23:27:17.431 13231 13273 I VoskAPI : ReadDataFiles():model.cc:248) Loading i-vector extractor from /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/ivector/final.ie
+03-31 23:27:17.443 13231 13273 I VoskAPI : ComputeDerivedVars():ivector-extractor.cc:183) Computing derived variables for iVector extractor
+03-31 23:27:17.534 13231 13756 D ProfileInstaller: Installing profile for com.voboost.voiceassistant
+03-31 23:27:17.577 13231 13273 I VoskAPI : ComputeDerivedVars():ivector-extractor.cc:204) Done.
+03-31 23:27:17.577 13231 13273 I VoskAPI : ReadDataFiles():model.cc:282) Loading HCL and G from /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/graph/HCLr.fst /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/graph/Gr.fst
+03-31 23:27:18.595 13231 13273 I VoskAPI : ReadDataFiles():model.cc:308) Loading winfo /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/graph/phones/word_boundary.int
+03-31 23:27:18.752 13231 13273 I SpeechRecognition: Vosk initialized successfully!
+03-31 23:27:18.753 13231 13273 D VoskRecognition: VoskRecognition already initialized in constructor
+03-31 23:27:18.753 13231 13273 I VoboostVoiceService: Speech recognition engine initialized
+03-31 23:27:18.754 13231 13273 D VoboostVoiceService: CancelReceiver registered
+03-31 23:27:18.755 13231 13273 D VoboostVoiceService: ConfirmationReceiver registered
+03-31 23:27:18.755 13231 13273 D VoboostVoiceService: startKeywordSpotting called
+03-31 23:27:18.755 13231 13273 D VoboostVoiceService:   isListening=false
+03-31 23:27:18.755 13231 13273 D VoboostVoiceService:   isCommandMode=false
+03-31 23:27:18.758 13231 13368 I VoboostVoiceService: Starting keyword spotting (waiting for activation phrase)...
+03-31 23:27:18.759 13231 13368 D VoskRecognition: Starting keyword spotting (Vosk)
+03-31 23:27:18.761 13231 13368 V AudioRecord: AudioRecord create
+03-31 23:27:18.761 13231 13368 V AudioRecord: set(): inputSource 6, sampleRate 16000, format 0x1, channelMask 0x10, frameCount 2048, notificationFrames 0, sessionId 0, transferType 0, flags 0, opPackageName com.voboost.voiceassistant uid -1, pid -1
+03-31 23:27:18.761 13231 13368 V AudioRecord: set(): Building AudioRecord with attributes: source=6 flags=0x800 tags=[]
+03-31 23:27:18.761 13231 13368 V AudioRecord: set(): mSessionId 0
+03-31 23:27:18.762 13231 13368 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:18.772 13231 13368 V AudioRecord: set(111): status 0
+03-31 23:27:18.773 13231 13368 I SpeechRecognition: AudioRecord initialized successfully!
+03-31 23:27:18.773 13231 13368 D SpeechRecognition: startKeywordSpotting called
+03-31 23:27:18.773 13231 13368 D SpeechRecognition:   isRunning=false
+03-31 23:27:18.773 13231 13368 D SpeechRecognition:   isListeningForKeyword=false
+03-31 23:27:18.773 13231 13368 D SpeechRecognition:   isProcessingCommand=false
+03-31 23:27:18.774 13231 13368 I SpeechRecognition: Starting keyword spotting...
+03-31 23:27:18.774 13231 13368 V AudioRecord: start(111): sync event 0 trigger session 0
+03-31 23:27:18.774 13231 13368 V AudioRecord: property isaac.dump.record[0]
+03-31 23:27:18.791 13231 13368 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:18.791 13231 13368 D SpeechRecognition: AudioRecord started
+03-31 23:27:24.618 13231 13368 D SpeechRecognition: Recognized: 
+03-31 23:27:29.617 13231 13368 D SpeechRecognition: Recognized: 
+03-31 23:27:34.691 13231 13368 D SpeechRecognition: Recognized: 
+03-31 23:27:39.743 13231 13368 D SpeechRecognition: Recognized: 
+03-31 23:27:43.529 13231 13368 D SpeechRecognition: Recognized: привет машина
+03-31 23:27:43.530 13231 13368 I SpeechRecognition: 🎯 KEYWORD DETECTED: привет машина
+03-31 23:27:43.532 13231 13231 I VoboostVoiceService: 🎯 Keyword detected!
+03-31 23:27:43.534 13231 13368 D SoundEffectManager: Playing start recognition sound
+03-31 23:27:43.535 13231 13273 V AudioRecord: stop stop
+03-31 23:27:43.535 13231 13273 V AudioRecord: stop(111): mActive:1
+03-31 23:27:43.537 13231 13368 D SoundEffectManager: Audio focus requested: true
+03-31 23:27:43.537 13231 13368 V AudioTrack: start(109): prior state:STATE_STOPPED
+03-31 23:27:43.541 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 3844 = 960 + 2884 err 0
+03-31 23:27:43.541 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 2884 = 960 + 1924 err 0
+03-31 23:27:43.541 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 1924 = 960 + 964 err 0
+03-31 23:27:43.541 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 960 + 4 err 0
+03-31 23:27:43.541 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.542 13231 13368 D SoundEffectManager: Tone played: type=1
+03-31 23:27:43.544 13231 13368 D SherpaSynthesis: Speaking: Слушаю вас
+03-31 23:27:43.545 13231 13368 D VoskRecognition: Starting command listening (Vosk)
+03-31 23:27:43.546 13231 13368 I SpeechRecognition: Listening for command...
+03-31 23:27:43.553 13231 13268 D SherpaSynthesis: Generating speech for: Слушаю вас
+03-31 23:27:43.554 13231 13268 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/csrc/offline-tts-vits-impl.h:Generate:163
+03-31 23:27:43.554 13231 13268 W sherpa-onnx: GenerationConfig(silence_scale=0.2, speed=1, sid=0, num_steps=5, reference_audio_len=0, reference_sample_rate=0)
+03-31 23:27:43.554 13231 13268 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/csrc/offline-tts-vits-impl.h:Generate:210
+03-31 23:27:43.554 13231 13268 W sherpa-onnx: Raw text: Слушаю вас
+03-31 23:27:43.554 13231 13273 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:43.554 13231 13368 V AudioRecord: start(111): sync event 0 trigger session 0
+03-31 23:27:43.554 13231 13368 V AudioRecord: property isaac.dump.record[0]
+03-31 23:27:43.554 13231 13273 D SpeechRecognition: AudioRecord stopped
+03-31 23:27:43.561 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.561 13231 13371 V AudioTrack: stop stop
+03-31 23:27:43.561 13231 13371 V AudioTrack: stop(109): prior state:STATE_ACTIVE
+03-31 23:27:43.561 13231 13371 D AudioTrack: stop(109): called with 3840 frames delivered
+03-31 23:27:43.563 13231 13368 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:43.563 13231 13368 D SpeechRecognition: AudioRecord started
+03-31 23:27:43.594 13231 13231 D WindowManagerImpl: addView wparams.type= 2038
+03-31 23:27:43.595 13231 13231 D WindowManagerImpl: addView wparams.type= null,use aosp
+--------- beginning of system
+03-31 23:27:43.595 13231 13231 D InputMethodManager: createRealInstance displayId = 0
+03-31 23:27:43.675 13231 13231 D OverlayManager: Animation shown at (50, 50)
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: QUALCOMM build                   : 3cb1a8304c, Idb104a9ee3
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Build Date                       : 11/23/22
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: EV031.30.02.00
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Local Branch                     : 
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Remote Branch                    : 
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Remote Branch                    : 
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Reconstruct Branch               : 
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Build Config                     : S P 10.0.6 AArch64
+03-31 23:27:43.693 13231 14357 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+03-31 23:27:43.711 13231 14357 I AdrenoGLES-0: PFP: 0x00000000, ME: 0x00000000
+03-31 23:27:43.718 13231 14357 I Adreno-GSL_RPC: <gsl_context_create:2928>: ctxt_id 94, sync_type 2
+03-31 23:27:43.724 13231 14357 W AdrenoUtils: <ReadGpuID_from_sysfs:198>: Failed to open /sys/class/kgsl/kgsl-3d0/gpu_model
+03-31 23:27:43.724 13231 14357 W AdrenoUtils: <ReadGpuID:222>: Failed to read chip ID from gpu_model. Fallback to use the GSL path
+03-31 23:27:43.733 13231 14357 I Adreno-GSL_RPC: <gsl_library_close:1573>:  library close -- refcount=1
+03-31 23:27:43.737 13231 14357 W OpenGLRenderer: call eglCreateContext: 0
+03-31 23:27:43.737 13231 14357 W libEGL  : call eglCreateContext: 0
+03-31 23:27:43.745 13231 14357 I Adreno-GSL_RPC: <gsl_context_create:2928>: ctxt_id 95, sync_type 2
+03-31 23:27:43.771 13231 13231 V AudioTrack: start(109): prior state:STATE_STOPPED
+03-31 23:27:43.771 13231 13231 V AudioTrack: start(109): server read:3840  cumulative flushed:0  client written:3840
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 3844 = 256 + 3588 err 0
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(704) returned 3588 = 704 + 2884 err 0
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 2884 = 960 + 1924 err 0
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 1924 = 960 + 964 err 0
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 960 + 4 err 0
+03-31 23:27:43.776 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.796 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.796 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(956) returned 0 = 0 + 0 err -11
+03-31 23:27:43.823 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(956) returned 1920 = 508 + 1412 err 0
+03-31 23:27:43.823 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(448) returned 1412 = 448 + 964 err 0
+03-31 23:27:43.823 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 960 + 4 err 0
+03-31 23:27:43.823 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.846 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 1924 = 960 + 964 err 0
+03-31 23:27:43.846 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 960 + 4 err 0
+03-31 23:27:43.846 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.866 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 1924 = 768 + 1156 err 0
+03-31 23:27:43.866 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(192) returned 1156 = 192 + 964 err 0
+03-31 23:27:43.866 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 960 + 4 err 0
+03-31 23:27:43.866 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.887 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 4 = 4 + 0 err 0
+03-31 23:27:43.887 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(956) returned 0 = 0 + 0 err -11
+03-31 23:27:43.901 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(956) returned 1920 = 956 + 964 err 0
+03-31 23:27:43.901 13231 13371 V AudioTrack: stop stop
+03-31 23:27:43.901 13231 13371 V AudioTrack: stop(109): prior state:STATE_ACTIVE
+03-31 23:27:43.901 13231 13371 D AudioTrack: stop(109): called with 9604 frames delivered
+03-31 23:27:44.138 13231 13268 D SherpaSynthesis: Audio generated: 20736 samples, sample rate: 22050
+03-31 23:27:44.139 13231 13268 V AudioTrack: getMinFrameCount(): getMinFrameCount=1772: afFrameCount=1920, afSampleRate=48000, afLatency=80
+03-31 23:27:44.140 13231 13268 E android.media.AudioTrack: AudioTrack, currPkg:com.voboost.voiceassistant, changedPkg:com.voboost.voiceassistant, attr:AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_SPEECH flags=0x800 tags= bundle=null
+03-31 23:27:44.140 13231 13268 V AudioTrack: AudioTrack create
+03-31 23:27:44.140 13231 13268 V AudioTrack: set(): streamType -1, sampleRate 22050, format 0x5, channelMask 0x1, frameCount 1772, flags #0, notificationFrames 0, sessionId 0, transferType 3, uid -1, pid -1
+03-31 23:27:44.140 13231 13268 V AudioTrack: set(): streamType -1 frameCount 1772 flags 0000
+03-31 23:27:44.140 13231 13268 V AudioTrack: set(): Building AudioTrack with attributes: usage=1 content=1 flags=0x800 tags=[]
+03-31 23:27:44.140 13231 13268 V AudioTrack: op_package_name[com.voboost.voiceassistant], binary_name[com.voboost.voiceassistant], streamType[-1], isBrlink[False], USAGE[1]
+03-31 23:27:44.154 13231 13268 V AudioTrack: start(114): prior state:STATE_STOPPED
+03-31 23:27:44.982 13231 13268 V AudioTrack: stop stop
+03-31 23:27:44.982 13231 13268 V AudioTrack: stop(114): prior state:STATE_ACTIVE
+03-31 23:27:44.982 13231 13268 D AudioTrack: stop(114): called with 20736 frames delivered
+03-31 23:27:44.983 13231 13268 V AudioTrack: flush(114): prior state:STATE_STOPPED
+03-31 23:27:44.984 13231 13268 D SherpaSynthesis: Audio playback completed
+03-31 23:27:44.984 13231 13268 V AudioTrack: stop stop
+03-31 23:27:44.984 13231 13268 V AudioTrack: stop(114): prior state:STATE_FLUSHED
+03-31 23:27:44.984 13231 13268 V AudioTrack: ~AudioTrack destroy
+03-31 23:27:44.985 13231 13268 V AudioTrack: stop stop
+03-31 23:27:44.985 13231 13268 V AudioTrack: stop(114): prior state:STATE_FLUSHED
+03-31 23:27:44.985 13231 13268 V AudioTrack: ~AudioTrack(114), releasing session id 2497 from 13231 on behalf of 13231
+03-31 23:27:45.179 13231 13231 D OverlayManager: Animation hidden
+03-31 23:27:47.220 13231 13368 D SpeechRecognition: Recognized: закрой окно
+03-31 23:27:47.220 13231 13368 I SpeechRecognition: 📝 COMMAND RECEIVED: закрой окно
+03-31 23:27:47.221 13231 13231 I VoboostVoiceService: 📝 Command received: закрой окно
+03-31 23:27:47.222 13231 13368 D NLUEngine: Parsing command: 'закрой окно' -> normalized: 'закрой окно'
+03-31 23:27:47.222 13231 14350 V AudioRecord: stop stop
+03-31 23:27:47.222 13231 14350 V AudioRecord: stop(111): mActive:1
+03-31 23:27:47.223 13231 13231 D SoundEffectManager: Playing end recognition sound
+03-31 23:27:47.223 13231 13231 V AudioTrack: start(109): prior state:STATE_STOPPED
+03-31 23:27:47.223 13231 13231 V AudioTrack: start(109): server read:5764  cumulative flushed:0  client written:9596
+03-31 23:27:47.223 13231 13368 D NLUEngine: Regex pattern: 'открой лючок зарядки' -> '^открой\s+лючок\s+зарядки$'
+03-31 23:27:47.224 13231 13368 D NLUEngine: Regex pattern: 'открой порт зарядки' -> '^открой\s+порт\s+зарядки$'
+03-31 23:27:47.224 13231 13368 D NLUEngine: Regex pattern: 'открыть зарядку' -> '^открыть\s+зарядку$'
+03-31 23:27:47.225 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 3844 = 960 + 2884 err 0
+03-31 23:27:47.225 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 2884 = 960 + 1924 err 0
+03-31 23:27:47.225 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 1924 = 960 + 964 err 0
+03-31 23:27:47.225 13231 13368 D NLUEngine: Regex pattern: 'открой зарядку' -> '^открой\s+зарядку$'
+03-31 23:27:47.225 13231 13231 D SoundEffectManager: Tone played: type=2
+03-31 23:27:47.225 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(960) returned 964 = 60 + 904 err 0
+03-31 23:27:47.225 13231 13371 V AudioTrack: processAudioBuffer(109): obtainBuffer(900) returned 904 = 900 + 4 err 0
+03-31 23:27:47.225 13231 13371 V AudioTrack: stop stop
+03-31 23:27:47.225 13231 13371 V AudioTrack: stop(109): prior state:STATE_ACTIVE
+03-31 23:27:47.225 13231 13371 D AudioTrack: stop(109): called with 2940 frames delivered
+03-31 23:27:47.225 13231 13368 D NLUEngine: Regex pattern: 'закрой лючок зарядки' -> '^закрой\s+лючок\s+зарядки$'
+03-31 23:27:47.225 13231 13368 D NLUEngine: Regex pattern: 'закрой порт зарядки' -> '^закрой\s+порт\s+зарядки$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'закрыть зарядку' -> '^закрыть\s+зарядку$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'закрой зарядку' -> '^закрой\s+зарядку$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'открой бензобак' -> '^открой\s+бензобак$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'открой крышку бензобака' -> '^открой\s+крышку\s+бензобака$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'открой лючок бензобака' -> '^открой\s+лючок\s+бензобака$'
+03-31 23:27:47.226 13231 13368 D NLUEngine: Regex pattern: 'открыть бензобак' -> '^открыть\s+бензобак$'
+03-31 23:27:47.227 13231 13368 D NLUEngine: Regex pattern: 'включи режим отдыха' -> '^включи\s+режим\s+отдыха$'
+03-31 23:27:47.227 13231 13368 D NLUEngine: Regex pattern: 'активируй режим отдыха' -> '^активируй\s+режим\s+отдыха$'
+03-31 23:27:47.227 13231 13368 D NLUEngine: Regex pattern: 'режим отдых' -> '^режим\s+отдых$'
+03-31 23:27:47.227 13231 13368 D NLUEngine: Regex pattern: 'включи отдых' -> '^включи\s+отдых$'
+03-31 23:27:47.227 13231 13368 D NLUEngine: Regex pattern: 'включи детский режим' -> '^включи\s+детский\s+режим$'
+03-31 23:27:47.228 13231 13368 D NLUEngine: Regex pattern: 'режим ребенок' -> '^режим\s+ребенок$'
+03-31 23:27:47.228 13231 13368 D NLUEngine: Regex pattern: 'детский режим' -> '^детский\s+режим$'
+03-31 23:27:47.228 13231 13368 D NLUEngine: Regex pattern: 'включи режим ребенок' -> '^включи\s+режим\s+ребенок$'
+03-31 23:27:47.228 13231 13368 D NLUEngine: Regex pattern: 'включи романтический режим' -> '^включи\s+романтический\s+режим$'
+03-31 23:27:47.228 13231 13368 D NLUEngine: Regex pattern: 'режим романтика' -> '^режим\s+романтика$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'романтический режим' -> '^романтический\s+режим$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'включи кондиционер' -> '^включи\s+кондиционер$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'включи печку' -> '^включи\s+печку$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'включи климат' -> '^включи\s+климат$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'включи обогрев' -> '^включи\s+обогрев$'
+03-31 23:27:47.229 13231 13368 D NLUEngine: Regex pattern: 'выключи кондиционер' -> '^выключи\s+кондиционер$'
+03-31 23:27:47.230 13231 13368 D NLUEngine: Regex pattern: 'выключи печку' -> '^выключи\s+печку$'
+03-31 23:27:47.230 13231 13368 D NLUEngine: Regex pattern: 'выключи климат' -> '^выключи\s+климат$'
+03-31 23:27:47.230 13231 13368 D NLUEngine: Regex pattern: 'отключи обогрев' -> '^отключи\s+обогрев$'
+03-31 23:27:47.231 13231 13368 D NLUEngine: Regex pattern: 'установи температуру {temp} градусов' -> '^установи\s+температуру\s+(.+)\s+градусов$'
+03-31 23:27:47.231 13231 13368 D NLUEngine: Regex pattern: 'поставь {temp} градусов' -> '^поставь\s+(.+)\s+градусов$'
+03-31 23:27:47.231 13231 13368 D NLUEngine: Regex pattern: 'температура {temp}' -> '^температура\s+(.+)$'
+03-31 23:27:47.231 13231 13368 D NLUEngine: Regex pattern: 'включи {temp} градусов' -> '^включи\s+(.+)\s+градусов$'
+03-31 23:27:47.232 13231 13368 D NLUEngine: Regex pattern: 'позвони {contact}' -> '^позвони\s+(.+)$'
+03-31 23:27:47.232 13231 13368 D NLUEngine: Regex pattern: 'вызови {contact}' -> '^вызови\s+(.+)$'
+03-31 23:27:47.232 13231 13368 D NLUEngine: Regex pattern: 'набери {contact}' -> '^набери\s+(.+)$'
+03-31 23:27:47.232 13231 13368 D NLUEngine: Regex pattern: 'звонок {contact}' -> '^звонок\s+(.+)$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'позвони {number}' -> '^позвони\s+(.+)$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'набери {number}' -> '^набери\s+(.+)$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'номер {number}' -> '^номер\s+(.+)$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'открой окно' -> '^открой\s+окно$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'открой все окна' -> '^открой\s+все\s+окна$'
+03-31 23:27:47.233 13231 13368 D NLUEngine: Regex pattern: 'открыть окно' -> '^открыть\s+окно$'
+03-31 23:27:47.235 13231 13368 I NLUEngine: Matched command 'window_close' with pattern 'закрой окно'
+03-31 23:27:47.235 13231 13368 I VoboostVoiceService: Command parsed: window_close
+03-31 23:27:47.235 13231 13368 I CommandExecutor: Executing command: window_close
+03-31 23:27:47.238 13231 13368 D CommandExecutor: Audio ducked: 3 -> 1
+03-31 23:27:47.238 13231 13368 D CommandExecutor: Executing via Hybrid (Intent for phone, AIDL for vehicle)
+03-31 23:27:47.238 13231 13368 D CommandExecutor: Target: Window, Classify: 2, Command: 1
+03-31 23:27:47.238 13231 13368 D HybridVehicleCommand: Selecting AIDLExecutor for command: Window
+03-31 23:27:47.238 13231 13368 D AIDLVehicleCommand: Executing via AIDL: target=Window, classify=2, command=1
+03-31 23:27:47.239 13231 13368 D AIDLVehicleCommand: Window CLOSE command
+03-31 23:27:47.239 13231 13368 D AIDLVehicleCommand: Window Command: state=ALL_WINDOW_CONTROL (128), value=1
+03-31 23:27:47.245 13231 13368 D CanBusServiceManager: setVehicleState: ALL_WINDOW_CONTROL = 1
+03-31 23:27:47.245 13231 13368 I CommandExecutor: Command executed successfully
+03-31 23:27:47.245 13231 13368 I CommandExecutor: Command executed successfully
+03-31 23:27:47.245 13231 13368 D SherpaSynthesis: Speaking: Закрываю окно
+03-31 23:27:47.246 13231 13368 D SherpaSynthesis: Generating speech for: Закрываю окно
+03-31 23:27:47.246 13231 13368 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/csrc/offline-tts-vits-impl.h:Generate:163
+03-31 23:27:47.246 13231 13368 W sherpa-onnx: GenerationConfig(silence_scale=0.2, speed=1, sid=0, num_steps=5, reference_audio_len=0, reference_sample_rate=0)
+03-31 23:27:47.246 13231 13368 W sherpa-onnx: /home/runner/work/sherpa-onnx/sherpa-onnx/sherpa-onnx/csrc/offline-tts-vits-impl.h:Generate:210
+03-31 23:27:47.246 13231 13368 W sherpa-onnx: Raw text: Закрываю окно
+03-31 23:27:47.268 13231 14350 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:47.268 13231 14350 D SpeechRecognition: AudioRecord stopped
+03-31 23:27:47.290 13231 13231 D CompatibilityChangeReporter: Compat change id reported: 147798919; UID 10068; state: ENABLED
+03-31 23:27:47.291 13231 13231 E Toast   : setGravity() shouldn't be called on text toasts, the values won't be used
+03-31 23:27:47.291 13231 13231 D Toast   : show service.enqueueToast mNextView=android.widget.LinearLayout{ede799a V.E...... ......I. 0,0-0,0}  mText=null
+03-31 23:27:47.294 13231 13231 D OverlayManager: Toast shown: Закрываю окно
+03-31 23:27:47.675 13231 13368 D SherpaSynthesis: Audio generated: 23296 samples, sample rate: 22050
+03-31 23:27:47.676 13231 13368 V AudioTrack: getMinFrameCount(): getMinFrameCount=1772: afFrameCount=1920, afSampleRate=48000, afLatency=80
+03-31 23:27:47.677 13231 13368 E android.media.AudioTrack: AudioTrack, currPkg:com.voboost.voiceassistant, changedPkg:com.voboost.voiceassistant, attr:AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_SPEECH flags=0x800 tags= bundle=null
+03-31 23:27:47.677 13231 13368 V AudioTrack: AudioTrack create
+03-31 23:27:47.677 13231 13368 V AudioTrack: set(): streamType -1, sampleRate 22050, format 0x5, channelMask 0x1, frameCount 1772, flags #0, notificationFrames 0, sessionId 0, transferType 3, uid -1, pid -1
+03-31 23:27:47.677 13231 13368 V AudioTrack: set(): streamType -1 frameCount 1772 flags 0000
+03-31 23:27:47.677 13231 13368 V AudioTrack: set(): Building AudioTrack with attributes: usage=1 content=1 flags=0x800 tags=[]
+03-31 23:27:47.677 13231 13368 V AudioTrack: op_package_name[com.voboost.voiceassistant], binary_name[com.voboost.voiceassistant], streamType[-1], isBrlink[False], USAGE[1]
+03-31 23:27:47.686 13231 13368 V AudioTrack: start(115): prior state:STATE_STOPPED
+03-31 23:27:47.728 13231 13231 D SoundEffectManager: Audio focus abandoned
+03-31 23:27:48.232 13231 14350 I VoboostVoiceService: ✅ Command completed - returning to keyword spotting...
+03-31 23:27:48.232 13231 14350 D VoboostVoiceService: startKeywordSpotting called
+03-31 23:27:48.232 13231 14350 D VoboostVoiceService:   isListening=false
+03-31 23:27:48.232 13231 14350 D VoboostVoiceService:   isCommandMode=false
+03-31 23:27:48.232 13231 14350 I VoboostVoiceService: Starting keyword spotting (waiting for activation phrase)...
+03-31 23:27:48.232 13231 14350 D VoskRecognition: Starting keyword spotting (Vosk)
+03-31 23:27:48.232 13231 14350 D SpeechRecognition: startKeywordSpotting called
+03-31 23:27:48.232 13231 14350 D SpeechRecognition:   isRunning=true
+03-31 23:27:48.232 13231 14350 D SpeechRecognition:   isListeningForKeyword=false
+03-31 23:27:48.232 13231 14350 D SpeechRecognition:   isProcessingCommand=true
+03-31 23:27:48.233 13231 13273 I SpeechRecognition: Starting keyword spotting...
+03-31 23:27:48.233 13231 13273 V AudioRecord: start(111): sync event 0 trigger session 0
+03-31 23:27:48.233 13231 13273 V AudioRecord: property isaac.dump.record[0]
+03-31 23:27:48.245 13231 13273 E IAudioManager: trackRecorder() failed, riid is -1
+03-31 23:27:48.245 13231 13273 D SpeechRecognition: AudioRecord started
+03-31 23:27:48.250 13231 14350 D CommandExecutor: Audio restored: 3
+03-31 23:27:48.702 13231 13368 V AudioTrack: stop stop
+03-31 23:27:48.702 13231 13368 V AudioTrack: stop(115): prior state:STATE_ACTIVE
+03-31 23:27:48.702 13231 13368 D AudioTrack: stop(115): called with 23296 frames delivered
+03-31 23:27:48.702 13231 13368 V AudioTrack: flush(115): prior state:STATE_STOPPED
+03-31 23:27:48.703 13231 13368 D SherpaSynthesis: Audio playback completed
+03-31 23:27:48.703 13231 13368 V AudioTrack: stop stop
+03-31 23:27:48.703 13231 13368 V AudioTrack: stop(115): prior state:STATE_FLUSHED
+03-31 23:27:48.703 13231 13368 V AudioTrack: ~AudioTrack destroy
+03-31 23:27:48.704 13231 13368 V AudioTrack: stop stop
+03-31 23:27:48.704 13231 13368 V AudioTrack: stop(115): prior state:STATE_FLUSHED
+03-31 23:27:48.704 13231 13368 V AudioTrack: ~AudioTrack(115), releasing session id 2505 from 13231 on behalf of 13231
+03-31 23:27:53.426 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:27:58.389 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:03.418 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:08.536 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:13.500 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:18.375 13231 13273 I SpeechRecognition: Keyword timeout - restarting...
+03-31 23:28:23.379 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:28.359 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:33.509 13231 13273 D SpeechRecognition: Recognized: 
+03-31 23:28:38.486 13231 13273 D SpeechRecognition: Recognized: 

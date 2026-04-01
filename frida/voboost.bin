@@ -1,0 +1,82 @@
+#!/system/bin/sh
+logger() {
+    log -p w -t VoboostInject "$1"
+}
+
+if pgrep -f "/data/local/tmp/voboost/voboost.bin" | grep -vq "$$"; then
+    logger "Already running. Exit."
+    exit 0
+fi
+
+setenforce 0
+
+if [ ! -x "/data/local/tmp/voboost/frida-inject" ]; then
+    logger "ERROR: frida-inject not found or not executable"
+    exit 1
+fi
+
+inject() {
+    process_name=$1
+    script_name=$2
+    script_path="/data/local/tmp/voboost/$script_name"
+    
+    if [ ! -f "$script_path" ]; then
+        logger "Script $script_name not found for $process_name"
+        return 1;
+    fi
+    
+    while true; do
+    
+        current_pid=$(pidof "$process_name")
+        
+        if [ -z "$current_pid" ]; then
+            logger "Process $process_name not running"
+            sleep 2
+            continue
+        fi
+        
+        sleep 5
+        
+        #test_pid=$(ps -ef | grep frida-inject | grep ${process_name}'"' | tail -n 1)
+        #if [ -n "$test_pid" ]; then
+            # logger "Already injected into $process_name (Frida PID: $test_pid)"
+        #    sleep 10
+        #    continue
+        #fi
+
+		if ps -ef | grep -v grep | grep "frida-inject" | grep "$process_name" | grep -q "$script_name"; then
+            logger "Script $script_name already injected into $process_name"
+            sleep 10
+            continue
+        fi
+        
+        logger "Injecting $process_name (PID: $current_pid) with $script_name"
+        /data/local/tmp/voboost/frida-inject -p "$current_pid" -s "/data/local/tmp/voboost/$script_name" -P '{"process_name":"'${process_name}'"}' &
+        sleep 5
+        injected_pid=$(ps -ef | grep frida-inject | grep ${process_name}'"' | tail -n 1)
+        logger "Process $process_name injected with frida pid ${injected_pid}"
+        
+    done
+}
+
+logger "Starting injection process"
+
+killall -9 frida-inject 2>/dev/null
+ps -ef | grep 'unix:abstract=/frida' | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+
+logger "Starting injection of other processes..."
+
+inject "com.qinggan.app.vehiclesetting" "ADAS-activation-mod.js" &
+inject "com.qinggan.app.launcher" "app-launcher-mod.js" &
+inject "com.qinggan.systemservice" "app-multi-display.js" &
+inject "system_server" "app-viewport-mod.js" &
+inject "com.qinggan.app.qgime" "keyboard-ru-mod.js" &
+inject "com.qinggan.app.qgime.second" "keyboard-ru-mod.js" &
+inject "com.qinggan.app.launcher" "media-source-mod.js" &
+inject "com.qinggan.media" "media-window-mod.js" &
+inject "com.qinggan.app.launcher" "navbar-launcher-mod.js" &
+inject "com.qinggan.bluetoothphone" "phone-num-mod.js" &
+inject "com.qinggan.app.launcher" "weather-widget-mod.js" &
+inject "com.qinggan.keymanager.service" "media-key-mod.js" &
+
+logger "End injection process"

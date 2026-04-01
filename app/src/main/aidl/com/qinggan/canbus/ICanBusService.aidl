@@ -1,0 +1,132 @@
+package com.qinggan.canbus;
+
+import android.app.PendingIntent;
+import com.qinggan.canbus.ICanBusServiceCallback;
+
+import com.qinggan.canbus.DoorStatus;
+import com.qinggan.canbus.LightStatus;
+import com.qinggan.canbus.WheelSpeed;
+import com.qinggan.canbus.FuelLevel;
+import com.qinggan.canbus.WheelCount;
+import com.qinggan.canbus.BrakePadStatus;
+import com.qinggan.canbus.SeatBelt;
+import com.qinggan.canbus.VehicleIO;
+import com.qinggan.canbus.BatteryState;
+import com.qinggan.canbus.Odometer;
+import com.qinggan.canbus.AirCondition;
+import com.qinggan.canbus.SWCAngle;
+import com.qinggan.canbus.RadarData;
+import com.qinggan.canbus.MediaSrcInfo;
+import com.qinggan.canbus.MediaPlayInfo;
+import com.qinggan.canbus.MediaPlayMode;
+import com.qinggan.canbus.NaviInfo;
+import com.qinggan.canbus.GearState;
+import com.qinggan.canbus.WindowStatus;
+import com.qinggan.canbus.VehicleState;
+import com.qinggan.canbus.VehicleStateAutoTest;
+import com.qinggan.canbus.AirConditionState;
+import com.qinggan.canbus.VehicleCenterControlEnabled;
+import com.qinggan.canbus.TravellingInfoType;
+import com.qinggan.canbus.PhoneInfo;
+import com.qinggan.canbus.FunctionType;
+import com.qinggan.canbus.GearBoxType;
+import com.qinggan.canbus.TPMSInfo;
+import com.qinggan.ipksync.IIpkSyncService;
+import com.qinggan.canbus.PowerLevel;
+import com.qinggan.canbus.RealityWarningInfo;
+import android.os.Bundle;
+import com.qinggan.canbus.MediaPlayProgressInfo;
+import com.qinggan.canbus.DVRState;
+import com.qinggan.canbus.CameraState;
+import com.qinggan.canbus.EnergyConsumptionPercent;
+import com.qinggan.canbus.EnergyConsumptionInfo;
+
+interface ICanBusService {
+    Odometer getOdometer();
+    DoorStatus getDoorStatus();
+    DVRState getDVRState();
+    String getCanBoxVersion();
+    LightStatus getLightStatus();
+    GearState getGearStatus();
+    int getAmbientTemperature();
+    WheelSpeed getWheelSpeed();
+    FuelLevel getFuelLevel();
+    WheelCount getWheelCount();
+    int getEngineTemperature();
+    BrakePadStatus getBrakePadStatus();
+    int getBrakeFluidStatus();
+    int getWiperFluidStatus();
+    int getInstantFuelConsumption();
+    int getComprehensiveFuelConsumption();
+    float getComprehensiveFuelConsumptionEX();
+    int getEngineStatus();
+    BatteryState getBatteryState();
+    void queryVehicleState();
+    SeatBelt getSeatBeltStatus();
+    int getIllumination();
+    VehicleIO getVehicleIO();
+    long getSecondaryOdometer();
+    int getVehicleKeyState();
+    int getVehicleSpeed();
+    int getEngineSpeed();
+    boolean addCallback(ICanBusServiceCallback cb);
+    boolean removeCallback(ICanBusServiceCallback cb);
+
+    AirCondition getAirCondition();
+    void setAirConditionState(in AirConditionState airCondition, int state);
+    int setAirConditionBundleState(in Bundle bundle);
+    int getAirConditionState(in AirConditionState airCondition);
+    RadarData getFrontRadarData();
+    RadarData getRearRadarData();
+    RadarData getLeftRadarData();
+    RadarData getRightRadarData();
+    int getReTracking();
+    int getHandBrakeStatus();
+    int getEngineFluidStatus();
+    int getAlarmData();
+    SWCAngle getSWCAngle();
+    int getHevSysMode();
+    WindowStatus getWindowStatus();
+
+    void updateMediaSrcInfo(in MediaSrcInfo info);
+    void updateMediaPlayInfo(in MediaPlayInfo info);
+    void updateMediaPlayProgressInfo(in MediaPlayProgressInfo info);
+    void updateMediaSeqType(int seqtype);
+    void updateMediaPlayMode(in MediaPlayMode mode);
+    void updateMediaVolume(int volume);
+    void updateNaviInfo(in NaviInfo info);
+    void updateNaviLaneInfo(boolean showLane,in Bundle laneData);
+    void updatePhoneInfo(in PhoneInfo info);
+    void updateCallListInfo(in Bundle airBundle);
+    
+    void setCanRawData(int canId,in  int[] data);
+    int[] getCanRawData(int canId);
+    int getVehicleState(in VehicleState vehicle);
+    void setVehicleState(in VehicleState vehicle, int state);
+    int setVehicleBundleState(in Bundle bundle);
+    int getVehicleCenterControlEnabled(in VehicleCenterControlEnabled vehicle);
+    boolean setVehicleCenterControlEnabled(in VehicleCenterControlEnabled vehicle,int state);
+   
+    int requestVehicleCenterControlEnabledInfo();
+    int requestTravellingInfo(in TravellingInfoType type);
+
+    boolean isSupportFunction(in FunctionType type);
+    void setGearBoxType(in GearBoxType type);
+    
+    int getAccStatus();
+    void setFactoryModeState(in VehicleStateAutoTest vehicle, String result,int length);
+    void setFactoryModeResult(int length, String factoryResult);
+    
+    IIpkSyncService getIpkSyncSvr();
+    TPMSInfo getTPMSInfo();
+    float getBatteryRemainingCapacity();
+	PowerLevel getPowerlLevel();
+	int getRainfallLevel();
+	int setVehicleSceneMode(int mode);
+	int   getVehicleSceneMode();
+    RealityWarningInfo getRealityWarningInfo();
+    int setVehicleAndAirConditionBundleState(in Bundle airBundle,in Bundle vehicleBundle);
+    CameraState getCameraState();
+    EnergyConsumptionPercent getEnergyConsumptionPercent();
+    EnergyConsumptionInfo getEnergyConsumptionInfo();
+}

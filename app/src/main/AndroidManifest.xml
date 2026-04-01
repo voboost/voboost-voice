@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.voboost.voiceassistant">
+
+    <!-- ✅ Микрофон (обязательно) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- ✅ Foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- ✅ Доступ к внешнему хранилищу (для системных приложений) -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <!-- ✅ Поверх других окон (для overlay) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- ✅ Доступ к интернету -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- ✅ Автозапуск -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- ✅ Для автомобильных систем -->
+    <uses-permission android:name="android.car.permission.CAR_POWER" />
+    <uses-permission android:name="android.car.permission.CAR_VENDOR_EXTENSION" />
+    <uses-permission android:name="android.car.permission.CAR_CONTROL_AUDIO_VOLUME" />
+    <!-- ✅ Не спать -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <queries>
+        <!-- Пакет приложения, к которому вы подключаетесь через AIDL -->
+        <package android:name="com.qinggan.canbus.service" />
+        <!-- Также можно добавить поиск по action, если пакет вдруг изменится -->
+        <intent>
+            <action android:name="com.qinggan.canbus.CanBusService" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_voice"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.VoboostVoice"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="34">
+
+        <!-- ✅ Главный сервис -->
+        <service
+            android:name=".VoboostVoiceService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="microphone"
+            android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="com.voboost.voiceassistant.START" />
+            </intent-filter>
+        </service>
+
+        <!-- ✅ Receiver для команд -->
+        <receiver
+            android:name=".VoiceCommandReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.voboost.voiceassistant.ACTIVATE" />
+                <action android:name="com.voboost.voiceassistant.CANCEL" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ✅ Автозапуск -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.REBOOT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

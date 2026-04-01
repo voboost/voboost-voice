@@ -1,0 +1,119 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.voboost.voiceassistant'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId "com.voboost.voiceassistant"
+        minSdk = 26
+        targetSdk = 33
+        versionCode = 1
+        versionName = "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled = false
+            debuggable = true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets']
+            aidl.srcDirs = ['src/main/aidl']
+        }
+    }
+    
+    // Исключаем модели и конфиг из APK (они будут на SD-карте)
+    aaptOptions {
+        ignoreAssetsPattern 'vosk-model-small-ru-0.22:tts-ru-model:asr-ru-model:config.json'
+    }
+    
+    androidResources {
+        noCompress += ['wav', 'amr', 'ogg', 'json', 'mdl', 'fst', 'int', 'conf', 'stats', 'mat', 'ie', 'dubm', 'tar.gz']
+    }
+
+    // Исключаем нативные библиотеки (загружаются вручную)
+    packagingOptions {
+        exclude '**/libjnidispatch.so'
+        exclude '**/libvosk.so'
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    // Don't compress Vosk model files
+    buildFeatures {
+        aidl = true
+    }
+}
+
+dependencies {
+    // ==================== SPEECH ENGINES ====================
+
+    // Vosk - исключаем нативные библиотеки (загружаем вручную)
+    implementation('com.alphacephei:vosk-android:0.3.45') {
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }
+
+    // Sherpa-ONNX (офлайн STT + TTS) - основной движок
+    // Последняя версия: v1.12.34
+    // Скачать: https://sourceforge.net/projects/sherpa-onnx.mirror/files/v1.12.34/
+    implementation files('libs/sherpa-onnx-v1.12.34-java8.jar')
+
+    // JNA (требуется для Vosk)
+    implementation 'net.java.dev.jna:jna:5.13.0@aar'
+
+    // ==================== ANDROIDX ====================
+    
+    // Kotlin coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1'
+
+    // Core
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.lifecycle:lifecycle-service:2.6.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
+
+    // ==================== UI ====================
+    
+    // Material Design
+    implementation 'com.google.android.material:material:1.9.0'
+
+    // ==================== UTILS ====================
+    
+    // JSON парсинг
+    implementation 'com.google.code.gson:gson:2.10.1'
+    //QR-code
+    implementation 'com.google.zxing:core:3.5.3'
+
+    //implementation 'com.github.tiann:FreeReflection:3.1.0'
+
+    // ==================== TESTING ====================
+    
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

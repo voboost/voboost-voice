@@ -1,0 +1,26 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        //maven { url "https://raw.githubusercontent.com" }
+        //maven { url 'https://maven.ximalaya.com'}
+        //maven { url 'https://maven.aliyun.com'}
+        //maven { url "https://hezuo.alipay.com" }
+        //maven { url 'https://maven.aliyun.com' } https://maven.aliyun.com/
+        //maven { url 'https://maven.aliyun.com/repository/central' }
+        //maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        //maven { url 'https://maven.aliyun.com/nexus/content/repositories/releases/' }
+    }
+}
+
+rootProject.name = "VoboostVoiceAssistant"
+include ':app'

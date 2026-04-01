@@ -1,0 +1,402 @@
+{
+  "version": "1.0",
+  "language": "ru",
+  
+  "activation": {
+    "keyword": "привет воях",
+    "alternative_keywords": ["привет машина", "привет воях", "вобуст", "голосовой помощник"],
+    "button_keycode": "TODO",
+    "button_package": "com.qinggan.sttservice"
+  },
+  
+  "speech": {
+    "offline": {
+      "enabled": true,
+      "engine": "vosk",
+      "model": "vosk-model-small-ru-0.22",
+      "sample_rate": 16000
+    },
+    "online": {
+      "enabled": false,
+      "engine": "yandex",
+      "api_key": "",
+      "folder_id": ""
+    }
+  },
+  
+  "tts": {
+    "offline": {
+      "enabled": true,
+      "engine": "system",
+      "voice": "ru_RU",
+      "rate": 1.0,
+      "pitch": 1.0
+    },
+    "online": {
+      "enabled": false,
+      "engine": "yandex",
+      "api_key": ""
+    }
+  },
+  
+  "ui": {
+    "overlay_position": "top_left",
+    "overlay_offset_x_dp": 50,
+    "overlay_offset_y_dp": 50,
+    "show_animation": true,
+    "animation_duration_ms": 1000,
+    "toast_duration_ms": 3000
+  },
+  
+  "confirmation": {
+    "default_timeout_sec": 5,
+    "require_confirmation": false
+  },
+  
+  "phrases": {
+    "default": {
+      "success": "Выполнено",
+      "failure": "Не получилось выполнить",
+      "not_understood": "Я вас не поняла",
+      "confirm_question": "Подтверждаете?",
+      "confirm_yes": "Да",
+      "confirm_no": "Нет",
+      "listening": "Слушаю вас"
+    }
+  },
+  
+  "commands": [
+    {
+      "id": "charge_port_open",
+      "enabled": true,
+      "patterns": [
+        "открой лючок зарядки",
+        "открой порт зарядки",
+        "открыть зарядку",
+        "открой зарядку"
+      ],
+      "action": {
+        "target": "Chargport",
+        "classify": 35,
+        "command": 1,
+        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
+        "params": {
+          "location": "all"
+        }
+      },
+      "confirmation": {
+        "required": false,
+        "timeout_sec": 5,
+        "question": "Открыть лючок зарядки?",
+        "yes_patterns": ["да", "подтверждаю", "открывай", "ага"],
+        "no_patterns": ["нет", "отмена", "не надо", "не нужно"]
+      },
+      "phrases": {
+        "success": "Открываю лючок зарядки",
+        "failure": "Не получилось открыть лючок зарядки",
+        "confirmed": "Открываю",
+        "cancelled": "Отменено"
+      }
+    },
+    {
+      "id": "charge_port_close",
+      "enabled": true,
+      "patterns": [
+        "закрой лючок зарядки",
+        "закрой порт зарядки",
+        "закрыть зарядку",
+        "закрой зарядку"
+      ],
+      "action": {
+        "target": "Chargport",
+        "classify": 35,
+        "command": 2,
+        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
+        "params": {
+          "location": "all"
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Закрываю лючок зарядки",
+        "failure": "Не получилось закрыть лючок зарядки"
+      }
+    },
+    {
+      "id": "fuel_tank_open",
+      "enabled": true,
+      "patterns": [
+        "открой бензобак",
+        "открой крышку бензобака",
+        "открой лючок бензобака",
+        "открыть бензобак"
+      ],
+      "action": {
+        "target": "Scuttle",
+        "classify": 19,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
+        "params": {}
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Открываю бензобак",
+        "failure": "Не получилось открыть бензобак"
+      }
+    },
+    {
+      "id": "smart_mode_leisure",
+      "enabled": true,
+      "patterns": [
+        "включи режим отдыха",
+        "активируй режим отдыха",
+        "режим отдых",
+        "включи отдых"
+      ],
+      "action": {
+        "target": "SmartMode",
+        "classify": 22,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
+        "params": {
+          "mode": 18
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Включаю режим отдыха",
+        "failure": "Не получилось включить режим отдыха"
+      }
+    },
+    {
+      "id": "smart_mode_child",
+      "enabled": true,
+      "patterns": [
+        "включи детский режим",
+        "режим ребенок",
+        "детский режим",
+        "включи режим ребенок"
+      ],
+      "action": {
+        "target": "SmartMode",
+        "classify": 22,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
+        "params": {
+          "mode": 22
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Включаю детский режим",
+        "failure": "Не получилось включить детский режим"
+      }
+    },
+    {
+      "id": "smart_mode_romantic",
+      "enabled": true,
+      "patterns": [
+        "включи романтический режим",
+        "режим романтика",
+        "романтический режим"
+      ],
+      "action": {
+        "target": "SmartMode",
+        "classify": 22,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
+        "params": {
+          "mode": 6
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Включаю романтический режим",
+        "failure": "Не получилось включить романтический режим"
+      }
+    },
+    {
+      "id": "ac_open",
+      "enabled": true,
+      "patterns": [
+        "включи кондиционер",
+        "включи печку",
+        "включи климат",
+        "включи обогрев"
+      ],
+      "action": {
+        "target": "AirConditioner",
+        "classify": 5,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.air_control.OPEN",
+        "params": {}
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Включаю кондиционер",
+        "failure": "Не получилось включить кондиционер"
+      }
+    },
+    {
+      "id": "ac_close",
+      "enabled": true,
+      "patterns": [
+        "выключи кондиционер",
+        "выключи печку",
+        "выключи климат",
+        "отключи обогрев"
+      ],
+      "action": {
+        "target": "AirConditioner",
+        "classify": 5,
+        "command": 1,
+        "intent_action": "pateo.dls.ivoka.air_control.CLOSE",
+        "params": {}
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Выключаю кондиционер",
+        "failure": "Не получилось выключить кондиционер"
+      }
+    },
+    {
+      "id": "ac_set_temp",
+      "enabled": true,
+      "patterns": [
+        "установи температуру {temp} градусов",
+        "поставь {temp} градусов",
+        "температура {temp}",
+        "включи {temp} градусов"
+      ],
+      "action": {
+        "target": "AirConditioner",
+        "classify": 5,
+        "command": 3,
+        "intent_action": "pateo.dls.ivoka.air_control.ADJUST",
+        "params": {
+          "temperature": "{temp}"
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Устанавливаю температуру {temp} градусов",
+        "failure": "Не получилось установить температуру"
+      }
+    },
+    {
+      "id": "phone_call_contact",
+      "enabled": true,
+      "patterns": [
+        "позвони {contact}",
+        "вызови {contact}",
+        "набери {contact}",
+        "звонок {contact}"
+      ],
+      "action": {
+        "target": "telephone",
+        "classify": 1,
+        "command": 1,
+        "intent_action": "pateo.dls.ivoka.telephone.CALL",
+        "params": {
+          "contact": "{contact}",
+          "call_type": "contact"
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Звоню {contact}",
+        "failure": "Не получилось позвонить {contact}"
+      }
+    },
+    {
+      "id": "phone_call_number",
+      "enabled": true,
+      "patterns": [
+        "позвони {number}",
+        "набери {number}",
+        "номер {number}"
+      ],
+      "action": {
+        "target": "telephone",
+        "classify": 1,
+        "command": 1,
+        "intent_action": "pateo.dls.ivoka.telephone.CALL",
+        "params": {
+          "number": "{number}",
+          "call_type": "number"
+        }
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Набираю {number}",
+        "failure": "Не получилось набрать номер"
+      }
+    },
+    {
+      "id": "window_open",
+      "enabled": true,
+      "patterns": [
+        "открой окно",
+        "открой все окна",
+        "открыть окно"
+      ],
+      "action": {
+        "target": "Window",
+        "classify": 2,
+        "command": 0,
+        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
+        "params": {}
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Открываю окно",
+        "failure": "Не получилось открыть окно"
+      }
+    },
+    {
+      "id": "window_close",
+      "enabled": true,
+      "patterns": [
+        "закрой окно",
+        "закрой все окна",
+        "закрыть окно"
+      ],
+      "action": {
+        "target": "Window",
+        "classify": 2,
+        "command": 1,
+        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
+        "params": {}
+      },
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Закрываю окно",
+        "failure": "Не получилось закрыть окно"
+      }
+    }
+  ]
+}

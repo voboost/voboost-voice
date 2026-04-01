@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Voboost Voice Assistant</string>
+    
+    <!-- Notification strings -->
+    <string name="notification_title">Голосовой помощник</string>
+    <string name="notification_text">Слушаю команды…</string>
+    
+    <!-- Notification channel -->
+    <string name="notification_channel_name">Голосовой помощник</string>
+    <string name="notification_channel_description">Сервис голосового помощника</string>
+</resources>

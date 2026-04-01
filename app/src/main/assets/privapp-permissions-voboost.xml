@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.voboost.voiceassistant">
+        <permission name="com.qinggan.permission.WRITE_CANBUS"/>
+        <permission name="com.qinggan.permission.READ_CANBUS"/>
+    </privapp-permissions>
+</permissions>

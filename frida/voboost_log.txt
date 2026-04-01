@@ -1,0 +1,10 @@
+--------- beginning of kernel
+--------- beginning of system
+--------- beginning of main
+03-31 23:04:26.978 18947 18947 W VoboostInject: Script app-viewport-mod.js already injected into system_server
+03-31 23:04:27.276 18954 18954 W VoboostInject: Script navbar-launcher-mod.js already injected into com.qinggan.app.launcher
+03-31 23:04:27.338 18960 18960 W VoboostInject: Already running. Exit.
+03-31 23:04:27.856 18964 18964 W VoboostInject: Process com.qinggan.app.qgime.second not running
+03-31 23:04:28.485 18976 18976 W VoboostInject: Script media-source-mod.js already injected into com.qinggan.app.launcher
+03-31 23:04:29.391 18986 18986 W VoboostInject: Already running. Exit.
+03-31 23:04:29.919 18993 18993 W VoboostInject: Process com.qinggan.app.qgime.second not running

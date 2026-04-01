@@ -1,0 +1,40 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android Studio
+captures/
+.externalNativeBuild
+.cxx
+
+# Keystore files
+*.jks
+*.keystore
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# APK files (optional - uncomment if you don't want to track APKs)
+# *.apk
+# *-unsigned.apk
+
+# Native libraries (if not source)
+# native_libs/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
