@@ -109,7 +109,8 @@ class SpeechRecognitionModule(
                                                       AudioFormat.CHANNEL_IN_MONO,
                                                       AudioFormat.ENCODING_PCM_16BIT)
 
-        audioRecord = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,
+        // Используем MIC вместо VOICE_RECOGNITION для совместимости с автомобильными системами Qinggan
+        audioRecord = AudioRecord(MediaRecorder.AudioSource.MIC,
                                   SAMPLE_RATE,
                                   AudioFormat.CHANNEL_IN_MONO,
                                   AudioFormat.ENCODING_PCM_16BIT,
