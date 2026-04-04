@@ -11,14 +11,13 @@ import com.voboost.voiceassistant.engine.system.SystemTtsSynthesis
 import com.voboost.voiceassistant.engine.vosk.VoskModelLoader
 import com.voboost.voiceassistant.engine.vosk.VoskStreamFactory
 import com.voboost.voiceassistant.speech.KeywordChecker
-import com.voboost.voiceassistant.speech.SpeechStateMachine
-import com.voboost.voiceassistant.speech.VoiceAssistantStateMachine
+import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 import java.io.File
 
 /**
  * Фабрика для создания модулей распознавания и синтеза речи
- * Позволяет легко переключаться между реализациями (Vosk, Sherpa-ONNX, System)
+ * Позволяет легко переключаться между реализациями (Vosk, Sherpa, System)
  */
 object SpeechEngineFactory {
 
@@ -35,33 +34,27 @@ object SpeechEngineFactory {
     }
 
     /**
-     * Создать State Machine для распознавания речи
+     * Создать распознаватель речи (утилита без состояний)
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
      * @param audioSource Источник аудио (создаётся через AudioSourceFactory)
-     * @return SpeechStateMachine для управления распознаванием
+     * @return SpeechRecognizer для управления распознаванием
      */
-    fun createSpeechStateMachine(
+    fun createSpeechRecognizer(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
         audioSource: AudioSource
-    ): SpeechStateMachine {
+    ): SpeechRecognizer {
         val configManager = com.voboost.voiceassistant.config.ConfigManager.getInstance(context)
         val keywordChecker = KeywordChecker(configManager)
-        
-        return when (engine) {
+
+        val recognitionEngine = when (engine) {
             RecognitionEngine.VOSK -> {
                 Log.i(TAG, "Creating Vosk recognition engine")
                 val modelLoader = VoskModelLoader(context)
                 val modelPath = modelLoader.getModelPath()
                 val model = modelLoader.loadModel(modelPath)
-                val recognitionEngine = VoskStreamFactory().create(model)
-                
-                SpeechStateMachine(
-                    audioSource = audioSource,
-                    recognitionEngine = recognitionEngine,
-                    keywordChecker = keywordChecker
-                )
+                VoskStreamFactory().create(model)
             }
 
             RecognitionEngine.SHERPA -> {
@@ -69,42 +62,14 @@ object SpeechEngineFactory {
                 val modelLoader = SherpaModelLoader(context)
                 val modelPath = modelLoader.getModelPath()
                 val model = modelLoader.loadModel(modelPath)
-                val recognitionEngine = SherpaStreamFactory().create(model)
-                
-                SpeechStateMachine(
-                    audioSource = audioSource,
-                    recognitionEngine = recognitionEngine,
-                    keywordChecker = keywordChecker
-                )
+                SherpaStreamFactory().create(model)
             }
         }
-    }
 
-    /**
-     * Создать Voice Assistant State Machine
-     * @param context Контекст приложения
-     * @param engine Тип движка (по умолчанию Vosk как стабильный)
-     * @param audioSource Источник аудио
-     * @param overlayManager Менеджер UI оверлея
-     * @param volumeManager Менеджер громкости
-     * @param scope CoroutineScope для фоновых задач
-     * @return VoiceAssistantStateMachine для управления голосовым помощником
-     */
-    fun createVoiceAssistantStateMachine(
-        context: Context,
-        engine: RecognitionEngine = RecognitionEngine.VOSK,
-        audioSource: AudioSource,
-        overlayManager: OverlayManager,
-        volumeManager: com.voboost.voiceassistant.audio.VolumeManager?,
-        scope: kotlinx.coroutines.CoroutineScope
-    ): VoiceAssistantStateMachine {
-        val speechStateMachine = createSpeechStateMachine(context, engine, audioSource)
-        
-        return VoiceAssistantStateMachine(
-            speechStateMachine = speechStateMachine,
-            overlayManager = overlayManager,
-            volumeManager = volumeManager,
-            scope = scope
+        return SpeechRecognizer(
+            audioSource = audioSource,
+            recognitionEngine = recognitionEngine,
+            keywordChecker = keywordChecker
         )
     }
 

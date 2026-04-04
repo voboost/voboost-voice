@@ -6,24 +6,28 @@ import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
-import com.voboost.voiceassistant.speech.SpeechStateMachine
-import com.voboost.voiceassistant.speech.VoiceAssistantListener
+import com.voboost.voiceassistant.speech.SpeechRecognizer
+import com.voboost.voiceassistant.speech.SpeechResult
 import com.voboost.voiceassistant.ui.OverlayManager
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 
 /**
  * Состояние: Ожидание ключевого слова
+ *
+ * Логика:
+ * 1. Скрыть анимацию, восстановить громкость
+ * 2. Ждём KeywordDetected из SpeechRecognizer
+ * 3. → ActivatedState
  */
 class IdleState(
-    private val speechSM: SpeechStateMachine,
+    private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
-    private val context: StateContext,
-    private val onKeywordDetected: () -> Unit
+    private val context: StateContext
 ) : State {
     companion object {
         private const val TAG = "IdleState"
@@ -36,48 +40,28 @@ class IdleState(
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
 
-            // Ждём ключевое слово
-            waitForKeyword()
+            // Ждём ключевое слово из SharedFlow
+            val result = speechRecognizer.results.first { it is SpeechResult.KeywordDetected }
+            val keywordText = (result as SpeechResult.KeywordDetected).text
+            Log.i(TAG, "🎯 Keyword detected: '$keywordText'")
 
             // Ключевое слово получено → ActivatedState
-            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
-            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            KeywordErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
-    /**
-     * Ждём ключевое слово
-     */
-    private suspend fun waitForKeyword() {
-        val result = CompletableDeferred<Unit>()
-
-        speechSM.startListeningForKeyword(object : VoiceAssistantListener {
-            override fun onKeywordDetected() {
-                if (!result.isCompleted) {
-                    result.complete(Unit)
-                }
-            }
-
-            override fun onError(error: String) {
-                if (!result.isCompleted) {
-                    result.completeExceptionally(Exception(error))
-                }
-            }
-        })
-
-        result.await()
-    }
-
     override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in IdleState - already idle, ignoring")
-        return this
+        Log.i(TAG, "Cancel in IdleState - returning to IdleState")
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 
     override suspend fun activate(): State {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
-        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 }

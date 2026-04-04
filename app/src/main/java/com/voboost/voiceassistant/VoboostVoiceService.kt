@@ -29,8 +29,8 @@ import com.voboost.voiceassistant.canbus.VoiceButtonHandler
 import com.voboost.voiceassistant.canbus.VoiceAssistantCallback
 import com.voboost.voiceassistant.canbus.TSRSpeedLimitHandler
 import com.voboost.voiceassistant.canbus.TTSCallback
-import com.voboost.voiceassistant.speech.SpeechStateMachine
-import com.voboost.voiceassistant.speech.SpeechRecognitionListener
+import com.voboost.voiceassistant.speech.SpeechRecognizer
+import com.voboost.voiceassistant.speech.SpeechResult
 import com.voboost.voiceassistant.speech.state.StateMachine
 import com.voboost.voiceassistant.speech.state.StateContext
 import com.voboost.voiceassistant.speech.state.IdleState
@@ -68,7 +68,7 @@ class VoboostVoiceService : Service() {
     // Компоненты системы
     private lateinit var configManager: ConfigManager
     private lateinit var stateMachine: StateMachine  // ← State Machine
-    private lateinit var speechSM: SpeechStateMachine  // ← Распознавание речи
+    private lateinit var speechRecognizer: SpeechRecognizer  // ← Распознавание речи
     private lateinit var commandHandler: CommandHandler  // ← Обработка команд
     private lateinit var nluEngine: NLUEngine
     private lateinit var commandExecutor: CommandExecutor
@@ -226,29 +226,25 @@ class VoboostVoiceService : Service() {
         commandHandler = CommandHandler(nluEngine, commandExecutor)
         Log.i(TAG, "CommandHandler initialized")
 
-        // Speech State Machine - распознавание речи
-        speechSM = SpeechEngineFactory.createSpeechStateMachine(
+        // SpeechRecognizer - распознавание речи (утилита без состояний)
+        speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(
             context = this,
             engine = ASR_ENGINE_TYPE,
             audioSource = audioSource
         )
-        Log.i(TAG, "Speech State Machine initialized")
+        Log.i(TAG, "SpeechRecognizer initialized")
 
         // State Machine - управление состояниями
         val context = StateContext()
         val initialState = IdleState(
-            speechSM = speechSM,
+            speechRecognizer = speechRecognizer,
             overlayManager = overlayManager,
             volumeManager = volumeManager,
             ttsEngine = ttsEngine,
             configManager = configManager,
             nluEngine = nluEngine,
             commandExecutor = commandExecutor,
-            context = context,
-            onKeywordDetected = {
-                Log.i(TAG, "🎯 Keyword detected!")
-                activateVoiceAssistant()
-            }
+            context = context
         )
 
         stateMachine = StateMachine(
@@ -354,7 +350,7 @@ class VoboostVoiceService : Service() {
         }
 
         stateMachine.stop()
-        speechSM.shutdown()
+        speechRecognizer.shutdown()
         ttsEngine.shutdown()
         soundEffectManager.release()
 
@@ -376,7 +372,8 @@ class VoboostVoiceService : Service() {
         serviceScope.launch {
             try {
                 Log.i(TAG, "Starting keyword spotting (waiting for activation phrase)...")
-                stateMachine.start()
+                speechRecognizer.start()  // Запускаем непрерывный поток распознавания
+                stateMachine.start()      // Запускаем State Machine
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start keyword spotting", e)
                 // Попытка перезапуска через 3 секунды

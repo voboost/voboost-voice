@@ -6,12 +6,12 @@ import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
-import com.voboost.voiceassistant.speech.SpeechStateMachine
+import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Распознана команда
- * 
+ *
  * Логика:
  * 1. Распарсить текст через NLU
  * 2. Если команда распознана:
@@ -20,7 +20,7 @@ import com.voboost.voiceassistant.ui.OverlayManager
  * 3. Если не распознана → CommandErrorState
  */
 class RecognizedCommandState(
-    private val speechSM: SpeechStateMachine,
+    private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
@@ -36,7 +36,7 @@ class RecognizedCommandState(
     override suspend fun execute(): State {
         val text = context.commandText ?: run {
             Log.e(TAG, "No command text in context")
-            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
+            return CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
         }
 
         Log.i(TAG, "Processing command: '$text'")
@@ -44,41 +44,39 @@ class RecognizedCommandState(
         return try {
             // Парсим текст через NLU
             val recognizedCommand = nluEngine.parseCommand(text)
-            
+
             if (recognizedCommand != null) {
                 Log.d(TAG, "Command parsed: ${recognizedCommand.id}")
                 context.recognizedCommand = recognizedCommand
-                
+
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
-                    return ConfirmationState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                    return ConfirmationState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
                 }
-                
+
                 // Выполняем команду без подтверждения
                 Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
-                return ExecutingCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                return ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
             } else {
                 Log.w(TAG, "Unrecognized command: '$text'")
-                CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing command", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in RecognizedCommandState → IdleState")
-        
+
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-        speechSM.returnToKeywordListening()
-        
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-            // Callback будет установлен при создании нового IdleState
-        }
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 
     override suspend fun activate(): State {

@@ -6,14 +6,14 @@ import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
-import com.voboost.voiceassistant.speech.SpeechStateMachine
+import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Ошибка выполнения команды
  */
 class CommandErrorState(
-    private val speechSM: SpeechStateMachine,
+    private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
@@ -31,24 +31,18 @@ class CommandErrorState(
         Log.e(TAG, "Entering COMMAND_ERROR state: $error")
 
         return try {
-            speechSM.finishCommand()
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-                // Callback для ключевого слова
-            }
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in CommandErrorState", e)
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-                // Callback для ключевого слова
-            }
+            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in CommandErrorState → IdleState")
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-            // Callback для ключевого слова
-        }
+        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 
     override suspend fun activate(): State {

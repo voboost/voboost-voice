@@ -5,7 +5,7 @@ import kotlinx.coroutines.*
 
 /**
  * State Machine для голосового помощника
- * 
+ *
  * Запускает цикл выполнения состояний:
  * ```
  * var state = initialState
@@ -13,12 +13,13 @@ import kotlinx.coroutines.*
  *     state = state.execute()  // ← Цепочка состояний
  * }
  * ```
- * 
+ *
  * Преимущества:
  * - ✅ Автоматический цикл выполнения
  * - ✅ Явные переходы между состояниями
  * - ✅ Легко добавить новые состояния
  * - ✅ Каждое состояние тестируется отдельно
+ * - ✅ Поддержка внешних прерываний (activate/cancel)
  */
 class StateMachine(
     private val initialState: State,
@@ -30,7 +31,13 @@ class StateMachine(
     }
 
     private var job: Job? = null
+
+    @Volatile
     private var currentState: State = initialState
+
+    // Job текущего состояния (для отмены при внешних прерываниях)
+    @Volatile
+    private var stateJob: Job? = null
 
     /**
      * Запустить State Machine
@@ -44,12 +51,21 @@ class StateMachine(
         job = scope.launch {
             try {
                 Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
-                
+
                 var state = currentState
                 while (isActive) {
-                    state = state.execute()  // ← Цепочка!
-                    Log.d(TAG, "State transition: ${currentState::class.simpleName} → ${state::class.simpleName}")
-                    currentState = state
+                    // Создаём дочерний job для текущего состояния
+                    stateJob = launch {
+                        state = state.execute()  // ← Цепочка!
+                        Log.d(TAG, "State transition: ${currentState::class.simpleName} → ${state::class.simpleName}")
+                        currentState = state
+                    }
+
+                    // Ждём завершения состояния
+                    stateJob?.join()
+
+                    // Если job был отменён (из activate/cancel) — продолжаем цикл с новым состоянием
+                    state = currentState
                 }
             } catch (e: CancellationException) {
                 Log.i(TAG, "State Machine cancelled")
@@ -84,6 +100,12 @@ class StateMachine(
      * Отменить текущее состояние
      */
     suspend fun cancel() {
+        Log.i(TAG, "Cancel requested in: ${currentState::class.simpleName}")
+
+        // Отменяем текущий job выполнения состояния
+        stateJob?.cancel()
+        stateJob = null
+
         val nextState = currentState.cancel()
         if (nextState !== currentState) {
             currentState = nextState
@@ -95,6 +117,12 @@ class StateMachine(
      * Активировать помощник
      */
     suspend fun activate() {
+        Log.i(TAG, "Activate requested from: ${currentState::class.simpleName}")
+
+        // Отменяем текущий job выполнения состояния (это прервёт blocked first{})
+        stateJob?.cancel()
+        stateJob = null
+
         val nextState = currentState.activate()
         if (nextState !== currentState) {
             currentState = nextState

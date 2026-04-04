@@ -6,23 +6,23 @@ import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
-import com.voboost.voiceassistant.speech.SpeechRecognitionListener
-import com.voboost.voiceassistant.speech.SpeechStateMachine
+import com.voboost.voiceassistant.speech.SpeechRecognizer
+import com.voboost.voiceassistant.speech.SpeechResult
 import com.voboost.voiceassistant.ui.OverlayManager
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 
 /**
  * Состояние: Слушаем команду
  *
  * Логика:
- * 1. Запустить распознавание команды
- * 2. Если команда получена → RecognizedCommandState
- * 3. Если таймаут → TimeoutState
- * 4. Если ошибка → CommandErrorState
- * 5. Если отмена → IdleState
+ * 1. Установить режим COMMAND в SpeechRecognizer
+ * 2. Ждём CommandReceived или Timeout из Channel
+ * 3. Если команда получена → RecognizedCommandState
+ * 4. Если таймаут → TimeoutState
+ * 5. Если ошибка → CommandErrorState
  */
 class ListeningCommandState(
-    private val speechSM: SpeechStateMachine,
+    private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
@@ -39,81 +39,68 @@ class ListeningCommandState(
         Log.i(TAG, "Entering LISTENING_COMMAND state")
 
         return try {
-            // Ждём результат распознавания
-            val commandText = waitForCommand()
-            
-            if (commandText != null && commandText.isNotEmpty()) {
-                Log.i(TAG, "Command received: '$commandText'")
-                context.commandText = commandText
-                
-                // Переходим к распознаванию команды
-                return RecognizedCommandState(
-                    speechSM = speechSM,
-                    overlayManager = overlayManager,
-                    volumeManager = volumeManager,
-                    ttsEngine = ttsEngine,
-                    configManager = configManager,
-                    nluEngine = nluEngine,
-                    commandExecutor = commandExecutor,
-                    context = context
-                )
-            } else {
-                Log.w(TAG, "No command received or empty")
-                IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-                    // Callback будет установлен при создании нового IdleState
+            // Устанавливаем режим распознавания команд
+            speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
+
+            // Ждём результат из SharedFlow
+            val result = speechRecognizer.results.first {
+                it is SpeechResult.CommandReceived ||
+                it is SpeechResult.Timeout ||
+                it is SpeechResult.Error
+            }
+
+            when (result) {
+                is SpeechResult.CommandReceived -> {
+                    val commandText = result.text
+                    if (commandText.isNotEmpty()) {
+                        Log.i(TAG, "Command received: '$commandText'")
+                        context.commandText = commandText
+                        RecognizedCommandState(
+                            speechRecognizer = speechRecognizer,
+                            overlayManager = overlayManager,
+                            volumeManager = volumeManager,
+                            ttsEngine = ttsEngine,
+                            configManager = configManager,
+                            nluEngine = nluEngine,
+                            commandExecutor = commandExecutor,
+                            context = context
+                        )
+                    } else {
+                        Log.w(TAG, "Empty command received")
+                        TimeoutState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                    }
+                }
+
+                is SpeechResult.Timeout -> {
+                    Log.w(TAG, "Command timeout")
+                    TimeoutState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                }
+
+                is SpeechResult.Error -> {
+                    Log.e(TAG, "Recognition error: ${result.message}")
+                    CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, result.message)
+                }
+
+                else -> {
+                    Log.w(TAG, "Unexpected result: $result")
+                    IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
                 }
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
-    }
-
-    /**
-     * Ждём результат распознавания команды
-     * @return Распознанный текст или null при таймауте/ошибке
-     */
-    private suspend fun waitForCommand(): String? {
-        val result = CompletableDeferred<String?>()
-        
-        val listener = object : SpeechRecognitionListener {
-            override fun onCommandReceived(text: String) {
-                if (!result.isCompleted) {
-                    result.complete(text)
-                }
-            }
-            
-            override fun onError(error: String) {
-                if (!result.isCompleted) {
-                    result.complete(null)
-                }
-            }
-            
-            override suspend fun onTimeout() {
-                if (!result.isCompleted) {
-                    result.complete(null)
-                }
-            }
-        }
-        
-        // Запускаем распознавание команды
-        speechSM.startListeningCommand(listener)
-        
-        // Ждём результат (таймаут обрабатывается внутри SpeechStateMachine)
-        return result.await()
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in ListeningCommandState → IdleState")
-        
+
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-        speechSM.returnToKeywordListening()
-        
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-            // Callback будет установлен при создании нового IdleState
-        }
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 
     override suspend fun activate(): State {

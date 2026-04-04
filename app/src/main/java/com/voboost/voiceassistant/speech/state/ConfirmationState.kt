@@ -6,12 +6,12 @@ import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
-import com.voboost.voiceassistant.speech.SpeechStateMachine
+import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Ожидание подтверждения команды
- * 
+ *
  * Логика:
  * 1. Сказать вопрос подтверждения
  * 2. Ждать ответ пользователя (да/нет)
@@ -20,7 +20,7 @@ import com.voboost.voiceassistant.ui.OverlayManager
  * 5. Если таймаут → IdleState
  */
 class ConfirmationState(
-    private val speechSM: SpeechStateMachine,
+    private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
@@ -36,9 +36,7 @@ class ConfirmationState(
     override suspend fun execute(): State {
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
-            return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-                // Callback будет установлен при создании нового IdleState
-            }
+            return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
         }
 
         Log.i(TAG, "Entering CONFIRMATION state for: ${command.id}")
@@ -49,29 +47,26 @@ class ConfirmationState(
             Log.d(TAG, "Asking: '$question'")
             ttsEngine.speak(question)
 
-            // Ждать ответ пользователя
-            // TODO: Реализовать ожидание ответа через SpeechRecognitionListener
+            // TODO: Реализовать ожидание ответа пользователя
             // Пока сразу переходим к выполнению (заглушка)
             Log.w(TAG, "Confirmation not fully implemented yet, executing command")
-            
-            ExecutingCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+
+            ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ConfirmationState", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in ConfirmationState → IdleState")
-        
+
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-        speechSM.returnToKeywordListening()
-        
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
-            // Callback будет установлен при создании нового IdleState
-        }
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 
     override suspend fun activate(): State {
