@@ -434,20 +434,24 @@ class VoboostVoiceService : Service() {
      * Активировать голосовой помощник (после ключевой фразы или кнопки)
      */
     private fun activateVoiceAssistant() {
-        if (stateMachine.getCurrentState() is ProcessingCommandState) {
-            // Уже активен — отменяем команду и возвращаемся к ожиданию
-            Log.i(TAG, "Already in command mode - CANCEL command")
-            cancelCurrentCommand()
-            return
+        Log.i(TAG, "Activating voice assistant...")
+        
+        serviceScope.launch {
+            try {
+                // State Machine сам обработает активацию в текущем State
+                stateMachine.activate()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error activating voice assistant", e)
+            }
         }
-
-        activateVoiceAssistantInternal()
     }
 
     /**
      * Отменить текущую команду и вернуться к ожиданию ключевого слова
      */
     private fun cancelCurrentCommand() {
+        Log.i(TAG, "Cancelling current command...")
+        
         serviceScope.launch {
             try {
                 // 🗣️ Сказать "Отмена"
@@ -464,26 +468,8 @@ class VoboostVoiceService : Service() {
                 // Отменить подтверждение если есть
                 confirmationContinuation = null
 
-                // Остановить распознавание
-                cancelRecognition()
-                
-                // Скрыть анимацию
-                withContext(Dispatchers.Main) {
-                    overlayManager.hideAnimation()
-                }
-
-                // Вернуться к ожиданию ключевого слова
-                stateMachine.transitionTo(
-                    IdleState(
-                        speechSM = speechSM,
-                        overlayManager = overlayManager,
-                        volumeManager = volumeManager,
-                        onKeywordDetected = {
-                            Log.i(TAG, "🎯 Keyword detected!")
-                            activateVoiceAssistant()
-                        }
-                    )
-                )
+                // State Machine сам обработает отмену
+                stateMachine.cancel()
             }
         }
     }
@@ -606,11 +592,6 @@ class VoboostVoiceService : Service() {
      * Отменить распознавание (повторное нажатие кнопки или от Frida)
      */
     fun cancelRecognition() {
-        if (stateMachine.getCurrentState() !is IdleState) {
-            Log.w(TAG, "Not in IdleState, ignoring cancel request")
-            return
-        }
-
         Log.i(TAG, "❌ Cancelling recognition...")
 
         serviceScope.launch {
@@ -618,8 +599,8 @@ class VoboostVoiceService : Service() {
                 // 🎵 Звук отмены
                 soundEffectManager.playCancelSound()
 
-                // Скрыть анимацию и восстановить громкость
-                speechSM.returnToKeywordListening()
+                // State Machine сам обработает отмену в текущем State
+                stateMachine.cancel()
 
                 Log.i(TAG, "✅ Recognition cancelled")
 

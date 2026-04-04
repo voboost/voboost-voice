@@ -49,4 +49,16 @@ class KeywordErrorState(
             }
         }
     }
+
+    override suspend fun cancel(): State {
+        Log.i(TAG, "Cancel in KeywordErrorState → IdleState")
+        return IdleState(speechSM, overlayManager, volumeManager) {
+            // Callback для ключевого слова
+        }
+    }
+
+    override suspend fun activate(): State {
+        Log.i(TAG, "Cannot activate from KeywordErrorState, ignoring")
+        return this
+    }
 }

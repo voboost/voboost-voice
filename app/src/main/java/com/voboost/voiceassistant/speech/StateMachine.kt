@@ -78,4 +78,26 @@ class StateMachine(
         currentState = state
         Log.i(TAG, "Forced transition to: ${state::class.simpleName}")
     }
+
+    /**
+     * Отменить текущее состояние
+     */
+    suspend fun cancel() {
+        val nextState = currentState.cancel()
+        if (nextState !== currentState) {
+            currentState = nextState
+            Log.i(TAG, "Cancel transition to: ${nextState::class.simpleName}")
+        }
+    }
+
+    /**
+     * Активировать помощник
+     */
+    suspend fun activate() {
+        val nextState = currentState.activate()
+        if (nextState !== currentState) {
+            currentState = nextState
+            Log.i(TAG, "Activate transition to: ${nextState::class.simpleName}")
+        }
+    }
 }

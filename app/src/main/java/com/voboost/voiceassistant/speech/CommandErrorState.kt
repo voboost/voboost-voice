@@ -45,4 +45,16 @@ class CommandErrorState(
             }
         }
     }
+
+    override suspend fun cancel(): State {
+        Log.i(TAG, "Cancel in CommandErrorState → IdleState")
+        return IdleState(speechSM, overlayManager, volumeManager) {
+            // Callback для ключевого слова
+        }
+    }
+
+    override suspend fun activate(): State {
+        Log.i(TAG, "Cannot activate from CommandErrorState, ignoring")
+        return this
+    }
 }

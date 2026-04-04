@@ -51,4 +51,14 @@ class IdleState(
             KeywordErrorState(speechSM, overlayManager, volumeManager, e.message ?: "Unknown error")
         }
     }
+
+    override suspend fun cancel(): State {
+        Log.i(TAG, "Cancel in IdleState - already idle, ignoring")
+        return this  // Остаёмся в IDLE
+    }
+
+    override suspend fun activate(): State {
+        Log.i(TAG, "Activate from IdleState → ActivatedState")
+        return ActivatedState(speechSM, overlayManager, volumeManager)
+    }
 }

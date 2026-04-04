@@ -46,4 +46,24 @@ class ActivatedState(
             CommandErrorState(speechSM, overlayManager, volumeManager, e.message ?: "Unknown error")
         }
     }
+
+    override suspend fun cancel(): State {
+        Log.i(TAG, "Cancel in ActivatedState → IdleState")
+        
+        // Скрыть анимацию и восстановить громкость
+        overlayManager.hideAnimation()
+        volumeManager?.restoreMedia()
+        
+        // Вернуться к ожиданию
+        speechSM.returnToKeywordListening()
+        
+        return IdleState(speechSM, overlayManager, volumeManager) {
+            // Callback будет установлен при создании нового IdleState
+        }
+    }
+
+    override suspend fun activate(): State {
+        Log.i(TAG, "Already in ActivatedState, ignoring")
+        return this
+    }
 }
