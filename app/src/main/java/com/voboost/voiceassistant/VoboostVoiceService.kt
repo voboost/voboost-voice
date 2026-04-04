@@ -60,7 +60,6 @@ class VoboostVoiceService : Service() {
 
         const val ACTION_CANCEL = "com.voboost.voiceassistant.CANCEL"
         const val ACTION_ACTIVATE = "com.voboost.voiceassistant.ACTIVATE"
-        const val ACTION_CONFIRMATION_RESPONSE = "com.voboost.voiceassistant.CONFIRMATION_RESPONSE"
         val ASR_ENGINE_TYPE = SpeechEngineFactory.RecognitionEngine.VOSK  // ← Vosk (стабильный)
         val TTS_ENGINE_TYPE = SpeechEngineFactory.SynthesisEngine.SHERPA  // ← Sherpa TTS (русский есть)
         val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY  // ← TransProxy (системный, с шумоподавлением)
@@ -94,10 +93,6 @@ class VoboostVoiceService : Service() {
 
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    // Состояние
-    @Volatile
-    private var isOnline = false
 
     // Receiver для отмены распознавания
     private val cancelReceiver = object : BroadcastReceiver() {
@@ -276,8 +271,7 @@ class VoboostVoiceService : Service() {
         if (hasRecordPermission()) {
             startKeywordSpotting()
         } else {
-            Log.w(TAG, "No RECORD_AUDIO permission, requesting...")
-            requestRecordPermission()  // ← Запросить разрешение
+            Log.w(TAG, "No RECORD_AUDIO permission")
         }
     }
 
@@ -286,12 +280,6 @@ class VoboostVoiceService : Service() {
             this,
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestRecordPermission() {
-        // Нужно вызвать из Activity, не из Service!
-        // Или использовать системный диалог через notification
-        Log.d(TAG, "requestRecordPermission")
     }
 
 
@@ -418,31 +406,6 @@ class VoboostVoiceService : Service() {
     }
 
     /**
-     * Отменить текущую команду и вернуться к ожиданию ключевого слова
-     */
-    private fun cancelCurrentCommand() {
-        Log.i(TAG, "Cancelling current command...")
-        
-        serviceScope.launch {
-            try {
-                // 🗣️ Сказать "Отмена"
-                withContext(Dispatchers.Main) {
-                    ttsEngine.speak("Отмена")
-                }
-
-                // Пауза для воспроизведения
-                delay(500)
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during cancel", e)
-            } finally {
-                // State Machine сам обработает отмену
-                stateMachine.cancel()
-            }
-        }
-    }
-    
-    /**
      * Отменить распознавание (повторное нажатие кнопки или от Frida)
      */
     fun cancelRecognition() {
@@ -532,14 +495,6 @@ class VoboostVoiceService : Service() {
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
-    }
-
-    /**
-     * Обновить состояние сети
-     */
-    fun updateNetworkState(isOnline: Boolean) {
-        this.isOnline = isOnline
-        Log.d(TAG, "Network state updated: isOnline=$isOnline")
     }
 
 }
