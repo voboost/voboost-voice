@@ -31,9 +31,9 @@ import com.voboost.voiceassistant.canbus.TSRSpeedLimitHandler
 import com.voboost.voiceassistant.canbus.TTSCallback
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.speech.SpeechRecognitionListener
-import com.voboost.voiceassistant.speech.StateMachine
-import com.voboost.voiceassistant.speech.IdleState
-import com.voboost.voiceassistant.speech.ProcessingCommandState
+import com.voboost.voiceassistant.speech.state.StateMachine
+import com.voboost.voiceassistant.speech.state.IdleState
+import com.voboost.voiceassistant.speech.state.ProcessingCommandState
 import com.voboost.voiceassistant.speech.CommandHandler
 import kotlinx.coroutines.*
 import kotlin.coroutines.resume

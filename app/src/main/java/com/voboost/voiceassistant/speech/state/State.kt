@@ -1,4 +1,4 @@
-package com.voboost.voiceassistant.speech
+package com.voboost.voiceassistant.speech.state
 
 /**
  * Интерфейс состояния голосового помощника

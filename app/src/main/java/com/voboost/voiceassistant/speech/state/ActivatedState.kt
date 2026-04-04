@@ -1,9 +1,10 @@
-package com.voboost.voiceassistant.speech
+package com.voboost.voiceassistant.speech.state
 
 import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
