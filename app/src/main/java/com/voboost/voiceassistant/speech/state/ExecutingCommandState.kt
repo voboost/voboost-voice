@@ -44,7 +44,7 @@ class ExecutingCommandState(
 
             // Успех → возвращаемся к ожиданию
             speechSM.finishCommand()
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback для ключевого слова
             }
 
@@ -61,7 +61,7 @@ class ExecutingCommandState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

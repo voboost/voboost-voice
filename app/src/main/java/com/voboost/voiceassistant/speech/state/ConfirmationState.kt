@@ -34,7 +34,7 @@ class ConfirmationState(
     override suspend fun execute(): State {
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
-            return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback будет установлен при создании нового IdleState
             }
         }
@@ -43,7 +43,7 @@ class ConfirmationState(
 
         return try {
             // Сказать вопрос подтверждения
-            val question = configManager.getConfirmationQuestion(command.config)
+            val question = command.config.confirmation.question ?: "Подтверждаете?"
             Log.d(TAG, "Asking: '$question'")
             ttsEngine.speak(question)
 
@@ -67,7 +67,7 @@ class ConfirmationState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

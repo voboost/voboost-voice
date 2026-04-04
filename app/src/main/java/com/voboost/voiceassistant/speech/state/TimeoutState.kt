@@ -27,13 +27,13 @@ class TimeoutState(
 
         return try {
             speechSM.finishCommand()
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback для ключевого слова
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in TimeoutState", e)
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback для ключевого слова
             }
         }
@@ -41,7 +41,7 @@ class TimeoutState(
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in TimeoutState → IdleState")
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback для ключевого слова
         }
     }

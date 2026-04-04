@@ -40,7 +40,7 @@ class ListeningCommandState(
             // В реальной реализации здесь нужно ждать результат
             // Но пока SpeechStateMachine сам вызывает callback
             // Поэтому возвращаем IdleState как fallback
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Этот callback не будет вызван, т.к. мы уже в команде
             }
 
@@ -57,7 +57,7 @@ class ListeningCommandState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

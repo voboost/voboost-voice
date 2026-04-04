@@ -62,7 +62,7 @@ class ActivatedState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

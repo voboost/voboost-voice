@@ -50,7 +50,7 @@ class RecognizedCommandState(
                 context.recognizedCommand = recognizedCommand
                 
                 // Проверяем нужно ли подтверждение
-                if (recognizedCommand.config.requiresConfirmation) {
+                if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
                     return ConfirmationState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, commandExecutor, context)
                 }
@@ -76,7 +76,7 @@ class RecognizedCommandState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

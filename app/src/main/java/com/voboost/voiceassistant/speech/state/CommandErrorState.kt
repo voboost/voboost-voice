@@ -28,13 +28,13 @@ class CommandErrorState(
 
         return try {
             speechSM.finishCommand()
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback для ключевого слова
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in CommandErrorState", e)
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
                 // Callback для ключевого слова
             }
         }
@@ -42,7 +42,7 @@ class CommandErrorState(
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in CommandErrorState → IdleState")
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
             // Callback для ключевого слова
         }
     }
