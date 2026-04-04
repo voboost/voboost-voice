@@ -98,6 +98,28 @@ class SpeechStateMachine(
     }
 
     /**
+     * Запустить слушание ключевого слова (удобный метод)
+     */
+    fun startListeningForKeyword(listener: com.voboost.voiceassistant.speech.VoiceAssistantListener) {
+        start(object : SpeechRecognitionListener {
+            override fun onKeywordDetected() {
+                listener.onKeywordDetected()
+            }
+            
+            override fun onError(error: String) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Завершить команду и вернуться к ожиданию ключевого слова
+     */
+    fun finishCommand() {
+        returnToKeywordListening()
+    }
+
+    /**
      * Активировать распознавание (перейти в режим команды)
      * Вызывается когда ключевое слово распознано
      */
