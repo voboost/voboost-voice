@@ -8,13 +8,6 @@ import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Ожидание ключевого слова
- * 
- * Логика:
- * 1. Скрыть анимацию
- * 2. Восстановить громкость музыки
- * 3. Запустить распознавание ключевого слова
- * 4. Если ключевое слово получено → ActivatedState
- * 5. Если ошибка → KeywordErrorState
  */
 class IdleState(
     private val speechSM: SpeechStateMachine,
@@ -32,11 +25,9 @@ class IdleState(
         Log.i(TAG, "Entering IDLE state - waiting for keyword...")
 
         return try {
-            // Скрыть анимацию и восстановить громкость
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
 
-            // Ждём ключевое слово
             speechSM.startListeningForKeyword(object : VoiceAssistantListener {
                 override fun onKeywordDetected() {
                     onKeywordDetected()
@@ -47,22 +38,21 @@ class IdleState(
                 }
             })
 
-            // Ключевое слово получено → ActivatedState
-            ActivatedState(speechSM, overlayManager, volumeManager)
+            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
-            KeywordErrorState(speechSM, overlayManager, volumeManager, e.message ?: "Unknown error")
+            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in IdleState - already idle, ignoring")
-        return this  // Остаёмся в IDLE
+        return this
     }
 
     override suspend fun activate(): State {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
-        return ActivatedState(speechSM, overlayManager, volumeManager)
+        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
     }
 }

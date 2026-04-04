@@ -55,15 +55,12 @@ class ActivatedState(
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in ActivatedState → IdleState")
-
-        // Скрыть анимацию и восстановить громкость
+        
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-
-        // Вернуться к ожиданию
         speechSM.returnToKeywordListening()
-
-        return IdleState(speechSM, overlayManager, volumeManager) {
+        
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
             // Callback будет установлен при создании нового IdleState
         }
     }

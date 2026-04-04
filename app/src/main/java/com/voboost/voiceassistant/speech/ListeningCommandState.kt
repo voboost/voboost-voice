@@ -2,22 +2,19 @@ package com.voboost.voiceassistant.speech
 
 import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
+import com.voboost.voiceassistant.config.ConfigManager
+import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Слушаем команду
- * 
- * Логика:
- * 1. Запустить распознавание команды
- * 2. Если команда получена → ProcessingCommandState
- * 3. Если таймаут → TimeoutState
- * 4. Если ошибка → CommandErrorState
- * 5. Если отмена → IdleState
  */
 class ListeningCommandState(
     private val speechSM: SpeechStateMachine,
     private val overlayManager: OverlayManager,
-    private val volumeManager: VolumeManager?
+    private val volumeManager: VolumeManager?,
+    private val ttsEngine: SpeechSynthesis,
+    private val configManager: ConfigManager
 ) : State {
     companion object {
         private const val TAG = "ListeningCommandState"
@@ -29,32 +26,24 @@ class ListeningCommandState(
         return try {
             // SpeechStateMachine уже активирован в ActivatedState
             // Просто ждём результат через callback
-            // Этот State завершается сразу, т.к. SpeechStateMachine асинхронный
-            
-            // В реальной реализации здесь нужно ждать результат
-            // Но пока SpeechStateMachine сам вызывает callback
-            // Поэтому возвращаем IdleState как fallback
-            IdleState(speechSM, overlayManager, volumeManager) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
                 // Этот callback не будет вызван, т.к. мы уже в команде
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, e.message ?: "Unknown error")
+            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in ListeningCommandState → IdleState")
         
-        // Скрыть анимацию и восстановить громкость
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-        
-        // Вернуться к ожиданию
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
             // Callback будет установлен при создании нового IdleState
         }
     }
