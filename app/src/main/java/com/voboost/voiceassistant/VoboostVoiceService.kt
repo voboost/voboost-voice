@@ -24,7 +24,6 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.executor.VehicleCommandExecutorFactory
 import com.voboost.voiceassistant.ui.OverlayManager
-import com.voboost.voiceassistant.engine.vosk.VoskRecognition
 import com.voboost.voiceassistant.engine.system.SystemTtsSynthesis
 import com.voboost.voiceassistant.canbus.CanBusServiceManager
 import com.voboost.voiceassistant.canbus.VoiceButtonHandler
@@ -35,6 +34,9 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.Manifest
+import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.AudioSourceFactory
+import com.voboost.voiceassistant.audio.VolumeManager
 
 /**
  * Главный сервис голосового помощника
@@ -56,6 +58,7 @@ class VoboostVoiceService : Service() {
         const val ACTION_CONFIRMATION_RESPONSE = "com.voboost.voiceassistant.CONFIRMATION_RESPONSE"
         val ASR_ENGINE_TYPE = SpeechEngineFactory.RecognitionEngine.VOSK  // ← Vosk (стабильный)
         val TTS_ENGINE_TYPE = SpeechEngineFactory.SynthesisEngine.SHERPA  // ← Sherpa TTS (русский есть)
+        val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY  // ← TransProxy (системный, с шумоподавлением)
     }
 
     // Компоненты системы
@@ -66,15 +69,21 @@ class VoboostVoiceService : Service() {
     private lateinit var overlayManager: OverlayManager
     private lateinit var ttsEngine: SpeechSynthesis  // ← Интерфейс
     private lateinit var soundEffectManager: SoundEffectManager
+    
+    // AudioSource - единый источник аудио данных
+    private lateinit var audioSource: AudioSource
 
     // CanBus Manager - единая точка доступа к CAN шине
     private lateinit var canBusManager: CanBusServiceManager
 
     // Voice Button Handler - обработка кнопки на руле
     private var voiceButtonHandler: VoiceButtonHandler? = null
-    
+
     // TSR Speed Limit Handler - предупреждения о превышении скорости
     private var tsrSpeedLimitHandler: TSRSpeedLimitHandler? = null
+    
+    // Volume Manager - управление громкостью
+    private var volumeManager: VolumeManager? = null
 
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -170,6 +179,15 @@ class VoboostVoiceService : Service() {
         nluEngine = NLUEngine(this)
         overlayManager = OverlayManager(this)
         soundEffectManager = SoundEffectManager(this)
+        
+        // AudioSource - создаётся ОДИН раз и передаётся в движок распознавания
+        audioSource = AudioSourceFactory.create(this, AUDIO_SOURCE_TYPE)
+        Log.i(TAG, "AudioSource created: ${audioSource!!::class.simpleName}")
+        
+        // Volume Manager - управление громкостью
+        volumeManager = VolumeManager(this)
+        volumeManager?.connect()
+        Log.i(TAG, "VolumeManager connected - can duck/restore media volume")
 
         // CanBus Manager - инициализация (автоматически подключается к CanBusService)
         canBusManager = CanBusServiceManager(this)
@@ -231,15 +249,22 @@ class VoboostVoiceService : Service() {
         try {
             speechRecognition = SpeechEngineFactory.createRecognitionEngine(
                 context = this,
-                engine = ASR_ENGINE_TYPE
+                engine = ASR_ENGINE_TYPE,
+                audioSource = audioSource
             )
 
-            // Инициализация движка (обязательно для Sherpa)
+            // Инициализация движка
             speechRecognition.initialize()
             Log.i(TAG, "Speech recognition engine initialized")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize speech recognition", e)
-            speechRecognition = VoskRecognition(this)  // Fallback
+            // Fallback: создаём новый AudioSource с Android AudioRecord
+            val fallbackAudioSource = AudioSourceFactory.create(this, AudioSourceFactory.SourceType.ANDROID)
+            speechRecognition = SpeechEngineFactory.createRecognitionEngine(
+                context = this,
+                engine = ASR_ENGINE_TYPE,
+                audioSource = fallbackAudioSource
+            )
         }
 
         // Регистрируем receiver
@@ -342,6 +367,16 @@ class VoboostVoiceService : Service() {
         tsrSpeedLimitHandler?.unregister()
         tsrSpeedLimitHandler = null
         Log.d(TAG, "TSRSpeedLimitHandler unregistered")
+        
+        // Отключаем Volume Manager
+        volumeManager?.disconnect()
+        volumeManager = null
+        Log.d(TAG, "VolumeManager disconnected")
+        
+        // Освобождаем AudioSource
+        audioSource.stop()
+        audioSource.release()
+        Log.d(TAG, "AudioSource released")
 
         // Отключаем CanBus Manager
         try {
@@ -475,7 +510,12 @@ class VoboostVoiceService : Service() {
         isListening = true
 
         serviceScope.launch {
-            try { // 🎵 Звук начала распознавания
+            try {
+                // 🔊 Приглушаем музыку при активации голосового помощника
+                volumeManager?.duckMedia(targetVolume = 1)
+                Log.d(TAG, "Media volume ducked")
+                
+                // 🎵 Звук начала распознавания
                 soundEffectManager.playStartSound()
 
                 // Показать анимацию
@@ -508,6 +548,10 @@ class VoboostVoiceService : Service() {
                                 soundEffectManager.playEndSound()
                                 overlayManager.hideAnimation()
                             }
+                            
+                            // 🔊 Восстанавливаем громкость музыки
+                            volumeManager?.restoreMedia()
+                            Log.d(TAG, "Media volume restored")
 
                             // Небольшая пауза перед возвратом к keyword spotting
                             delay(1000)

@@ -2,10 +2,15 @@ package com.voboost.voiceassistant.core
 
 import android.content.Context
 import android.util.Log
-import com.voboost.voiceassistant.engine.sherpa.SherpaRecognition
+import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.AudioSourceFactory
+import com.voboost.voiceassistant.engine.sherpa.SherpaModelLoader
+import com.voboost.voiceassistant.engine.sherpa.SherpaStreamFactory
 import com.voboost.voiceassistant.engine.sherpa.SherpaSynthesis
 import com.voboost.voiceassistant.engine.system.SystemTtsSynthesis
-import com.voboost.voiceassistant.engine.vosk.VoskRecognition
+import com.voboost.voiceassistant.engine.vosk.VoskModelLoader
+import com.voboost.voiceassistant.engine.vosk.VoskStreamFactory
+import com.voboost.voiceassistant.speech.EngineRecognition
 import java.io.File
 
 /**
@@ -30,24 +35,32 @@ object SpeechEngineFactory {
      * Создать модуль распознавания речи
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
-     * @param modelPath Путь к модели (опционально)
+     * @param audioSource Источник аудио (создаётся через AudioSourceFactory)
      */
     fun createRecognitionEngine(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
-        modelPath: String? = null,
-        keywords: List<String> = emptyList()
+        audioSource: AudioSource
     ): SpeechRecognition {
         return when (engine) {
             RecognitionEngine.VOSK -> {
                 Log.i(TAG, "Creating Vosk recognition engine")
-                VoskRecognition(context)
+                EngineRecognition(
+                    context = context,
+                    audioSource = audioSource,
+                    modelLoader = VoskModelLoader(context),
+                    streamFactory = VoskStreamFactory()
+                )
             }
 
             RecognitionEngine.SHERPA -> {
                 Log.i(TAG, "Creating Sherpa recognition engine")
-                val path = modelPath ?: getDefaultSherpaModelPath(context)
-                SherpaRecognition(context, path, keywords.toMutableList())
+                EngineRecognition(
+                    context = context,
+                    audioSource = audioSource,
+                    modelLoader = SherpaModelLoader(context),
+                    streamFactory = SherpaStreamFactory()
+                )
             }
         }
     }

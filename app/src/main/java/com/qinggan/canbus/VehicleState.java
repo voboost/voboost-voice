@@ -1189,4 +1189,8 @@ public enum VehicleState implements Parcelable {
         }
         return null;
     }
+
+     public String toString(){
+        return getVehicleState(value).toString();
+    }
 }

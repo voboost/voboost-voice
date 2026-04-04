@@ -22,10 +22,8 @@ interface SpeechRecognition {
      * @param onKeywordDetected Вызывается когда обнаружена ключевая фраза
      * @param onError Вызывается при ошибке распознавания
      */
-    suspend fun startKeywordSpotting(
-        onKeywordDetected: () -> Unit,
-        onError: suspend (String) -> Unit
-    )
+    suspend fun startKeywordSpotting(onKeywordDetected: () -> Unit,
+                                     onError: suspend (String) -> Unit)
 
     /**
      * Запустить прослушивание команды после активации
@@ -33,11 +31,9 @@ interface SpeechRecognition {
      * @param onError Вызывается при ошибке распознавания
      * @param onTimeout Вызывается при таймауте (если команда не сказана)
      */
-    fun startCommandListening(
-        onCommandReceived: (String) -> Unit,
-        onError: (String) -> Unit,
-        onTimeout: suspend () -> Unit
-    )
+    fun startCommandListening(onCommandReceived: (String) -> Unit,
+                              onError: (String) -> Unit,
+                              onTimeout: suspend () -> Unit)
 
     /**
      * Однократное прослушивание команды (для подтверждений и других сценариев)

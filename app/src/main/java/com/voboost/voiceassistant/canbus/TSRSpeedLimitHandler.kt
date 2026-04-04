@@ -33,6 +33,7 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
     }
 
     private fun handleVehicleStateChanged(vehicle: VehicleState, state: Int) {
+        Log.w(TAG, "⚠️ VehicleState: ${vehicle.toString()} (state=$state)")
         when (vehicle) { // Факт превышения скорости
             VehicleState.IPK_OVER_SPEED_WARNING -> {
                 val isOverSpeed = (state == 1)
@@ -92,6 +93,7 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
     }
 
     private fun handleVehicleSpeedChanged(speed: Int) {
+        Log.w(TAG, "⚠️ Speed: ${speed}")
         currentSpeed = speed // Log.d(TAG, "🚗 Скорость: $speed км/ч")
         checkSpeedLimit()
     }
