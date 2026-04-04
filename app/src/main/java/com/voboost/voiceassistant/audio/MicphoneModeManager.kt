@@ -125,6 +125,16 @@ class MicphoneModeManager(private val context: Context) {
         try {
             val intent = Intent(INTENT_MICPHONE_MODE)
             intent.setPackage("com.qinggan.sttservice")
+
+            // Сначала запускаем сервис (как в AbstractManager.bindService())
+            try {
+                context.startService(intent)
+                Log.d(TAG, "startService called")
+            } catch (e: Exception) {
+                Log.w(TAG, "startService failed: ${e.message}")
+            }
+
+            // Затем подключаемся
             val result = context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
             Log.d(TAG, "bindService result: $result")
 
