@@ -4,6 +4,8 @@ import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.executor.CommandExecutor
+import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.speech.VoiceAssistantListener
 import com.voboost.voiceassistant.ui.OverlayManager
@@ -17,6 +19,8 @@ class IdleState(
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
+    private val nluEngine: NLUEngine,
+    private val commandExecutor: CommandExecutor,
     private val context: StateContext,
     private val onKeywordDetected: () -> Unit
 ) : State {
@@ -41,11 +45,11 @@ class IdleState(
                 }
             })
 
-            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context)
+            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
-            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
+            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
@@ -56,6 +60,6 @@ class IdleState(
 
     override suspend fun activate(): State {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
-        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context)
+        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 }

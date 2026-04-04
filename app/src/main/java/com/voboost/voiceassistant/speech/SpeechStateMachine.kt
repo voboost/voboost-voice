@@ -231,7 +231,7 @@ class SpeechStateMachine(
             SpeechState.LISTENING_COMMAND -> {
                 Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text}")
                 listener?.onCommandReceived(result.text)
-                returnToKeywordListening()
+                // НЕ возвращаемся к keyword listening - пусть State Machine решает
             }
 
             else -> {

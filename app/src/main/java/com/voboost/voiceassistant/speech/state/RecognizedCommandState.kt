@@ -36,7 +36,7 @@ class RecognizedCommandState(
     override suspend fun execute(): State {
         val text = context.commandText ?: run {
             Log.e(TAG, "No command text in context")
-            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, "No command text")
+            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
         }
 
         Log.i(TAG, "Processing command: '$text'")
@@ -52,20 +52,20 @@ class RecognizedCommandState(
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
-                    return ConfirmationState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, commandExecutor, context)
+                    return ConfirmationState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
                 }
                 
                 // Выполняем команду без подтверждения
                 Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
-                return ExecutingCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, commandExecutor)
+                return ExecutingCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
             } else {
                 Log.w(TAG, "Unrecognized command: '$text'")
-                CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, "Unrecognized command: $text")
+                CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing command", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
+            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
@@ -76,7 +76,7 @@ class RecognizedCommandState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }

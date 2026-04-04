@@ -242,6 +242,8 @@ class VoboostVoiceService : Service() {
             volumeManager = volumeManager,
             ttsEngine = ttsEngine,
             configManager = configManager,
+            nluEngine = nluEngine,
+            commandExecutor = commandExecutor,
             context = context,
             onKeywordDetected = {
                 Log.i(TAG, "🎯 Keyword detected!")
@@ -424,36 +426,6 @@ class VoboostVoiceService : Service() {
             }
             catch (e: Exception) {
                 Log.e(TAG, "Error cancelling recognition", e)
-            }
-        }
-    }
-
-    /**
-     * Обработать голосовую команду
-     */
-    fun processVoiceCommand(text: String) {
-        serviceScope.launch {
-            try {
-                Log.i(TAG, "📝 Processing command: '$text'")
-                
-                // Сохраняем текст команды в контекст
-                stateMachine.context.commandText = text
-                
-                // Переходим к состоянию распознавания команды
-                stateMachine.transitionTo(
-                    com.voboost.voiceassistant.speech.state.RecognizedCommandState(
-                        speechSM = speechSM,
-                        overlayManager = overlayManager,
-                        volumeManager = volumeManager,
-                        ttsEngine = ttsEngine,
-                        configManager = configManager,
-                        nluEngine = nluEngine,
-                        commandExecutor = commandExecutor,
-                        context = stateMachine.context
-                    )
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error processing command", e)
             }
         }
     }

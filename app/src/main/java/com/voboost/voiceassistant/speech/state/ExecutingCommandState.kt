@@ -5,6 +5,7 @@ import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
+import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.ui.OverlayManager
 
@@ -22,8 +23,9 @@ class ExecutingCommandState(
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
-    private val context: StateContext,
-    private val commandExecutor: CommandExecutor
+    private val nluEngine: NLUEngine,
+    private val commandExecutor: CommandExecutor,
+    private val context: StateContext
 ) : State {
     companion object {
         private const val TAG = "ExecutingCommandState"
@@ -32,7 +34,7 @@ class ExecutingCommandState(
     override suspend fun execute(): State {
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
-            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, "No command to execute")
+            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command to execute")
         }
 
         Log.i(TAG, "Entering EXECUTING_COMMAND state: ${command.id}")
@@ -44,13 +46,13 @@ class ExecutingCommandState(
 
             // Успех → возвращаемся к ожиданию
             speechSM.finishCommand()
-            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
+            IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
                 // Callback для ключевого слова
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error executing command: ${command.id}", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
+            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }
 
@@ -61,7 +63,7 @@ class ExecutingCommandState(
         volumeManager?.restoreMedia()
         speechSM.returnToKeywordListening()
         
-        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context) {
+        return IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context) {
             // Callback будет установлен при создании нового IdleState
         }
     }
