@@ -4,54 +4,58 @@ import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.config.ConfigManager
 import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
- * Состояние: Слушаем команду
+ * Состояние: Выполнение команды
  * 
  * Логика:
- * 1. Запустить распознавание команды
- * 2. Если команда получена → RecognizedCommandState
- * 3. Если таймаут → TimeoutState
- * 4. Если ошибка → CommandErrorState
- * 5. Если отмена → IdleState
+ * 1. Выполнить команду через CommandExecutor
+ * 2. Если успех → IdleState
+ * 3. Если ошибка → CommandErrorState
  */
-class ListeningCommandState(
+class ExecutingCommandState(
     private val speechSM: SpeechStateMachine,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
-    private val context: StateContext
+    private val context: StateContext,
+    private val commandExecutor: CommandExecutor
 ) : State {
     companion object {
-        private const val TAG = "ListeningCommandState"
+        private const val TAG = "ExecutingCommandState"
     }
 
     override suspend fun execute(): State {
-        Log.i(TAG, "Entering LISTENING_COMMAND state")
+        val command = context.recognizedCommand ?: run {
+            Log.e(TAG, "No recognized command in context")
+            return CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, "No command to execute")
+        }
+
+        Log.i(TAG, "Entering EXECUTING_COMMAND state: ${command.id}")
 
         return try {
-            // SpeechStateMachine уже активирован в ActivatedState
-            // Просто ждём результат через callback
-            // Этот State завершается сразу, т.к. SpeechStateMachine асинхронный
-            
-            // В реальной реализации здесь нужно ждать результат
-            // Но пока SpeechStateMachine сам вызывает callback
-            // Поэтому возвращаем IdleState как fallback
+            // Выполняем команду
+            commandExecutor.executeCommand(command)
+            Log.i(TAG, "Command executed successfully: ${command.id}")
+
+            // Успех → возвращаемся к ожиданию
+            speechSM.finishCommand()
             IdleState(speechSM, overlayManager, volumeManager, ttsEngine, configManager) {
-                // Этот callback не будет вызван, т.к. мы уже в команде
+                // Callback для ключевого слова
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error in ListeningCommandState", e)
+            Log.e(TAG, "Error executing command: ${command.id}", e)
             CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in ListeningCommandState → IdleState")
+        Log.i(TAG, "Cancel in ExecutingCommandState → IdleState")
         
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
@@ -63,7 +67,7 @@ class ListeningCommandState(
     }
 
     override suspend fun activate(): State {
-        Log.i(TAG, "Already in ListeningCommandState, ignoring")
+        Log.i(TAG, "Already in ExecutingCommandState, ignoring")
         return this
     }
 }

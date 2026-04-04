@@ -17,6 +17,7 @@ class IdleState(
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
+    private val context: StateContext,
     private val onKeywordDetected: () -> Unit
 ) : State {
     companion object {
@@ -40,11 +41,11 @@ class IdleState(
                 }
             })
 
-            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
+            ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
-            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, e.message ?: "Unknown error")
+            KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
         }
     }
 
@@ -55,6 +56,6 @@ class IdleState(
 
     override suspend fun activate(): State {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
-        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
+        return ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context)
     }
 }

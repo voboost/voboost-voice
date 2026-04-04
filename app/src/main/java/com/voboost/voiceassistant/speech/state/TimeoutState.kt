@@ -15,7 +15,8 @@ class TimeoutState(
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
-    private val configManager: ConfigManager
+    private val configManager: ConfigManager,
+    private val context: StateContext
 ) : State {
     companion object {
         private const val TAG = "TimeoutState"

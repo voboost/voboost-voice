@@ -16,6 +16,7 @@ class CommandErrorState(
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
     private val configManager: ConfigManager,
+    private val context: StateContext,
     private val error: String
 ) : State {
     companion object {

@@ -32,8 +32,8 @@ import com.voboost.voiceassistant.canbus.TTSCallback
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.speech.SpeechRecognitionListener
 import com.voboost.voiceassistant.speech.state.StateMachine
+import com.voboost.voiceassistant.speech.state.StateContext
 import com.voboost.voiceassistant.speech.state.IdleState
-import com.voboost.voiceassistant.speech.state.ProcessingCommandState
 import com.voboost.voiceassistant.speech.CommandHandler
 import kotlinx.coroutines.*
 import kotlin.coroutines.resume
@@ -256,12 +256,14 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "Speech State Machine initialized")
 
         // State Machine - управление состояниями
+        val context = StateContext()
         val initialState = IdleState(
             speechSM = speechSM,
             overlayManager = overlayManager,
             volumeManager = volumeManager,
             ttsEngine = ttsEngine,
             configManager = configManager,
+            context = context,
             onKeywordDetected = {
                 Log.i(TAG, "🎯 Keyword detected!")
                 activateVoiceAssistant()
@@ -270,7 +272,8 @@ class VoboostVoiceService : Service() {
 
         stateMachine = StateMachine(
             initialState = initialState,
-            scope = serviceScope
+            scope = serviceScope,
+            context = context
         )
 
         Log.i(TAG, "State Machine initialized")
@@ -504,25 +507,27 @@ class VoboostVoiceService : Service() {
      */
     fun processVoiceCommand(text: String) {
         serviceScope.launch {
-            try { // Парсинг команды
-                val recognizedCommand = nluEngine.parseCommand(text)
-
-                if (recognizedCommand != null) {
-                    Log.i(TAG, "Command parsed: ${recognizedCommand.id}")
-                    commandExecutor.executeCommand(recognizedCommand)
-                }
-                else {
-                    Log.w(TAG, "Command not recognized: $text")
-                    commandExecutor.handleUnrecognizedCommand(text)
-                }
-
-            }
-            catch (e: Exception) {
-                Log.e(TAG, "Error processing command", e)
-                withContext(Dispatchers.Main) {
-                    ttsEngine.speak(configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE))
-                    overlayManager.showToast(configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE))
-                }
+            try {
+                Log.i(TAG, "📝 Processing command: '$text'")
+                
+                // Сохраняем текст команды в контекст
+                stateMachine.context.commandText = text
+                
+                // Переходим к состоянию распознавания команды
+                stateMachine.transitionTo(
+                    com.voboost.voiceassistant.speech.state.RecognizedCommandState(
+                        speechSM = speechSM,
+                        overlayManager = overlayManager,
+                        volumeManager = volumeManager,
+                        ttsEngine = ttsEngine,
+                        configManager = configManager,
+                        nluEngine = nluEngine,
+                        commandExecutor = commandExecutor,
+                        context = stateMachine.context
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error processing command", e)
             }
         }
     }

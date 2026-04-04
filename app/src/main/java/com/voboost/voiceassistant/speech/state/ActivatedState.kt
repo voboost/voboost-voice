@@ -22,7 +22,8 @@ class ActivatedState(
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
     private val ttsEngine: SpeechSynthesis,
-    private val configManager: ConfigManager
+    private val configManager: ConfigManager,
+    private val context: StateContext
 ) : State {
     companion object {
         private const val TAG = "ActivatedState"
@@ -46,11 +47,11 @@ class ActivatedState(
 
             // Переходим к слушанию команды
             speechSM.activate()
-            ListeningCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
+            ListeningCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ActivatedState", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, e.message ?: "Unknown error")
+            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, context, e.message ?: "Unknown error")
         }
     }
 

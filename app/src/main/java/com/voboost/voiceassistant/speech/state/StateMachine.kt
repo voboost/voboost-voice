@@ -22,7 +22,8 @@ import kotlinx.coroutines.*
  */
 class StateMachine(
     private val initialState: State,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    val context: StateContext = StateContext()
 ) {
     companion object {
         private const val TAG = "StateMachine"
