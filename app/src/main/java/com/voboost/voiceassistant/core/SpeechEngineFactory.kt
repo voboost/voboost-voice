@@ -38,12 +38,14 @@ object SpeechEngineFactory {
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
      * @param audioSource Источник аудио (создаётся через AudioSourceFactory)
+     * @param zoneDetector Детектор зоны говорящего (опционально)
      * @return SpeechRecognizer для управления распознаванием
      */
     fun createSpeechRecognizer(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
-        audioSource: AudioSource
+        audioSource: AudioSource,
+        zoneDetector: com.voboost.voiceassistant.audio.VoiceZoneDetector? = null
     ): SpeechRecognizer {
         val configManager = com.voboost.voiceassistant.config.ConfigManager.getInstance(context)
         val keywordChecker = KeywordChecker(configManager)
@@ -69,7 +71,8 @@ object SpeechEngineFactory {
         return SpeechRecognizer(
             audioSource = audioSource,
             recognitionEngine = recognitionEngine,
-            keywordChecker = keywordChecker
+            keywordChecker = keywordChecker,
+            zoneDetector = zoneDetector
         )
     }
 

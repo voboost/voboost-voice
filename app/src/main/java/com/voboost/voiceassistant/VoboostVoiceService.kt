@@ -91,6 +91,10 @@ class VoboostVoiceService : Service() {
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
 
+    // Voice Zone Detector - определение зоны говорящего
+    private var micphoneModeManager: com.voboost.voiceassistant.audio.MicphoneModeManager? = null
+    private var voiceZoneDetector: com.voboost.voiceassistant.audio.VoiceZoneDetector? = null
+
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -226,11 +230,18 @@ class VoboostVoiceService : Service() {
         commandHandler = CommandHandler(nluEngine, commandExecutor)
         Log.i(TAG, "CommandHandler initialized")
 
+        // Voice Zone Detector - определение зоны говорящего
+        micphoneModeManager = com.voboost.voiceassistant.audio.MicphoneModeManager(this)
+        micphoneModeManager?.connect()
+        voiceZoneDetector = com.voboost.voiceassistant.audio.VoiceZoneDetector(micphoneModeManager!!)
+        Log.i(TAG, "VoiceZoneDetector initialized")
+
         // SpeechRecognizer - распознавание речи (утилита без состояний)
         speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(
             context = this,
             engine = ASR_ENGINE_TYPE,
-            audioSource = audioSource
+            audioSource = audioSource,
+            zoneDetector = voiceZoneDetector
         )
         Log.i(TAG, "SpeechRecognizer initialized")
 
@@ -279,7 +290,6 @@ class VoboostVoiceService : Service() {
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
-
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand: action=${intent?.action}")
@@ -335,6 +345,12 @@ class VoboostVoiceService : Service() {
         volumeManager?.disconnect()
         volumeManager = null
         Log.d(TAG, "VolumeManager disconnected")
+
+        // Отключаем Voice Zone Detector
+        micphoneModeManager?.disconnect()
+        micphoneModeManager = null
+        voiceZoneDetector = null
+        Log.d(TAG, "VoiceZoneDetector disconnected")
         
         // Освобождаем AudioSource
         audioSource.stop()

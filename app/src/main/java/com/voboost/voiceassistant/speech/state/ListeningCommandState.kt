@@ -52,9 +52,11 @@ class ListeningCommandState(
             when (result) {
                 is SpeechResult.CommandReceived -> {
                     val commandText = result.text
+                    val zone = result.zone
                     if (commandText.isNotEmpty()) {
-                        Log.i(TAG, "Command received: '$commandText'")
+                        Log.i(TAG, "Command received: '$commandText' (zone=$zone)")
                         context.commandText = commandText
+                        context.zone = zone
                         RecognizedCommandState(
                             speechRecognizer = speechRecognizer,
                             overlayManager = overlayManager,

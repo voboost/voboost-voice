@@ -18,5 +18,6 @@ import com.voboost.voiceassistant.nlu.RecognizedCommand
 data class StateContext(
     var recognizedCommand: RecognizedCommand? = null,
     var commandText: String? = null,
-    var error: String? = null
+    var error: String? = null,
+    var zone: String = "front_left"  // Зона говорящего: front_left, front_right, second_left, second_right
 )

@@ -43,7 +43,9 @@ class IdleState(
             // Ждём ключевое слово из SharedFlow
             val result = speechRecognizer.results.first { it is SpeechResult.KeywordDetected }
             val keywordText = (result as SpeechResult.KeywordDetected).text
-            Log.i(TAG, "🎯 Keyword detected: '$keywordText'")
+            val zone = result.zone
+            Log.i(TAG, "🎯 Keyword detected: '$keywordText' (zone=$zone)")
+            context.zone = zone
 
             // Ключевое слово получено → ActivatedState
             ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)

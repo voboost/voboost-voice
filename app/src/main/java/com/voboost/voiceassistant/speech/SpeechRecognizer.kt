@@ -2,6 +2,7 @@ package com.voboost.voiceassistant.speech
 
 import android.util.Log
 import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.VoiceZoneDetector
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,7 +26,8 @@ import java.util.concurrent.atomic.AtomicReference
 class SpeechRecognizer(
     private val audioSource: AudioSource,
     private val recognitionEngine: RecognitionEngine,
-    private val keywordChecker: KeywordChecker
+    private val keywordChecker: KeywordChecker,
+    private val zoneDetector: VoiceZoneDetector? = null
 ) {
     companion object {
         private const val TAG = "SpeechRecognizer"
@@ -207,17 +209,19 @@ class SpeechRecognizer(
      * Обработать результат распознавания
      */
     private fun handleRecognitionResult(result: RecognitionResult) {
+        val zone = zoneDetector?.detectZone() ?: "front_left"
+
         when (mode) {
             Mode.KEYWORD -> {
                 if (keywordChecker.isActivationKeyword(result.text)) {
-                    Log.i(TAG, "🎯 KEYWORD DETECTED: ${result.text}")
-                    results.tryEmit(SpeechResult.KeywordDetected(result.text))
+                    Log.i(TAG, "🎯 KEYWORD DETECTED: ${result.text} (zone=$zone)")
+                    results.tryEmit(SpeechResult.KeywordDetected(result.text, zone))
                 }
             }
 
             Mode.COMMAND -> {
-                Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text}")
-                results.tryEmit(SpeechResult.CommandReceived(result.text))
+                Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text} (zone=$zone)")
+                results.tryEmit(SpeechResult.CommandReceived(result.text, zone))
             }
         }
     }
@@ -255,8 +259,8 @@ class SpeechRecognizer(
  * Результат распознавания
  */
 sealed class SpeechResult {
-    data class KeywordDetected(val text: String) : SpeechResult()
-    data class CommandReceived(val text: String) : SpeechResult()
+    data class KeywordDetected(val text: String, val zone: String = "front_left") : SpeechResult()
+    data class CommandReceived(val text: String, val zone: String = "front_left") : SpeechResult()
     object Timeout : SpeechResult()
     data class Error(val message: String) : SpeechResult()
 }
