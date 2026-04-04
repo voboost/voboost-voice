@@ -1,7 +1,7 @@
 # 🔄 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Дата последнего обновления:** 2026-04-04 20:00
-**Версия:** 17.0 (SpeechRecognizer Refactoring)
+**Дата последнего обновления:** 2026-04-04 22:00
+**Версия:** 18.0 (Voice Zone Detection)
 **Статус:** ✅ ГОТОВО К ТЕСТИРОВАНИЮ
 
 ---
@@ -53,16 +53,22 @@
 ## 🏗️ АРХИТЕКТУРА
 
 ```
-VoboostVoiceService (координатор, ~460 строк)
+VoboostVoiceService (координатор, ~485 строк)
 ├── StateMachine (с StateContext)
 │   ├── IdleState → ActivatedState → ListeningCommandState
 │   ├── RecognizedCommandState → ConfirmationState → ExecutingCommandState
 │   ├── TimeoutState, CommandErrorState, KeywordErrorState
 │
-├── SpeechRecognizer (распознавание, ~200 строк)
+├── SpeechRecognizer (распознавание, ~270 строк)
 │   ├── start() — один непрерывный поток
 │   ├── setMode(KEYWORD/COMMAND) — переключение режима
-│   └── results: Channel<SpeechResult> — результаты
+│   ├── results: MutableSharedFlow<SpeechResult> — результаты с зоной
+│   └── zoneDetector: VoiceZoneDetector? — опционально
+│
+├── VoiceZoneDetector (определение зоны говорящего)
+│   ├── micphoneModeManager — подключение к IMicphoneMode AIDL
+│   ├── detectZone() → front_left/front_right/second_left/second_right
+│   └── fallback на front_left если сервис недоступен
 │
 ├── CommandHandler (NLU → CommandExecutor)
 ├── VolumeManager (управление громкостью)
@@ -77,11 +83,11 @@ VoboostVoiceService (координатор, ~460 строк)
 speech/
 ├── state/
 │   ├── State.kt                    ← Интерфейс состояния
-│   ├── StateMachine.kt             ← Главный цикл состояний
-│   ├── StateContext.kt             ← Передача данных между состояниями
-│   ├── IdleState.kt                ← Ожидание ключевого слова
+│   ├── StateMachine.kt             ← Главный цикл состояний (+stateJob для прерываний)
+│   ├── StateContext.kt             ← Передача данных (zone поле добавлено)
+│   ├── IdleState.kt                ← Ожидание ключевого слова (+zone)
 │   ├── ActivatedState.kt           ← Активация
-│   ├── ListeningCommandState.kt    ← Слушаем команду
+│   ├── ListeningCommandState.kt    ← Слушаем команду (+zone)
 │   ├── RecognizedCommandState.kt   ← Распознавание команды
 │   ├── ConfirmationState.kt        ← Запрос подтверждения
 │   ├── ExecutingCommandState.kt    ← Выполнение команды
@@ -89,18 +95,21 @@ speech/
 │   ├── CommandErrorState.kt        ← Ошибка команды
 │   └── KeywordErrorState.kt        ← Ошибка ключевого слова
 │
-├── SpeechRecognizer.kt             ← Распознавание (Channel-based)
+├── SpeechRecognizer.kt             ← Распознавание (SharedFlow-based, +zone)
 ├── RecognitionEngine.kt            ← Интерфейс движка
 ├── RecognitionResult.kt            ← Результат распознавания
+├── SpeechResult.kt                 ← sealed class (+zone поле)
 ├── KeywordChecker.kt               ← Проверка ключевых слов
 └── CommandHandler.kt               ← NLU → CommandExecutor
 
 audio/
 ├── AudioSource.kt                  ← Интерфейс аудио
 ├── AudioSourceFactory.kt           ← Фабрика аудио
-├── MicrophoneStreamAudioSource.kt  ← TransProxy
+├── MicrophoneStreamAudioSource.kt  ← TransProxy (+логирование PCM)
 ├── AndroidAudioSource.kt           ← Fallback
-└── VolumeManager.kt                ← Громкость
+├── VolumeManager.kt                ← Громкость
+├── MicphoneModeManager.kt          ← AIDL IMicphoneMode клиент (v18.0 NEW)
+└── VoiceZoneDetector.kt            ← Определение зоны говорящего (v18.0 NEW)
 
 engine/
 ├── vosk/
@@ -111,6 +120,11 @@ engine/
     ├── SherpaModelLoader.kt
     ├── SherpaStream.kt             ← реализует RecognitionEngine
     └── SherpaStreamFactory.kt
+
+aidl/ (v18.0 NEW)
+└── com/qinggan/qinglink/api/hu/
+    ├── IMicphoneMode.aidl          ← AIDL интерфейс зоны
+    └── IMicphoneModeListener.aidl  ← AIDL listener
 ```
 
 ---
@@ -186,7 +200,8 @@ adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
 | **TSR Speed Limit** | ✅ Работает | Предупреждения |
 | **Audio Channel** | ✅ Работает | USAGE_ASSISTANT |
 | **State Machine** | ✅ Работает | 9 состояний |
-| **SpeechRecognizer** | ✅ Работает | Channel-based |
+| **SpeechRecognizer** | ✅ Работает | SharedFlow-based |
+| **VoiceZoneDetector** | ✅ Работает | IMicphoneMode AIDL |
 | **ConfirmationState** | ⚠️ Заглушка | Не ждёт ответ пользователя |
 
 ---
@@ -242,9 +257,10 @@ adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
 | 14.0 | 2026-04-04 | AudioSource Refactoring |
 | 15.0 | 2026-04-04 | State Machine Pattern |
 | 16.0 | 2026-04-04 | Упрощение SpeechStateMachine |
-| **17.0** | **2026-04-04** | **SpeechRecognizer (Channel-based)** |
+| 17.0 | 2026-04-04 | SpeechRecognizer (Channel-based) |
+| **18.0** | **2026-04-04** | **Voice Zone Detection (IMicphoneMode AIDL)** |
 
 ---
 
-**Последнее обновление:** 2026-04-04 20:00
+**Последнее обновление:** 2026-04-04 22:00
 **Следующая задача:** Реализовать ConfirmationState для ожидания ответа пользователя
