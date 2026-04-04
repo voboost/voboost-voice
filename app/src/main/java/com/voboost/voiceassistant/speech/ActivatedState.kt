@@ -2,11 +2,13 @@ package com.voboost.voiceassistant.speech
 
 import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
+import com.voboost.voiceassistant.config.ConfigManager
+import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Активация (после ключевого слова)
- * 
+ *
  * Логика:
  * 1. Показать анимацию
  * 2. Приглушить музыку
@@ -17,7 +19,9 @@ import com.voboost.voiceassistant.ui.OverlayManager
 class ActivatedState(
     private val speechSM: SpeechStateMachine,
     private val overlayManager: OverlayManager,
-    private val volumeManager: VolumeManager?
+    private val volumeManager: VolumeManager?,
+    private val ttsEngine: SpeechSynthesis,
+    private val configManager: ConfigManager
 ) : State {
     companion object {
         private const val TAG = "ActivatedState"
@@ -31,32 +35,34 @@ class ActivatedState(
             overlayManager.showAnimation()
             volumeManager?.duckMedia(targetVolume = 1)
 
-            // Звук начала распознавания
-            // soundEffectManager.playStartSound()  // ← Можно добавить
-
-            // Сказать "Слушаю вас"
-            // ttsEngine.speak("Слушаю вас")  // ← Можно добавить
+            // Сказать что слушаем (опционально)
+            val listeningPhrase = configManager.getConfig().phrases.listening
+            if (!listeningPhrase.isNullOrEmpty()) {
+                ttsEngine.speak(listeningPhrase)
+            } else {
+                Log.w(TAG, "Listening phrase is null or empty")
+            }
 
             // Переходим к слушанию команды
             speechSM.activate()
-            ListeningCommandState(speechSM, overlayManager, volumeManager)
+            ListeningCommandState(speechSM, overlayManager, volumeManager, ttsEngine, configManager)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ActivatedState", e)
-            CommandErrorState(speechSM, overlayManager, volumeManager, e.message ?: "Unknown error")
+            CommandErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, e.message ?: "Unknown error")
         }
     }
 
     override suspend fun cancel(): State {
         Log.i(TAG, "Cancel in ActivatedState → IdleState")
-        
+
         // Скрыть анимацию и восстановить громкость
         overlayManager.hideAnimation()
         volumeManager?.restoreMedia()
-        
+
         // Вернуться к ожиданию
         speechSM.returnToKeywordListening()
-        
+
         return IdleState(speechSM, overlayManager, volumeManager) {
             // Callback будет установлен при создании нового IdleState
         }

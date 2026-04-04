@@ -2,6 +2,8 @@ package com.voboost.voiceassistant.speech
 
 import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
+import com.voboost.voiceassistant.config.ConfigManager
+import com.voboost.voiceassistant.core.SpeechSynthesis
 import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
@@ -18,6 +20,8 @@ class IdleState(
     private val speechSM: SpeechStateMachine,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
+    private val ttsEngine: SpeechSynthesis,
+    private val configManager: ConfigManager,
     private val onKeywordDetected: () -> Unit
 ) : State {
     companion object {

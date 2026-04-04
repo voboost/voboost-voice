@@ -260,6 +260,8 @@ class VoboostVoiceService : Service() {
             speechSM = speechSM,
             overlayManager = overlayManager,
             volumeManager = volumeManager,
+            ttsEngine = ttsEngine,
+            configManager = configManager,
             onKeywordDetected = {
                 Log.i(TAG, "🎯 Keyword detected!")
                 activateVoiceAssistant()
@@ -474,120 +476,6 @@ class VoboostVoiceService : Service() {
         }
     }
     
-    /**
-     * Внутренняя активация (без проверок)
-     */
-    private fun activateVoiceAssistantInternal() {
-        serviceScope.launch {
-            try {
-                // 🔊 Приглушаем музыку при активации голосового помощника
-                // (State Machine сделает это автоматически при активации)
-                
-                // 🎵 Звук начала распознавания
-                soundEffectManager.playStartSound()
-
-                // Показать анимацию
-                withContext(Dispatchers.Main) {
-                    overlayManager.showAnimation()
-                }
-
-                // Сказать что слушаем (опционально)
-                val listeningPhrase = configManager.getConfig().phrases.listening
-                if (!listeningPhrase.isNullOrEmpty()) {
-                    ttsEngine.speak(listeningPhrase)
-                }
-                else {
-                    Log.w(TAG, "Listening phrase is null or empty")
-                }
-
-                // 🎤 Запустить прослушивание команды
-                // State Machine автоматически перейдёт к ListeningCommandState
-                speechSM.activate()
-                speechSM.startListeningCommand(object : SpeechRecognitionListener {
-                    override fun onCommandReceived(text: String) {
-                        Log.i(TAG, "📝 Command received: $text")
-                        processVoiceCommand(text)
-
-                        // После обработки команды - возвращаемся к ожиданию ключевой фразы
-                        serviceScope.launch {
-                            withContext(Dispatchers.Main) {
-                                soundEffectManager.playEndSound()
-                                overlayManager.hideAnimation()
-                            }
-
-                            // 🔊 Восстанавливаем громкость музыки
-                            volumeManager?.restoreMedia()
-                            Log.d(TAG, "Media volume restored")
-
-                            // Небольшая пауза перед возвратом к keyword spotting
-                            delay(1000)
-
-                            if (serviceScope.isActive) {
-                                Log.i(TAG, "✅ Command completed - returning to keyword spotting...")
-                                speechSM.finishCommand()
-                            }
-                        }
-                    }
-                    
-                    override fun onError(error: String) {
-                        Log.e(TAG, "❌ Command listening error: $error")
-                        serviceScope.launch {
-                            withContext(Dispatchers.Main) {
-                                val failurePhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
-                                if (!failurePhrase.isNullOrEmpty()) {
-                                    ttsEngine.speak(failurePhrase)
-                                }
-                                soundEffectManager.playEndSound()
-                                overlayManager.hideAnimation()
-                            }
-
-                            delay(500)
-                            if (serviceScope.isActive) {
-                                Log.i(TAG, "🔄 Returning to keyword spotting after error...")
-                                speechSM.finishCommand()
-                            }
-                        }
-                    }
-                    
-                    override suspend fun onTimeout() {
-                        Log.w(TAG, "⏱️ Command timeout - returning to keyword spotting")
-
-                        serviceScope.launch {
-                            withContext(Dispatchers.Main) {
-                                soundEffectManager.playEndSound()
-                                overlayManager.hideAnimation()
-                            }
-                            delay(500)
-
-                            if (serviceScope.isActive) {
-                                Log.i(TAG, "🔄 Returning to keyword spotting after timeout...")
-                                speechSM.finishCommand()
-                            }
-                        }
-                    }
-                })
-
-            }
-            catch (e: Exception) {
-                Log.e(TAG, "Error during voice recognition", e)
-
-                withContext(Dispatchers.Main) {
-                    val failurePhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
-                    if (!failurePhrase.isNullOrEmpty()) {
-                        ttsEngine.speak(failurePhrase)
-                    }
-                    soundEffectManager.playEndSound()
-                    overlayManager.hideAnimation()
-                }
-
-                delay(500)
-                if (serviceScope.isActive) {
-                    speechSM.finishCommand()
-                }
-            }
-        }
-    }
-
     /**
      * Отменить распознавание (повторное нажатие кнопки или от Frida)
      */
