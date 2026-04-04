@@ -12,6 +12,8 @@ import com.voboost.voiceassistant.engine.vosk.VoskModelLoader
 import com.voboost.voiceassistant.engine.vosk.VoskStreamFactory
 import com.voboost.voiceassistant.speech.KeywordChecker
 import com.voboost.voiceassistant.speech.SpeechStateMachine
+import com.voboost.voiceassistant.speech.VoiceAssistantStateMachine
+import com.voboost.voiceassistant.ui.OverlayManager
 import java.io.File
 
 /**
@@ -76,6 +78,34 @@ object SpeechEngineFactory {
                 )
             }
         }
+    }
+
+    /**
+     * Создать Voice Assistant State Machine
+     * @param context Контекст приложения
+     * @param engine Тип движка (по умолчанию Vosk как стабильный)
+     * @param audioSource Источник аудио
+     * @param overlayManager Менеджер UI оверлея
+     * @param volumeManager Менеджер громкости
+     * @param scope CoroutineScope для фоновых задач
+     * @return VoiceAssistantStateMachine для управления голосовым помощником
+     */
+    fun createVoiceAssistantStateMachine(
+        context: Context,
+        engine: RecognitionEngine = RecognitionEngine.VOSK,
+        audioSource: AudioSource,
+        overlayManager: OverlayManager,
+        volumeManager: com.voboost.voiceassistant.audio.VolumeManager?,
+        scope: kotlinx.coroutines.CoroutineScope
+    ): VoiceAssistantStateMachine {
+        val speechStateMachine = createSpeechStateMachine(context, engine, audioSource)
+        
+        return VoiceAssistantStateMachine(
+            speechStateMachine = speechStateMachine,
+            overlayManager = overlayManager,
+            volumeManager = volumeManager,
+            scope = scope
+        )
     }
 
     /**
