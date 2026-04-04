@@ -99,28 +99,12 @@ class VoboostVoiceService : Service() {
     @Volatile
     private var isOnline = false
 
-    // Подтверждение команд
-
-    private var confirmationContinuation: kotlin.coroutines.Continuation<String>? = null
-
     // Receiver для отмены распознавания
     private val cancelReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ACTION_CANCEL) {
                 Log.i(TAG, "Cancel request received from Frida")
                 cancelRecognition()
-            }
-        }
-    }
-
-    // Receiver для подтверждения команд
-    private val confirmationReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == ACTION_CONFIRMATION_RESPONSE) {
-                val response = intent.getStringExtra("recognized_text") ?: ""
-                Log.d(TAG, "Confirmation response received: '$response'")
-                confirmationContinuation?.resume(response)
-                confirmationContinuation = null
             }
         }
     }
@@ -288,16 +272,6 @@ class VoboostVoiceService : Service() {
         }
         Log.d(TAG, "CancelReceiver registered")
 
-        // Регистрируем receiver для подтверждений
-        val confirmationFilter = IntentFilter(ACTION_CONFIRMATION_RESPONSE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(confirmationReceiver, confirmationFilter, Context.RECEIVER_NOT_EXPORTED)
-        }
-        else {
-            registerReceiver(confirmationReceiver, confirmationFilter)
-        }
-        Log.d(TAG, "ConfirmationReceiver registered")
-
         // ✅ Запуск распознавания (если permission есть)
         if (hasRecordPermission()) {
             startKeywordSpotting()
@@ -359,14 +333,6 @@ class VoboostVoiceService : Service() {
         }
         catch (e: Exception) {
             Log.w(TAG, "Failed to unregister receiver", e)
-        }
-
-        try {
-            unregisterReceiver(confirmationReceiver)
-            Log.d(TAG, "ConfirmationReceiver unregistered")
-        }
-        catch (e: Exception) {
-            Log.w(TAG, "Failed to unregister confirmation receiver", e)
         }
 
         // Отключаем Voice Button Handler
@@ -470,9 +436,6 @@ class VoboostVoiceService : Service() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error during cancel", e)
             } finally {
-                // Отменить подтверждение если есть
-                confirmationContinuation = null
-
                 // State Machine сам обработает отмену
                 stateMachine.cancel()
             }
@@ -579,61 +542,4 @@ class VoboostVoiceService : Service() {
         Log.d(TAG, "Network state updated: isOnline=$isOnline")
     }
 
-    /**
-     * Запросить голосовое подтверждение (для CommandExecutor)
-     * @param question Текст вопроса (например, "Подтверждаете открытие окна?")
-     * @param timeout Таймаут в миллисекундах
-     * @return Ответ пользователя ("да", "нет" или пустая строка при таймауте)
-     */
-    suspend fun requestConfirmation(question: String, timeout: Long = 3000): String {
-        Log.d(TAG, "Requesting confirmation: '$question', timeout: ${timeout}ms")
-
-        // Сказать вопрос
-        ttsEngine.speak(question)
-
-        // Запустить распознавание ответа
-        return kotlinx.coroutines.withTimeoutOrNull(timeout) {
-            suspendCoroutine<String> { continuation ->
-                var resultReceived = false
-
-                val listener = object : SpeechRecognitionListener {
-                    override fun onCommandReceived(text: String) {
-                        if (!resultReceived) {
-                            resultReceived = true
-                            Log.d(TAG, "Confirmation response: '$text'")
-                            confirmationContinuation = null
-                            continuation.resume(text)
-                        }
-                    }
-
-                    override fun onError(error: String) {
-                        if (!resultReceived) {
-                            resultReceived = true
-                            Log.e(TAG, "Error during confirmation: $error")
-                            confirmationContinuation = null
-                            continuation.resume("")
-                        }
-                    }
-
-                    override suspend fun onTimeout() {
-                        if (!resultReceived) {
-                            resultReceived = true
-                            Log.w(TAG, "Confirmation timeout")
-                            confirmationContinuation = null
-                            continuation.resume("")
-                        }
-                    }
-                }
-
-                confirmationContinuation = continuation
-
-                // Продолжить слушать команду (уже активировано)
-                speechSM.startListeningCommand(listener)
-            }
-        } ?: run {
-            Log.w(TAG, "Confirmation timeout")
-            confirmationContinuation = null
-            ""
-        }
-    }
 }

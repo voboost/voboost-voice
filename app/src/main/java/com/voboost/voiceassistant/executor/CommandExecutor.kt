@@ -56,20 +56,6 @@ class CommandExecutor(
         duckAudio(true)
 
         try {
-            // Проверка необходимости подтверждения
-            if (nluEngine.requiresConfirmation(commandConfig)) {
-                val confirmed = requestConfirmation(commandConfig)
-
-                if (!confirmed) {
-                    Log.i(TAG, "Command cancelled by user")
-                    val cancelledPhrase = commandConfig.phrases?.cancelled
-                        ?: configManager.getConfig().phrases.notUnderstood
-                    ttsEngine.speak(cancelledPhrase)
-                    overlayManager.showToast(cancelledPhrase)
-                    return
-                }
-            }
-
             // Выполнение действия
             val success = executeAction(commandConfig, recognizedCommand.extractedParams)
 
@@ -102,46 +88,6 @@ class CommandExecutor(
         } finally {
             // Восстановить громкость
             duckAudio(false)
-        }
-    }
-
-    /**
-     * Запросить подтверждение у пользователя (голосовое)
-     * Использует VoboostVoiceService для распознавания ответа
-     */
-    private suspend fun requestConfirmation(commandConfig: CommandConfig): Boolean {
-        val question = nluEngine.getConfirmationQuestion(commandConfig)
-        val timeout = nluEngine.getConfirmationTimeout(commandConfig)
-
-        Log.d(TAG, "Requesting confirmation: '$question', timeout: ${timeout}s")
-
-        // Получить сервис
-        val service = VoboostVoiceService.getInstance()
-            ?: run {
-                Log.e(TAG, "VoboostVoiceService instance is null, auto-confirming")
-                return true
-            }
-
-        // Запросить подтверждение через сервис
-        val response = service.requestConfirmation(question, timeout * 1000L)
-
-        if (response.isEmpty()) {
-            Log.w(TAG, "No response to confirmation request")
-            return false
-        }
-
-        Log.d(TAG, "Confirmation response: '$response'")
-
-        // Проверяем ответ
-        return if (nluEngine.isConfirmationYes(response, commandConfig)) {
-            Log.i(TAG, "Confirmation: YES")
-            true
-        } else if (nluEngine.isConfirmationNo(response, commandConfig)) {
-            Log.i(TAG, "Confirmation: NO")
-            false
-        } else {
-            Log.w(TAG, "Unknown confirmation response")
-            false
         }
     }
 
