@@ -10,7 +10,8 @@ import com.voboost.voiceassistant.engine.sherpa.SherpaSynthesis
 import com.voboost.voiceassistant.engine.system.SystemTtsSynthesis
 import com.voboost.voiceassistant.engine.vosk.VoskModelLoader
 import com.voboost.voiceassistant.engine.vosk.VoskStreamFactory
-import com.voboost.voiceassistant.speech.EngineRecognition
+import com.voboost.voiceassistant.speech.KeywordChecker
+import com.voboost.voiceassistant.speech.SpeechStateMachine
 import java.io.File
 
 /**
@@ -32,34 +33,46 @@ object SpeechEngineFactory {
     }
 
     /**
-     * Создать модуль распознавания речи
+     * Создать State Machine для распознавания речи
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
      * @param audioSource Источник аудио (создаётся через AudioSourceFactory)
+     * @return SpeechStateMachine для управления распознаванием
      */
-    fun createRecognitionEngine(
+    fun createSpeechStateMachine(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
         audioSource: AudioSource
-    ): SpeechRecognition {
+    ): SpeechStateMachine {
+        val configManager = com.voboost.voiceassistant.config.ConfigManager.getInstance(context)
+        val keywordChecker = KeywordChecker(configManager)
+        
         return when (engine) {
             RecognitionEngine.VOSK -> {
                 Log.i(TAG, "Creating Vosk recognition engine")
-                EngineRecognition(
-                    context = context,
+                val modelLoader = VoskModelLoader(context)
+                val modelPath = modelLoader.getModelPath()
+                val model = modelLoader.loadModel(modelPath)
+                val recognitionEngine = VoskStreamFactory().create(model)
+                
+                SpeechStateMachine(
                     audioSource = audioSource,
-                    modelLoader = VoskModelLoader(context),
-                    streamFactory = VoskStreamFactory()
+                    recognitionEngine = recognitionEngine,
+                    keywordChecker = keywordChecker
                 )
             }
 
             RecognitionEngine.SHERPA -> {
                 Log.i(TAG, "Creating Sherpa recognition engine")
-                EngineRecognition(
-                    context = context,
+                val modelLoader = SherpaModelLoader(context)
+                val modelPath = modelLoader.getModelPath()
+                val model = modelLoader.loadModel(modelPath)
+                val recognitionEngine = SherpaStreamFactory().create(model)
+                
+                SpeechStateMachine(
                     audioSource = audioSource,
-                    modelLoader = SherpaModelLoader(context),
-                    streamFactory = SherpaStreamFactory()
+                    recognitionEngine = recognitionEngine,
+                    keywordChecker = keywordChecker
                 )
             }
         }
@@ -93,27 +106,11 @@ object SpeechEngineFactory {
     }
 
     /**
-     * Проверить, доступна ли модель Sherpa-ONNX для распознавания
-     */
-    fun isSherpaRecognitionAvailable(context: Context): Boolean {
-        val modelPath = getDefaultSherpaModelPath(context)
-        return File(modelPath).exists()
-    }
-
-    /**
      * Проверить, доступна ли модель Sherpa-ONNX для синтеза
      */
     fun isSherpaSynthesisAvailable(context: Context): Boolean {
         val modelPath = getDefaultSherpaTtsPath(context)
         return File(modelPath).exists()
-    }
-
-    /**
-     * Получить путь к модели Sherpa-ONNX по умолчанию
-     */
-    private fun getDefaultSherpaModelPath(context: Context): String {
-        // Модель будет копироваться из assets или загружаться отдельно
-        return context.filesDir.resolve("sherpa/asr-ru-model").absolutePath
     }
 
     /**
