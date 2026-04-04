@@ -9,6 +9,7 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.speech.VoiceAssistantListener
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * Состояние: Ожидание ключевого слова
@@ -35,22 +36,39 @@ class IdleState(
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
 
-            speechSM.startListeningForKeyword(object : VoiceAssistantListener {
-                override fun onKeywordDetected() {
-                    onKeywordDetected()
-                }
+            // Ждём ключевое слово
+            waitForKeyword()
 
-                override fun onError(error: String) {
-                    Log.e(TAG, "Keyword spotting error: $error")
-                }
-            })
-
+            // Ключевое слово получено → ActivatedState
             ActivatedState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
             KeywordErrorState(speechSM, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
+    }
+
+    /**
+     * Ждём ключевое слово
+     */
+    private suspend fun waitForKeyword() {
+        val result = CompletableDeferred<Unit>()
+
+        speechSM.startListeningForKeyword(object : VoiceAssistantListener {
+            override fun onKeywordDetected() {
+                if (!result.isCompleted) {
+                    result.complete(Unit)
+                }
+            }
+
+            override fun onError(error: String) {
+                if (!result.isCompleted) {
+                    result.completeExceptionally(Exception(error))
+                }
+            }
+        })
+
+        result.await()
     }
 
     override suspend fun cancel(): State {
