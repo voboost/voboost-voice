@@ -31,8 +31,10 @@ import com.voboost.voiceassistant.canbus.TSRSpeedLimitHandler
 import com.voboost.voiceassistant.canbus.TTSCallback
 import com.voboost.voiceassistant.speech.SpeechStateMachine
 import com.voboost.voiceassistant.speech.SpeechRecognitionListener
-import com.voboost.voiceassistant.speech.VoiceAssistantStateMachine
-import com.voboost.voiceassistant.speech.VoiceAssistantListener
+import com.voboost.voiceassistant.speech.StateMachine
+import com.voboost.voiceassistant.speech.IdleState
+import com.voboost.voiceassistant.speech.ProcessingCommandState
+import com.voboost.voiceassistant.speech.CommandHandler
 import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -66,7 +68,9 @@ class VoboostVoiceService : Service() {
 
     // Компоненты системы
     private lateinit var configManager: ConfigManager
-    private lateinit var voiceAssistantSM: VoiceAssistantStateMachine  // ← Voice Assistant State Machine
+    private lateinit var stateMachine: StateMachine  // ← State Machine
+    private lateinit var speechSM: SpeechStateMachine  // ← Распознавание речи
+    private lateinit var commandHandler: CommandHandler  // ← Обработка команд
     private lateinit var nluEngine: NLUEngine
     private lateinit var commandExecutor: CommandExecutor
     private lateinit var overlayManager: OverlayManager
@@ -239,31 +243,35 @@ class VoboostVoiceService : Service() {
             vehicleCommandExecutor = vehicleCommandExecutor
         )
 
-        // Voice Assistant State Machine - создаём с UI и громкостью
-        try {
-            voiceAssistantSM = SpeechEngineFactory.createVoiceAssistantStateMachine(
-                context = this,
-                engine = ASR_ENGINE_TYPE,
-                audioSource = audioSource,
-                overlayManager = overlayManager,
-                volumeManager = volumeManager,
-                scope = serviceScope
-            )
+        // Command Handler - обработка команд
+        commandHandler = CommandHandler(nluEngine, commandExecutor)
+        Log.i(TAG, "CommandHandler initialized")
 
-            Log.i(TAG, "Voice Assistant State Machine initialized")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize voice assistant", e)
-            // Fallback: создаём новый AudioSource с Android AudioRecord
-            val fallbackAudioSource = AudioSourceFactory.create(this, AudioSourceFactory.SourceType.ANDROID)
-            voiceAssistantSM = SpeechEngineFactory.createVoiceAssistantStateMachine(
-                context = this,
-                engine = ASR_ENGINE_TYPE,
-                audioSource = fallbackAudioSource,
-                overlayManager = overlayManager,
-                volumeManager = volumeManager,
-                scope = serviceScope
-            )
-        }
+        // Speech State Machine - распознавание речи
+        speechSM = SpeechEngineFactory.createSpeechStateMachine(
+            context = this,
+            engine = ASR_ENGINE_TYPE,
+            audioSource = audioSource
+        )
+        Log.i(TAG, "Speech State Machine initialized")
+
+        // State Machine - управление состояниями
+        val initialState = IdleState(
+            speechSM = speechSM,
+            overlayManager = overlayManager,
+            volumeManager = volumeManager,
+            onKeywordDetected = {
+                Log.i(TAG, "🎯 Keyword detected!")
+                activateVoiceAssistant()
+            }
+        )
+
+        stateMachine = StateMachine(
+            initialState = initialState,
+            scope = serviceScope
+        )
+
+        Log.i(TAG, "State Machine initialized")
 
         // Регистрируем receiver
         val filter = IntentFilter(ACTION_CANCEL)
@@ -384,7 +392,8 @@ class VoboostVoiceService : Service() {
             Log.w(TAG, "Failed to unbind CanBusServiceManager", e)
         }
 
-        voiceAssistantSM.shutdown()
+        stateMachine.stop()
+        speechSM.shutdown()
         ttsEngine.shutdown()
         soundEffectManager.release()
 
@@ -396,38 +405,17 @@ class VoboostVoiceService : Service() {
      */
     private fun startKeywordSpotting() {
         Log.d(TAG, "startKeywordSpotting called")
-        Log.d(TAG, "  state=${voiceAssistantSM.getState()}")
+        Log.d(TAG, "  state=${stateMachine.getCurrentState()::class.simpleName}")
 
-        if (voiceAssistantSM.isListeningCommand()) {
-            Log.w(TAG, "Already running, skipping keyword spotting")
+        if (stateMachine.getCurrentState() !is IdleState) {
+            Log.w(TAG, "Not in IdleState, skipping keyword spotting")
             return
         }
 
         serviceScope.launch {
             try {
                 Log.i(TAG, "Starting keyword spotting (waiting for activation phrase)...")
-
-                voiceAssistantSM.startListeningForKeyword(object : VoiceAssistantListener {
-                    override fun onKeywordDetected() {
-                        Log.i(TAG, "🎯 Keyword detected!")
-                        activateVoiceAssistant()
-                    }
-                    
-                    override fun onError(error: String) {
-                        Log.e(TAG, "Keyword spotting error: $error")
-                        serviceScope.launch {
-                            withContext(Dispatchers.Main) {
-                                ttsEngine.speak(configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE))
-                            }
-                            // Возврат в keyword spotting после ошибки
-                            delay(2000)
-                            if (serviceScope.isActive) {
-                                Log.i(TAG, "Returning to keyword spotting after error...")
-                                startKeywordSpotting()
-                            }
-                        }
-                    }
-                })
+                stateMachine.start()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start keyword spotting", e)
                 // Попытка перезапуска через 3 секунды
@@ -446,7 +434,7 @@ class VoboostVoiceService : Service() {
      * Активировать голосовой помощник (после ключевой фразы или кнопки)
      */
     private fun activateVoiceAssistant() {
-        if (voiceAssistantSM.isListeningCommand()) {
+        if (stateMachine.getCurrentState() is ProcessingCommandState) {
             // Уже активен — отменяем команду и возвращаемся к ожиданию
             Log.i(TAG, "Already in command mode - CANCEL command")
             cancelCurrentCommand()
@@ -455,7 +443,7 @@ class VoboostVoiceService : Service() {
 
         activateVoiceAssistantInternal()
     }
-    
+
     /**
      * Отменить текущую команду и вернуться к ожиданию ключевого слова
      */
@@ -466,10 +454,10 @@ class VoboostVoiceService : Service() {
                 withContext(Dispatchers.Main) {
                     ttsEngine.speak("Отмена")
                 }
-                
+
                 // Пауза для воспроизведения
                 delay(500)
-                
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error during cancel", e)
             } finally {
@@ -483,14 +471,19 @@ class VoboostVoiceService : Service() {
                 withContext(Dispatchers.Main) {
                     overlayManager.hideAnimation()
                 }
-                
-                // Очистить очередь TTS
-                ttsEngine.clearQueue()
-                
-                // 🎵 Звук окончания
-                soundEffectManager.playEndSound()
-                
-                Log.i(TAG, "✅ Command cancelled, returning to keyword spotting")
+
+                // Вернуться к ожиданию ключевого слова
+                stateMachine.transitionTo(
+                    IdleState(
+                        speechSM = speechSM,
+                        overlayManager = overlayManager,
+                        volumeManager = volumeManager,
+                        onKeywordDetected = {
+                            Log.i(TAG, "🎯 Keyword detected!")
+                            activateVoiceAssistant()
+                        }
+                    )
+                )
             }
         }
     }
@@ -502,7 +495,7 @@ class VoboostVoiceService : Service() {
         serviceScope.launch {
             try {
                 // 🔊 Приглушаем музыку при активации голосового помощника
-                // (VoiceAssistantSM сделает это автоматически при активации)
+                // (State Machine сделает это автоматически при активации)
                 
                 // 🎵 Звук начала распознавания
                 soundEffectManager.playStartSound()
@@ -522,12 +515,9 @@ class VoboostVoiceService : Service() {
                 }
 
                 // 🎤 Запустить прослушивание команды
-                // После получения команды модуль автоматически вернётся к keyword spotting
-                voiceAssistantSM.activate(object : com.voboost.voiceassistant.speech.VoiceAssistantCallback {
-                    override fun onKeywordDetected() {
-                        // Не используется в этом контексте
-                    }
-                    
+                // State Machine автоматически перейдёт к ListeningCommandState
+                speechSM.activate()
+                speechSM.startListeningCommand(object : SpeechRecognitionListener {
                     override fun onCommandReceived(text: String) {
                         Log.i(TAG, "📝 Command received: $text")
                         processVoiceCommand(text)
@@ -548,7 +538,7 @@ class VoboostVoiceService : Service() {
 
                             if (serviceScope.isActive) {
                                 Log.i(TAG, "✅ Command completed - returning to keyword spotting...")
-                                voiceAssistantSM.finishCommand()
+                                speechSM.finishCommand()
                             }
                         }
                     }
@@ -568,7 +558,7 @@ class VoboostVoiceService : Service() {
                             delay(500)
                             if (serviceScope.isActive) {
                                 Log.i(TAG, "🔄 Returning to keyword spotting after error...")
-                                voiceAssistantSM.finishCommand()
+                                speechSM.finishCommand()
                             }
                         }
                     }
@@ -585,7 +575,7 @@ class VoboostVoiceService : Service() {
 
                             if (serviceScope.isActive) {
                                 Log.i(TAG, "🔄 Returning to keyword spotting after timeout...")
-                                voiceAssistantSM.finishCommand()
+                                speechSM.finishCommand()
                             }
                         }
                     }
@@ -606,7 +596,7 @@ class VoboostVoiceService : Service() {
 
                 delay(500)
                 if (serviceScope.isActive) {
-                    voiceAssistantSM.finishCommand()
+                    speechSM.finishCommand()
                 }
             }
         }
@@ -616,8 +606,8 @@ class VoboostVoiceService : Service() {
      * Отменить распознавание (повторное нажатие кнопки или от Frida)
      */
     fun cancelRecognition() {
-        if (!voiceAssistantSM.isListeningCommand()) {
-            Log.w(TAG, "Not listening, ignoring cancel request")
+        if (stateMachine.getCurrentState() !is IdleState) {
+            Log.w(TAG, "Not in IdleState, ignoring cancel request")
             return
         }
 
@@ -629,7 +619,7 @@ class VoboostVoiceService : Service() {
                 soundEffectManager.playCancelSound()
 
                 // Скрыть анимацию и восстановить громкость
-                voiceAssistantSM.cancel()
+                speechSM.returnToKeywordListening()
 
                 Log.i(TAG, "✅ Recognition cancelled")
 
@@ -727,12 +717,6 @@ class VoboostVoiceService : Service() {
         // Сказать вопрос
         ttsEngine.speak(question)
 
-        // Проверить что можно запросить подтверждение
-        if (!voiceAssistantSM.requestConfirmation()) {
-            Log.w(TAG, "Cannot request confirmation in current state")
-            return ""
-        }
-
         // Запустить распознавание ответа
         return kotlinx.coroutines.withTimeoutOrNull(timeout) {
             suspendCoroutine<String> { continuation ->
@@ -743,7 +727,6 @@ class VoboostVoiceService : Service() {
                         if (!resultReceived) {
                             resultReceived = true
                             Log.d(TAG, "Confirmation response: '$text'")
-                            voiceAssistantSM.finishConfirmation()
                             confirmationContinuation = null
                             continuation.resume(text)
                         }
@@ -753,7 +736,6 @@ class VoboostVoiceService : Service() {
                         if (!resultReceived) {
                             resultReceived = true
                             Log.e(TAG, "Error during confirmation: $error")
-                            voiceAssistantSM.finishConfirmation()
                             confirmationContinuation = null
                             continuation.resume("")
                         }
@@ -763,7 +745,6 @@ class VoboostVoiceService : Service() {
                         if (!resultReceived) {
                             resultReceived = true
                             Log.w(TAG, "Confirmation timeout")
-                            voiceAssistantSM.finishConfirmation()
                             confirmationContinuation = null
                             continuation.resume("")
                         }
@@ -773,27 +754,10 @@ class VoboostVoiceService : Service() {
                 confirmationContinuation = continuation
 
                 // Продолжить слушать команду (уже активировано)
-                voiceAssistantSM.activate(object : com.voboost.voiceassistant.speech.VoiceAssistantCallback {
-                    override fun onKeywordDetected() {
-                        // Не используется в этом контексте
-                    }
-                    
-                    override fun onCommandReceived(text: String) {
-                        listener.onCommandReceived(text)
-                    }
-                    
-                    override fun onError(error: String) {
-                        listener.onError(error)
-                    }
-                    
-                    override suspend fun onTimeout() {
-                        listener.onTimeout()
-                    }
-                })
+                speechSM.startListeningCommand(listener)
             }
         } ?: run {
             Log.w(TAG, "Confirmation timeout")
-            voiceAssistantSM.finishConfirmation()
             confirmationContinuation = null
             ""
         }
