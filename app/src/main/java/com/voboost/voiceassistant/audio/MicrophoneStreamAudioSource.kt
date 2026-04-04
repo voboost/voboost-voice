@@ -50,8 +50,15 @@ class MicrophoneStreamAudioSource(private val context: Context) : AudioSource {
 
             // Создаём слушатель для получения PCM данных
             pcmListener = object : IPcmListener.Stub() {
+                private var pcmCount = 0
+
                 @Throws(RemoteException::class)
                 override fun onPcm(pcm: ByteArray) {
+                    pcmCount++
+                    if (pcmCount % 100 == 1) {
+                        Log.d(TAG, "🎤 Received PCM #${pcmCount}: ${pcm.size} bytes")
+                    }
+
                     // Передаём PCM данные всем внешним слушателям
                     for (listener in listeners) {
                         try {
@@ -98,28 +105,43 @@ class MicrophoneStreamAudioSource(private val context: Context) : AudioSource {
 
         try {
             Log.d(TAG, "Connecting to TransProxy service...")
+            Log.d(TAG, "  Intent: $INTENT_TRANSPROXY")
+            Log.d(TAG, "  Package: $QGSPEECH_PACKAGE")
 
             val intent = Intent(INTENT_TRANSPROXY)
             intent.setPackage(QGSPEECH_PACKAGE)
 
             context.bindService(intent, object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    Log.i(TAG, "✅ TransProxy connected")
+                    Log.i(TAG, "✅ TransProxy connected via AIDL")
+                    Log.i(TAG, "  Service binder: ${service}")
                     pcmModule = IPcmModule.Stub.asInterface(service)
+                    Log.i(TAG, "  pcmModule: ${pcmModule}")
 
                     // Регистрируем слушатель
                     try {
                         pcmModule?.registerPcmListener(pcmListener)
-                        Log.i(TAG, "✅ PCM listener registered")
+                        Log.i(TAG, "✅ PCM listener registered successfully")
                         isRecording = true
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to register PCM listener", e)
+                        Log.e(TAG, "❌ Failed to register PCM listener", e)
                     }
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
-                    Log.w(TAG, "❌ TransProxy disconnected")
+                    Log.w(TAG, "❌ TransProxy disconnected: $name")
                     pcmModule = null
+                    isRecording = false
+                }
+
+                override fun onBindingDied(name: ComponentName?) {
+                    Log.e(TAG, "❌ TransProxy binding died: $name")
+                    pcmModule = null
+                    isRecording = false
+                }
+
+                override fun onNullBinding(name: ComponentName?) {
+                    Log.e(TAG, "❌ TransProxy null binding - service does not export this intent!")
                     isRecording = false
                 }
             }, Context.BIND_AUTO_CREATE)
