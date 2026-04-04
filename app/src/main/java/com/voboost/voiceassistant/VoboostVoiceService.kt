@@ -93,17 +93,9 @@ class VoboostVoiceService : Service() {
 
     // Состояние
     @Volatile
-    private var isListening = false
-
-    @Volatile
     private var isOnline = false
 
-    @Volatile
-    private var isCommandMode = false  // Новый флаг: режим команды
-
     // Подтверждение команд
-    @Volatile
-    private var isWaitingConfirmation = false
 
     private var confirmationContinuation: kotlin.coroutines.Continuation<String>? = null
 
@@ -125,7 +117,6 @@ class VoboostVoiceService : Service() {
                 Log.d(TAG, "Confirmation response received: '$response'")
                 confirmationContinuation?.resume(response)
                 confirmationContinuation = null
-                isWaitingConfirmation = false
             }
         }
     }
@@ -405,10 +396,9 @@ class VoboostVoiceService : Service() {
      */
     private fun startKeywordSpotting() {
         Log.d(TAG, "startKeywordSpotting called")
-        Log.d(TAG, "  isListening=$isListening")
-        Log.d(TAG, "  isCommandMode=$isCommandMode")
+        Log.d(TAG, "  state=${voiceAssistantSM.getState()}")
 
-        if (isListening) {
+        if (voiceAssistantSM.isListeningCommand()) {
             Log.w(TAG, "Already running, skipping keyword spotting")
             return
         }
@@ -456,7 +446,7 @@ class VoboostVoiceService : Service() {
      * Активировать голосовой помощник (после ключевой фразы или кнопки)
      */
     private fun activateVoiceAssistant() {
-        if (isCommandMode) {
+        if (voiceAssistantSM.isListeningCommand()) {
             // Уже активен — отменяем команду и возвращаемся к ожиданию
             Log.i(TAG, "Already in command mode - CANCEL command")
             cancelCurrentCommand()
@@ -483,14 +473,9 @@ class VoboostVoiceService : Service() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error during cancel", e)
             } finally {
-                // Сброс всех флагов
-                isCommandMode = false
-                isListening = false
-                isWaitingConfirmation = false
-                
                 // Отменить подтверждение если есть
                 confirmationContinuation = null
-                
+
                 // Остановить распознавание
                 cancelRecognition()
                 
@@ -514,14 +499,10 @@ class VoboostVoiceService : Service() {
      * Внутренняя активация (без проверок)
      */
     private fun activateVoiceAssistantInternal() {
-        isCommandMode = true
-        isListening = true
-
         serviceScope.launch {
             try {
                 // 🔊 Приглушаем музыку при активации голосового помощника
-                volumeManager?.duckMedia(targetVolume = 1)
-                Log.d(TAG, "Media volume ducked")
+                // (VoiceAssistantSM сделает это автоматически при активации)
                 
                 // 🎵 Звук начала распознавания
                 soundEffectManager.playStartSound()
