@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Состояние: Слушаем команду
@@ -38,6 +39,8 @@ class ListeningCommandState(
 ) : State {
     companion object {
         private const val TAG = "ListeningCommandState"
+        // Флаг для предотвращения повторных отмен пока TTS ещё говорит
+        private val isCancelling = AtomicBoolean(false)
     }
 
     override suspend fun execute(): State {
@@ -96,18 +99,37 @@ class ListeningCommandState(
 
         } catch (e: CancellationException) {
             // Нормальная ситуация при нажатии кнопки во время слушания команды
+            // Проверяем, не идёт ли уже процесс отмены
+            if (isCancelling.get()) {
+                Log.d(TAG, "Cancel already in progress, ignoring")
+                throw e
+            }
+            
             Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
             
-            // Воспроизводим звук отмены и говорим "Отмена"
-            context.soundEffectManager?.playCancelSound()
+            // Устанавливаем флаг отмены
+            isCancelling.set(true)
             
-            // Ждём пока TTS закончит говорить "Отмена"
-            val ttsLatch = CountDownLatch(1)
-            ttsEngine.speak("Отмена") {
-                ttsLatch.countDown()
-            }
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                ttsLatch.await(3, TimeUnit.SECONDS)
+            try {
+                // Сначала воспроизводим звук "пик"
+                context.soundEffectManager?.playCancelSound()
+                
+                // Ждём 400ms чтобы звук "пик" успел закончиться перед TTS
+                kotlinx.coroutines.delay(400)
+                
+                // Потом говорим "Отмена"
+                val ttsLatch = CountDownLatch(1)
+                ttsEngine.speak("Отмена") {
+                    ttsLatch.countDown()
+                }
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    ttsLatch.await(5, TimeUnit.SECONDS)
+                }
+                
+                Log.d(TAG, "Cancel speech completed")
+            } finally {
+                // Сбрасываем флаг отмены
+                isCancelling.set(false)
             }
             
             throw e // Пробрасываем дальше для корректной отмены
