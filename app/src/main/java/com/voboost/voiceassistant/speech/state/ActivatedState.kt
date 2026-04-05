@@ -9,6 +9,9 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Состояние: Активация (после ключевого слова)
@@ -17,7 +20,7 @@ import kotlinx.coroutines.withContext
  * 1. Показать анимацию
  * 2. Приглушить музыку
  * 3. Сказать "Слушаю вас"
- * 4. → ListeningCommandState
+ * 4. → finish(StateResult.Next(ListeningCommandState))
  */
 class ActivatedState(
     private val speechRecognizer: SpeechRecognizer,
@@ -28,15 +31,18 @@ class ActivatedState(
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
     private val context: StateContext
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "ActivatedState"
     }
 
-    override suspend fun execute(): State {
+    override val canCancel = true
+    private val isCancelling = AtomicBoolean(false)
+
+    override suspend fun execute() {
         Log.i(TAG, "Entering ACTIVATED state")
 
-        return try {
+        try {
             // Показать анимацию и приглушить музыку
             overlayManager.showAnimation()
             volumeManager?.duckMedia(targetVolume = 1)
@@ -47,14 +53,12 @@ class ActivatedState(
             // Сказать что слушаем (опционально)
             val listeningPhrase = configManager.getConfig().phrases.listening
             if (!listeningPhrase.isNullOrEmpty()) {
-                // Используем callback чтобы включить распознавание ПОСЛЕ TTS
-                val phraseLatch = java.util.concurrent.CountDownLatch(1)
+                val phraseLatch = CountDownLatch(1)
                 ttsEngine.speak(listeningPhrase) {
                     phraseLatch.countDown()
                 }
-                // Ждём завершения TTS (синхронно в suspend функции)
                 withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    phraseLatch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                    phraseLatch.await(5, TimeUnit.SECONDS)
                 }
             } else {
                 Log.w(TAG, "Listening phrase is null or empty")
@@ -64,34 +68,64 @@ class ActivatedState(
             speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
 
             // Переходим к слушанию команды
-            ListeningCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                ListeningCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: kotlinx.coroutines.CancellationException) {
-            // Нормальная ситуация при быстром повторном нажатии кнопки
             Log.d(TAG, "ActivatedState cancelled (rapid button press)")
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            // Переходим к IdleState чтобы можно было снова активировать
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ActivatedState", e)
-            // Восстановить распознавание при ошибке
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            finish(StateResult.Next(
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in ActivatedState → IdleState")
+    override suspend fun cancel() {
+        if (isCancelling.compareAndSet(false, true)) {
+            Log.i(TAG, "ActivatedState cancelled (button pressed)")
 
-        overlayManager.hideAnimation()
-        volumeManager?.restoreMedia()
-        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            try {
+                // Остановить TTS если ещё говорит "Слушаю вас"
+                ttsEngine.stop()
+                
+                // Небольшая задержка чтобы TTS успел остановиться
+                kotlinx.coroutines.delay(200)
+                
+                // Звук отмены
+                context.soundEffectManager?.playCancelSound()
+                
+                // Даём звуку закончиться
+                kotlinx.coroutines.delay(400)
+                
+                // Говорим "Отмена"
+                val latch = CountDownLatch(1)
+                ttsEngine.speak("Отмена") { latch.countDown() }
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    latch.await(5, TimeUnit.SECONDS)
+                }
+                
+                Log.d(TAG, "Cancel speech completed")
+            } finally {
+                isCancelling.set(false)
+            }
+            
+            overlayManager.hideAnimation()
+            volumeManager?.restoreMedia()
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            
+            cancelled("ActivatedState cancelled by user")
+        }
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Already in ActivatedState, ignoring")
         return this
     }

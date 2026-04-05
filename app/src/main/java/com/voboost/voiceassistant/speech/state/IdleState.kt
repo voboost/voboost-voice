@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.first
  * Логика:
  * 1. Скрыть анимацию, восстановить громкость
  * 2. Ждём KeywordDetected из SpeechRecognizer
- * 3. → ActivatedState
+ * 3. → finish(StateResult.Next(ActivatedState))
  */
 class IdleState(
     private val speechRecognizer: SpeechRecognizer,
@@ -29,15 +29,15 @@ class IdleState(
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
     private val context: StateContext
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "IdleState"
     }
 
-    override suspend fun execute(): State {
+    override suspend fun execute() {
         Log.i(TAG, "Entering IDLE state - waiting for keyword...")
 
-        return try {
+        try {
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
 
@@ -49,26 +49,29 @@ class IdleState(
             context.zone = zone
 
             // Ключевое слово получено → ActivatedState
-            ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: CancellationException) {
-            // Это нормально — coroutine отменён при активации через кнопку или другое состояние
             Log.d(TAG, "IdleState coroutine cancelled (normal during activation)")
-            throw e // Пробрасываем дальше чтобы State Machine мог корректно обработать
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
-            KeywordErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            finish(StateResult.Next(
+                KeywordErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
+    override suspend fun cancel() {
         Log.i(TAG, "Cancel in IdleState - returning to IdleState")
         speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+        cancelled("IdleState cancelled")
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
         return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }

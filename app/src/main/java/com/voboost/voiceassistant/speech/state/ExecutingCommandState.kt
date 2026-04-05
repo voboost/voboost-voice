@@ -17,8 +17,10 @@ import kotlinx.coroutines.withContext
  *
  * Логика:
  * 1. Выполнить команду через CommandExecutor
- * 2. Если успех → IdleState
- * 3. Если ошибка → CommandErrorState
+ * 2. Ждём пока TTS закончит говорить
+ * 3. finish(StateResult.Next(IdleState))
+ *
+ * canCancel = false — кнопка игнорируется (команда уже отправлена)
  */
 class ExecutingCommandState(
     private val speechRecognizer: SpeechRecognizer,
@@ -29,20 +31,26 @@ class ExecutingCommandState(
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
     private val context: StateContext
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "ExecutingCommandState"
     }
 
-    override suspend fun execute(): State {
+    // Команда уже выполняется — отменять поздно
+    override val canCancel = false
+
+    override suspend fun execute() {
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
-            return CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command to execute")
+            finish(StateResult.Next(
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command to execute")
+            ))
+            return
         }
 
         Log.i(TAG, "Entering EXECUTING_COMMAND state: ${command.id}")
 
-        return try {
+        try {
             // ОТКЛЮЧИТЬ распознавание пока TTS говорит ответ (чтобы не было ЭХО)
             speechRecognizer.setMode(SpeechRecognizer.Mode.MUTED)
 
@@ -59,7 +67,9 @@ class ExecutingCommandState(
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
 
             // Успех → возвращаемся к ожиданию ключевого слова
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: CancellationException) {
             Log.d(TAG, "ExecutingCommandState cancelled")
@@ -68,23 +78,19 @@ class ExecutingCommandState(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error executing command: ${command.id}", e)
-            // Восстановить распознавание при ошибке
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            finish(StateResult.Next(
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in ExecutingCommandState → IdleState")
-
-        overlayManager.hideAnimation()
-        volumeManager?.restoreMedia()
-        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+    override suspend fun cancel() {
+        // Не вызывается т.к. canCancel = false
+        Log.w(TAG, "Cancel called but canCancel=false, ignoring")
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Already in ExecutingCommandState, ignoring")
         return this
     }

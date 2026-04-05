@@ -9,6 +9,10 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Состояние: Распознана команда
@@ -16,9 +20,9 @@ import kotlinx.coroutines.CancellationException
  * Логика:
  * 1. Распарсить текст через NLU
  * 2. Если команда распознана:
- *    - Если нужно подтверждение → ConfirmationState
- *    - Если нет → ExecutingCommandState
- * 3. Если не распознана → CommandErrorState
+ *    - Если нужно подтверждение → finish(StateResult.Next(ConfirmationState))
+ *    - Если нет → finish(StateResult.Next(ExecutingCommandState))
+ * 3. Если не распознана → finish(StateResult.Next(CommandErrorState))
  */
 class RecognizedCommandState(
     private val speechRecognizer: SpeechRecognizer,
@@ -29,20 +33,26 @@ class RecognizedCommandState(
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
     private val context: StateContext
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "RecognizedCommandState"
     }
 
-    override suspend fun execute(): State {
+    override val canCancel = true
+    private val isCancelling = AtomicBoolean(false)
+
+    override suspend fun execute() {
         val text = context.commandText ?: run {
             Log.e(TAG, "No command text in context")
-            return CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
+            finish(StateResult.Next(
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
+            ))
+            return
         }
 
         Log.i(TAG, "Processing command: '$text'")
 
-        return try {
+        try {
             // Парсим текст через NLU
             val recognizedCommand = nluEngine.parseCommand(text)
 
@@ -53,15 +63,21 @@ class RecognizedCommandState(
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
-                    return ConfirmationState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                    finish(StateResult.Next(
+                        ConfirmationState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                    ))
+                } else {
+                    // Выполняем команду без подтверждения
+                    Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
+                    finish(StateResult.Next(
+                        ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                    ))
                 }
-
-                // Выполняем команду без подтверждения
-                Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
-                return ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
             } else {
                 Log.w(TAG, "Unrecognized command: '$text'")
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
+                finish(StateResult.Next(
+                    CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
+                ))
             }
 
         } catch (e: CancellationException) {
@@ -70,21 +86,38 @@ class RecognizedCommandState(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing command", e)
-            CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            finish(StateResult.Next(
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in RecognizedCommandState → IdleState")
+    override suspend fun cancel() {
+        if (isCancelling.compareAndSet(false, true)) {
+            Log.i(TAG, "RecognizedCommandState cancelled (button pressed)")
 
-        overlayManager.hideAnimation()
-        volumeManager?.restoreMedia()
-        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            try {
+                context.soundEffectManager?.playCancelSound()
+                kotlinx.coroutines.delay(400)
 
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                val latch = CountDownLatch(1)
+                ttsEngine.speak("Отмена") { latch.countDown() }
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    latch.await(5, TimeUnit.SECONDS)
+                }
+            } finally {
+                isCancelling.set(false)
+            }
+
+            overlayManager.hideAnimation()
+            volumeManager?.restoreMedia()
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+            cancelled("RecognizedCommandState cancelled by user")
+        }
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Already in RecognizedCommandState, ignoring")
         return this
     }

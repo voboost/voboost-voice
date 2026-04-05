@@ -248,6 +248,14 @@ class VoboostVoiceService : Service() {
         // State Machine - управление состояниями
         val context = StateContext()
         context.soundEffectManager = soundEffectManager
+        context.speechRecognizer = speechRecognizer
+        context.overlayManager = overlayManager
+        context.volumeManager = volumeManager
+        context.ttsEngine = ttsEngine
+        context.configManager = configManager
+        context.nluEngine = nluEngine
+        context.commandExecutor = commandExecutor
+        
         val initialState = IdleState(
             speechRecognizer = speechRecognizer,
             overlayManager = overlayManager,
@@ -433,11 +441,8 @@ class VoboostVoiceService : Service() {
 
         serviceScope.launch {
             try {
-                // 🎵 Звук отмены
-                soundEffectManager.playCancelSound()
-
                 // State Machine сам обработает отмену в текущем State
-                stateMachine.cancel()
+                stateMachine.onButtonPressed()
 
                 Log.i(TAG, "✅ Recognition cancelled")
 

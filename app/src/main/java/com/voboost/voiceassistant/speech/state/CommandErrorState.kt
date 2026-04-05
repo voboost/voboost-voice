@@ -11,6 +11,12 @@ import com.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * Состояние: Ошибка выполнения команды
+ *
+ * Логика:
+ * 1. Восстановить распознавание
+ * 2. finish(StateResult.Next(IdleState))
+ *
+ * canCancel = false — уже переходит в IdleState
  */
 class CommandErrorState(
     private val speechRecognizer: SpeechRecognizer,
@@ -22,30 +28,37 @@ class CommandErrorState(
     private val commandExecutor: CommandExecutor,
     private val context: StateContext,
     private val error: String
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "CommandErrorState"
     }
 
-    override suspend fun execute(): State {
+    override val canCancel = false
+
+    override suspend fun execute() {
         Log.e(TAG, "Entering COMMAND_ERROR state: $error")
 
-        return try {
+        try {
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in CommandErrorState", e)
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in CommandErrorState → IdleState")
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+    override suspend fun cancel() {
+        // Не вызывается т.к. canCancel = false
+        Log.w(TAG, "Cancel called but canCancel=false, ignoring")
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Activate from CommandErrorState → ActivatedState")
         speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
         return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)

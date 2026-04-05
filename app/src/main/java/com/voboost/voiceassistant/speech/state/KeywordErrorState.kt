@@ -12,6 +12,8 @@ import kotlinx.coroutines.delay
 
 /**
  * Состояние: Ошибка распознавания ключевого слова
+ *
+ * canCancel = false — уже переходит в IdleState
  */
 class KeywordErrorState(
     private val speechRecognizer: SpeechRecognizer,
@@ -23,36 +25,40 @@ class KeywordErrorState(
     private val commandExecutor: CommandExecutor,
     private val context: StateContext,
     private val error: String
-) : State {
+) : BaseState() {
     companion object {
         private const val TAG = "KeywordErrorState"
     }
 
-    override suspend fun execute(): State {
+    override val canCancel = false
+
+    override suspend fun execute() {
         Log.e(TAG, "Entering KEYWORD_ERROR state: $error")
 
-        return try {
+        try {
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
 
             delay(1000)
 
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in KeywordErrorState", e)
-            IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            finish(StateResult.Next(
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+            ))
         }
     }
 
-    override suspend fun cancel(): State {
-        Log.i(TAG, "Cancel in KeywordErrorState → IdleState")
-        return IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+    override suspend fun cancel() {
+        Log.w(TAG, "Cancel called but canCancel=false, ignoring")
     }
 
-    override suspend fun activate(): State {
+    override suspend fun activate(): State? {
         Log.i(TAG, "Activate from KeywordErrorState → ActivatedState")
-        // Кнопка на руле должна активировать помощник даже из состояния ошибки
         speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
         return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }

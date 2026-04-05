@@ -4,22 +4,18 @@ import android.util.Log
 import kotlinx.coroutines.*
 
 /**
- * State Machine для голосового помощника
+ * State Machine для голосового помощника (Event-driven версия)
  *
- * Запускает цикл выполнения состояний:
- * ```
- * var state = initialState
- * while (true) {
- *     state = state.execute()  // ← Цепочка состояний
- * }
- * ```
+ * Принцип работы:
+ * 1. StateMachine подписывается на completionCallback и cancellationCallback
+ * 2. Состояние само вызывает finish() или cancelled() когда готово
+ * 3. StateMachine переключает на следующее состояние
  *
  * Преимущества:
- * - ✅ Автоматический цикл выполнения
- * - ✅ Явные переходы между состояниями
- * - ✅ Легко добавить новые состояния
- * - ✅ Каждое состояние тестируется отдельно
- * - ✅ Поддержка внешних прерываний (activate/cancel)
+ * - ✅ Состояния сами решают когда завершиться
+ * - ✅ Нет гонок с currentState
+ * - ✅ Чистое разделение ответственности
+ * - ✅ canCancel явно декларирует можно ли отменить
  */
 class StateMachine(
     private val initialState: State,
@@ -30,57 +26,26 @@ class StateMachine(
         private const val TAG = "StateMachine"
     }
 
-    private var job: Job? = null
+    private var mainJob: Job? = null
 
     @Volatile
     private var currentState: State = initialState
 
-    // Job текущего состояния (для отмены при внешних прерываниях)
     @Volatile
-    private var stateJob: Job? = null
+    private var executionJob: Job? = null
 
     /**
      * Запустить State Machine
      */
     fun start() {
-        if (job?.isActive == true) {
+        if (mainJob?.isActive == true) {
             Log.w(TAG, "Already running, ignoring")
             return
         }
 
-        job = scope.launch {
-            try {
-                Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
-
-                var state = currentState
-                while (isActive) {
-                    // Создаём дочерний job для текущего состояния
-                    stateJob = launch {
-                        try {
-                            state = state.execute()  // ← Цепочка!
-                            Log.d(TAG, "State transition: ${currentState::class.simpleName} → ${state::class.simpleName}")
-                            currentState = state
-                        } catch (e: CancellationException) {
-                            // Нормальная ситуация при activate/cancel — состояние уже обновлено через activate()/cancel()
-                            Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
-                            // currentState уже обновлён через activate()/cancel(), продолжаем цикл
-                        } catch (e: Exception) {
-                            Log.e(TAG, "State execution error", e)
-                            currentState = state  // Остаёмся на текущем состоянии
-                        }
-                    }
-
-                    // Ждём завершения состояния
-                    stateJob?.join()
-
-                    // Если job был отменён (из activate/cancel) — продолжаем цикл с новым состоянием
-                    state = currentState
-                }
-            } catch (e: CancellationException) {
-                Log.i(TAG, "State Machine cancelled")
-            } catch (e: Exception) {
-                Log.e(TAG, "State Machine error", e)
-            }
+        mainJob = scope.launch {
+            Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
+            transitionTo(currentState)
         }
     }
 
@@ -88,8 +53,10 @@ class StateMachine(
      * Остановить State Machine
      */
     fun stop() {
-        job?.cancel()
-        job = null
+        mainJob?.cancel()
+        executionJob?.cancel()
+        mainJob = null
+        executionJob = null
     }
 
     /**
@@ -98,44 +65,107 @@ class StateMachine(
     fun getCurrentState(): State = currentState
 
     /**
-     * Принудительно перейти к состоянию
+     * Перейти к новому состоянию.
+     * Подписывается на колбэки и запускает execute() в фоне.
      */
-    fun transitionTo(state: State) {
+    private fun transitionTo(state: State) {
+        // Отменяем предыдущее выполнение
+        executionJob?.cancel()
+        executionJob = null
+
         currentState = state
-        Log.i(TAG, "Forced transition to: ${state::class.simpleName}")
-    }
+        Log.d(TAG, "Transition to: ${state::class.simpleName}")
 
-    /**
-     * Отменить текущее состояние
-     */
-    suspend fun cancel() {
-        Log.i(TAG, "Cancel requested in: ${currentState::class.simpleName}")
+        // Подписываемся на колбэки
+        state.setCompletionCallback { result ->
+            when (result) {
+                is StateResult.Next -> {
+                    Log.d(TAG, "Completion → ${result.state::class.simpleName}")
+                    transitionTo(result.state)
+                }
+                is StateResult.Cancel -> {
+                    Log.d(TAG, "Completion with Cancel → IdleState")
+                    transitionTo(createIdleState())
+                }
+            }
+        }
 
-        // Отменяем текущий job выполнения состояния
-        stateJob?.cancel()
-        stateJob = null
+        state.setCancellationCallback { reason ->
+            Log.d(TAG, "Cancellation: $reason → IdleState")
+            transitionTo(createIdleState())
+        }
 
-        val nextState = currentState.cancel()
-        if (nextState !== currentState) {
-            currentState = nextState
-            Log.i(TAG, "Cancel transition to: ${nextState::class.simpleName}")
+        // Запускаем execute() в фоне
+        executionJob = scope.launch {
+            try {
+                state.execute()
+            } catch (e: CancellationException) {
+                Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
+            } catch (e: Exception) {
+                Log.e(TAG, "State execution error", e)
+                transitionTo(createIdleState())
+            }
         }
     }
 
     /**
-     * Активировать помощник
+     * Обработать нажатие кнопки.
+     * Если состояние можно отменить → вызывает cancel().
+     */
+    suspend fun onButtonPressed() {
+        val current = currentState
+
+        if (!current.canCancel) {
+            Log.d(TAG, "Button ignored in ${current::class.simpleName}")
+            return
+        }
+
+        if (context.isCancelling.get()) {
+            Log.d(TAG, "Cancellation already in progress, ignoring")
+            return
+        }
+
+        Log.i(TAG, "Button pressed → cancelling ${current::class.simpleName}")
+
+        // Отменяем текущее выполнение
+        executionJob?.cancel()
+        executionJob = null
+
+        // Вызываем cancel() состояния
+        current.cancel()
+    }
+
+    /**
+     * Активировать помощник (кнопка или keyword).
+     * Если можно отменить → onButtonPressed(), иначе активирует.
      */
     suspend fun activate() {
-        Log.i(TAG, "Activate requested from: ${currentState::class.simpleName}")
+        val current = currentState
 
-        // Отменяем текущий job выполнения состояния (это прервёт blocked first{})
-        stateJob?.cancel()
-        stateJob = null
-
-        val nextState = currentState.activate()
-        if (nextState !== currentState) {
-            currentState = nextState
-            Log.i(TAG, "Activate transition to: ${nextState::class.simpleName}")
+        if (current.canCancel) {
+            onButtonPressed()
+        } else {
+            Log.i(TAG, "Activate from non-cancellable state: ${current::class.simpleName}")
+            val nextState = current.activate()
+            if (nextState != null && nextState !== current) {
+                transitionTo(nextState)
+            }
         }
+    }
+
+    /**
+     * Создать IdleState с актуальным контекстом.
+     */
+    private fun createIdleState(): State {
+        return IdleState(
+            speechRecognizer = context.speechRecognizer!!,
+            overlayManager = context.overlayManager!!,
+            volumeManager = context.volumeManager,
+            ttsEngine = context.ttsEngine!!,
+            configManager = context.configManager!!,
+            nluEngine = context.nluEngine!!,
+            commandExecutor = context.commandExecutor!!,
+            context = context
+        )
     }
 }
