@@ -262,9 +262,20 @@ class VolumeManager(private val context: Context) {
         // Попытка через Volume сервис
         if (volumeService != null) {
             return try {
-                previousMediaVolume = -1 // TODO: запросить текущую громкость
+                // Сначала запрашиваем текущую громкость через Volume сервис
+                // Используем AudioTrack.getCurrentVolume или запоминаем из предыдущих операций
+                // Т.к. Volume сервис не даёт getCurrentVolume, используем fallback
+                if (previousMediaVolume == -1) {
+                    // Первая попытка duck — пробуем получить через AudioManager
+                    try {
+                        val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        previousMediaVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                    } catch (e: Exception) {
+                        previousMediaVolume = 5 // Дефолтное значение
+                    }
+                }
                 volumeService?.sendSetMDVolume(STREAM_MEDIA, targetVolume)
-                Log.i(TAG, "✅ Media duck to volume: $targetVolume (via Volume service)")
+                Log.i(TAG, "✅ Media duck to volume: $targetVolume (was $previousMediaVolume, via Volume service)")
                 true
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to duck media via Volume service", e)

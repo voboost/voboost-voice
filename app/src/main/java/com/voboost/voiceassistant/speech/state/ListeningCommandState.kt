@@ -114,6 +114,10 @@ class ListeningCommandState(
             Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
 
             try {
+                // Остановить TTS если что-то говорит
+                ttsEngine.stop()
+                kotlinx.coroutines.delay(200)
+
                 // Сначала воспроизводим звук "пик"
                 context.soundEffectManager?.playCancelSound()
 

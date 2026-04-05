@@ -97,6 +97,9 @@ class RecognizedCommandState(
             Log.i(TAG, "RecognizedCommandState cancelled (button pressed)")
 
             try {
+                ttsEngine.stop()
+                kotlinx.coroutines.delay(200)
+
                 context.soundEffectManager?.playCancelSound()
                 kotlinx.coroutines.delay(400)
 

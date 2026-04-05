@@ -8,6 +8,9 @@ import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Состояние: Ошибка выполнения команды
@@ -39,6 +42,14 @@ class CommandErrorState(
         Log.e(TAG, "Entering COMMAND_ERROR state: $error")
 
         try {
+            // Сказать пользователю что команда не распознана
+            val notUnderstoodPhrase = configManager.getConfig().phrases.notUnderstood ?: "Не поняла команду"
+            val ttsLatch = CountDownLatch(1)
+            ttsEngine.speak(notUnderstoodPhrase) { ttsLatch.countDown() }
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                ttsLatch.await(5, TimeUnit.SECONDS)
+            }
+
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(
                 IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
