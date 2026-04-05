@@ -100,7 +100,7 @@ class RecognizedCommandState(
                 ttsEngine.stop()
                 kotlinx.coroutines.delay(200)
 
-                context.soundEffectManager?.playCancelSound()
+                context.soundEffectManager?.playEndSound()
                 kotlinx.coroutines.delay(400)
 
                 val latch = CountDownLatch(1)

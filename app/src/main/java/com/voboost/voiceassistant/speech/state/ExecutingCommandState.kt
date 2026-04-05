@@ -66,6 +66,11 @@ class ExecutingCommandState(
             // ВКЛЮЧИТЬ распознавание ключевых слов (TTS закончил)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
 
+            // Небольшая задержка перед возвратом громкости, чтобы последняя фраза не съедалась
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                delay(500)
+            }
+
             // Успех → возвращаемся к ожиданию ключевого слова
             finish(StateResult.Next(
                 IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)

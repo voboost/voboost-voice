@@ -43,6 +43,9 @@ class ActivatedState(
         Log.i(TAG, "Entering ACTIVATED state")
 
         try {
+            // Звук начала распознавания
+            context.soundEffectManager?.playStartSound()
+
             // Показать анимацию и приглушить музыку
             overlayManager.showAnimation()
             volumeManager?.duckMedia(targetVolume = 1)
@@ -99,8 +102,8 @@ class ActivatedState(
                 // Небольшая задержка чтобы TTS успел остановиться
                 kotlinx.coroutines.delay(200)
                 
-                // Звук отмены
-                context.soundEffectManager?.playCancelSound()
+                // Одинаковый звук отмены с TimeoutState
+                context.soundEffectManager?.playEndSound()
                 
                 // Даём звуку закончиться
                 kotlinx.coroutines.delay(400)

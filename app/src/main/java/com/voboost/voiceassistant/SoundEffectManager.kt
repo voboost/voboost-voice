@@ -43,12 +43,19 @@ class SoundEffectManager(private val context: Context) {
 
     init {
         // Инициализация ToneGenerator
-        // STREAM_MUSIC - музыка/медиа (наиболее совместимый)
+        // STREAM_RING - звонок (высокий приоритет, воспроизводится даже когда TTS активен)
+        // STREAM_MUSIC заглушается когда TTS говорит, поэтому используем STREAM_RING
         try {
-            toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
-            Log.d(TAG, "ToneGenerator initialized")
+            toneGenerator = ToneGenerator(AudioManager.STREAM_RING, 80)
+            Log.d(TAG, "ToneGenerator initialized with STREAM_RING")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create ToneGenerator", e)
+            Log.e(TAG, "Failed to create ToneGenerator with STREAM_RING, trying STREAM_ALARM", e)
+            try {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 80)
+                Log.d(TAG, "ToneGenerator initialized with STREAM_ALARM")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Failed to create ToneGenerator with STREAM_ALARM", e2)
+            }
         }
     }
 
@@ -57,11 +64,6 @@ class SoundEffectManager(private val context: Context) {
      */
     fun playStartSound() {
         Log.d(TAG, "Playing start recognition sound")
-
-        // Запрос аудио фокуса
-        requestAudioFocus()
-
-        // Воспроизводим звук
         playTone(SOUND_START)
     }
 
@@ -70,14 +72,7 @@ class SoundEffectManager(private val context: Context) {
      */
     fun playEndSound() {
         Log.d(TAG, "Playing end recognition sound")
-
-        // Воспроизводим звук
         playTone(SOUND_END)
-
-        // Освобождаем аудио фокус с задержкой
-        handler.postDelayed({
-            abandonAudioFocus()
-        }, 500)
     }
 
     /**
@@ -85,12 +80,7 @@ class SoundEffectManager(private val context: Context) {
      */
     fun playCancelSound() {
         Log.d(TAG, "Playing cancel sound")
-
-        // Воспроизводим звук
         playTone(SOUND_CANCEL)
-
-        // Освобождаем аудио фокус
-        abandonAudioFocus()
     }
 
     /**
@@ -127,133 +117,12 @@ class SoundEffectManager(private val context: Context) {
     }
 
     /**
-     * Запросить аудио фокус
-     */
-//    private fun requestAudioFocus(): Boolean {
-//        if (hasAudioFocus) {
-//            Log.d(TAG, "Already has audio focus")
-//            return true
-//        }
-//
-//        return try {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                val attributes = AudioAttributes.Builder()
-//                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-//                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-//                    .build()
-//
-//                audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-//                    .setAudioAttributes(attributes)
-//                    .build()
-//
-//                val result = audioManager.requestAudioFocus(audioFocusRequest!!)
-//                hasAudioFocus = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-//
-//            } else {
-//                val result = audioManager.requestAudioFocus(
-//                    null,
-//                    AudioManager.STREAM_MUSIC,
-//                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-//                )
-//                hasAudioFocus = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-//            }
-//
-//            Log.d(TAG, "Audio focus requested: $hasAudioFocus")
-//            hasAudioFocus
-//
-//        } catch (e: Exception) {
-//            Log.e(TAG, "Failed to request audio focus", e)
-//            false
-//        }
-//    }
-
-    private fun requestAudioFocus(): Boolean {
-        if (hasAudioFocus) {
-            Log.d(TAG, "Already has audio focus")
-            return true
-        }
-
-        return try {
-            hasAudioFocus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val attributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-
-                audioFocusRequest =
-                    AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                        .setAudioAttributes(attributes)
-                        .build()
-
-                val result = audioManager.requestAudioFocus(audioFocusRequest!!)
-                result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-
-            } else {
-                @Suppress("DEPRECATION")
-                val result = audioManager.requestAudioFocus(
-                    null,
-                    AudioManager.STREAM_MUSIC,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-                )
-                result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-            }
-
-            Log.d(TAG, "Audio focus requested: $hasAudioFocus")
-            hasAudioFocus
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to request audio focus", e)
-            false
-        }
-    }
-
-    /**
-     * Освободить аудио фокус
-     */
-//    private fun abandonAudioFocus() {
-//        if (!hasAudioFocus) {
-//            return
-//        }
-//
-//        try {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                audioFocusRequest?.let {
-//                    audioManager.abandonAudioFocusRequest(it)
-//                }
-//            } else {
-//                audioManager.abandonAudioFocus(null)
-//            }
-//
-//            hasAudioFocus = false
-//            Log.d(TAG, "Audio focus abandoned")
-//
-//        } catch (e: Exception) {
-//            Log.e(TAG, "Failed to abandon audio focus", e)
-//        }
-//    }
-
-    private fun abandonAudioFocus() {
-        if (!hasAudioFocus) return
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager.abandonAudioFocus(null)
-        }
-
-        hasAudioFocus = false
-        Log.d(TAG, "Audio focus abandoned")
-    }
-
-    /**
      * Очистить ресурсы
      */
     fun release() {
         try {
             toneGenerator?.release()
             toneGenerator = null
-            abandonAudioFocus()
             handler.removeCallbacksAndMessages(null)
             Log.d(TAG, "SoundEffectManager released")
         } catch (e: Exception) {

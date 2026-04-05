@@ -118,8 +118,8 @@ class ListeningCommandState(
                 ttsEngine.stop()
                 kotlinx.coroutines.delay(200)
 
-                // Сначала воспроизводим звук "пик"
-                context.soundEffectManager?.playCancelSound()
+                // Одинаковый звук отмены с TimeoutState
+                context.soundEffectManager?.playEndSound()
 
                 // Ждём 400ms чтобы звук "пик" успел закончиться перед TTS
                 kotlinx.coroutines.delay(400)
