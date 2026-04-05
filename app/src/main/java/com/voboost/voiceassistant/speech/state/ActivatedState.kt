@@ -3,7 +3,7 @@ package com.voboost.voiceassistant.speech.state
 import android.util.Log
 import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
@@ -26,21 +26,21 @@ class ActivatedState(
     private val speechRecognizer: SpeechRecognizer,
     private val overlayManager: OverlayManager,
     private val volumeManager: VolumeManager?,
-    private val ttsEngine: SpeechSynthesis,
+    private val ttsEngine: ISpeechSynthesis,
     private val configManager: ConfigManager,
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
     private val context: StateContext
 ) : BaseState() {
     companion object {
-        private const val TAG = "ActivatedState"
+        const val TAG = "ActivatedState"
     }
 
     override val canCancel = true
     private val isCancelling = AtomicBoolean(false)
 
     override suspend fun execute() {
-        Log.i(TAG, "Entering ACTIVATED state")
+        Log.i(TAG, "Entering ACTIVATED IState")
 
         try {
             // Звук начала распознавания
@@ -128,7 +128,7 @@ class ActivatedState(
         }
     }
 
-    override suspend fun activate(): State? {
+    override suspend fun activate(): IState? {
         Log.i(TAG, "Already in ActivatedState, ignoring")
         return this
     }

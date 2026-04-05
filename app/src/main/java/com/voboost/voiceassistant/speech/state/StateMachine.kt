@@ -4,7 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.*
 
 /**
- * State Machine для голосового помощника (Event-driven версия)
+ * IState Machine для голосового помощника (Event-driven версия)
  *
  * Принцип работы:
  * 1. StateMachine подписывается на completionCallback и cancellationCallback
@@ -18,24 +18,24 @@ import kotlinx.coroutines.*
  * - ✅ canCancel явно декларирует можно ли отменить
  */
 class StateMachine(
-    private val initialState: State,
+    private val initialState: IState,
     private val scope: CoroutineScope,
     val context: StateContext = StateContext()
 ) {
     companion object {
-        private const val TAG = "StateMachine"
+        const val TAG = "StateMachine"
     }
 
     private var mainJob: Job? = null
 
     @Volatile
-    private var currentState: State = initialState
+    private var currentState: IState = initialState
 
     @Volatile
     private var executionJob: Job? = null
 
     /**
-     * Запустить State Machine
+     * Запустить IState Machine
      */
     fun start() {
         if (mainJob?.isActive == true) {
@@ -44,13 +44,13 @@ class StateMachine(
         }
 
         mainJob = scope.launch {
-            Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
+            Log.i(TAG, "Starting IState Machine from: ${currentState::class.simpleName}")
             transitionTo(currentState)
         }
     }
 
     /**
-     * Остановить State Machine
+     * Остановить IState Machine
      */
     fun stop() {
         mainJob?.cancel()
@@ -62,26 +62,26 @@ class StateMachine(
     /**
      * Текущее состояние
      */
-    fun getCurrentState(): State = currentState
+    fun getCurrentState(): IState = currentState
 
     /**
      * Перейти к новому состоянию.
      * Подписывается на колбэки и запускает execute() в фоне.
      */
-    private fun transitionTo(state: State) {
+    private fun transitionTo(IState: IState) {
         // Отменяем предыдущее выполнение
         executionJob?.cancel()
         executionJob = null
 
-        currentState = state
-        Log.d(TAG, "Transition to: ${state::class.simpleName}")
+        currentState = IState
+        Log.d(TAG, "Transition to: ${IState::class.simpleName}")
 
         // Подписываемся на колбэки
-        state.setCompletionCallback { result ->
+        IState.setCompletionCallback { result ->
             when (result) {
                 is StateResult.Next -> {
-                    Log.d(TAG, "Completion → ${result.state::class.simpleName}")
-                    transitionTo(result.state)
+                    Log.d(TAG, "Completion → ${result.IState::class.simpleName}")
+                    transitionTo(result.IState)
                 }
                 is StateResult.Cancel -> {
                     Log.d(TAG, "Completion with Cancel → IdleState")
@@ -90,7 +90,7 @@ class StateMachine(
             }
         }
 
-        state.setCancellationCallback { reason ->
+        IState.setCancellationCallback { reason ->
             Log.d(TAG, "Cancellation: $reason → IdleState")
             transitionTo(createIdleState())
         }
@@ -98,11 +98,11 @@ class StateMachine(
         // Запускаем execute() в фоне
         executionJob = scope.launch {
             try {
-                state.execute()
+                IState.execute()
             } catch (e: CancellationException) {
-                Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
+                Log.d(TAG, "IState execution cancelled (normal during activation/cancellation)")
             } catch (e: Exception) {
-                Log.e(TAG, "State execution error", e)
+                Log.e(TAG, "IState execution error", e)
                 transitionTo(createIdleState())
             }
         }
@@ -145,7 +145,7 @@ class StateMachine(
         if (current.canCancel) {
             onButtonPressed()
         } else {
-            Log.i(TAG, "Activate from non-cancellable state: ${current::class.simpleName}")
+            Log.i(TAG, "Activate from non-cancellable IState: ${current::class.simpleName}")
             val nextState = current.activate()
             if (nextState != null && nextState !== current) {
                 transitionTo(nextState)
@@ -156,7 +156,7 @@ class StateMachine(
     /**
      * Создать IdleState с актуальным контекстом.
      */
-    private fun createIdleState(): State {
+    private fun createIdleState(): IState {
         return IdleState(
             speechRecognizer = context.speechRecognizer!!,
             overlayManager = context.overlayManager!!,

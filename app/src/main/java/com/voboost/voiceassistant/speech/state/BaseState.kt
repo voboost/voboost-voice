@@ -5,7 +5,7 @@ package com.voboost.voiceassistant.speech.state
  * StateMachine подписывается на completionCallback и cancellationCallback.
  * Состояние вызывает finish() или cancelled() когда готово перейти дальше.
  */
-abstract class BaseState : State {
+abstract class BaseState : IState {
     private var completionCallback: ((StateResult) -> Unit)? = null
     private var cancellationCallback: ((String) -> Unit)? = null
 

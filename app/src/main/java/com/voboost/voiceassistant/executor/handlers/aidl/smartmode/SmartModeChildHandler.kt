@@ -1,0 +1,16 @@
+package com.voboost.voiceassistant.executor.handlers.aidl.smartmode
+
+import com.voboost.voiceassistant.canbus.CanBusServiceManager
+
+/**
+ * Детский режим
+ *
+ * config.json:
+ *   id: "smart_mode_child", classify: 22, command: 0
+ *   params: mode=22
+ *
+ * CAN-шина: setVehicleSceneMode(22)
+ */
+class SmartModeChildHandler(
+    canBusManager: CanBusServiceManager
+) : AbstractSmartModeHandler("smart_mode_child", canBusManager, modeId = 22)

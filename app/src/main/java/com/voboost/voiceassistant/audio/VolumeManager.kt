@@ -27,7 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 class VolumeManager(private val context: Context) {
 
     companion object {
-        private const val TAG = "VolumeManager"
+        const val TAG = "VolumeManager"
         private const val INTENT_VOLUME = "com.qinggan.qinglink.hu.VOLUME"
         private const val QGSPEECH_PACKAGE = "com.qinggan.sttservice"
 

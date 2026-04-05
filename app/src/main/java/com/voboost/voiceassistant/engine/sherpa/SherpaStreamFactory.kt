@@ -1,20 +1,20 @@
 package com.voboost.voiceassistant.engine.sherpa
 
-import com.voboost.voiceassistant.speech.RecognitionEngine
-import com.voboost.voiceassistant.speech.StreamFactory
+import com.voboost.voiceassistant.speech.IRecognitionEngine
+import com.voboost.voiceassistant.speech.IStreamFactory
 
 /**
  * Фабрика потоков распознавания Sherpa-ONNX
- * Реализует универсальный интерфейс StreamFactory
+ * Реализует универсальный интерфейс IStreamFactory
  */
-class SherpaStreamFactory : StreamFactory {
+class SherpaStreamFactory : IStreamFactory {
     
     /**
      * Создать поток распознавания Sherpa-ONNX
      * @param model Путь к директории модели (String)
-     * @return SherpaStream который реализует RecognitionEngine
+     * @return SherpaStream который реализует IRecognitionEngine
      */
-    override fun create(model: Any): RecognitionEngine {
+    override fun create(model: Any): IRecognitionEngine {
         if (model !is String) {
             throw IllegalArgumentException("Expected model path (String), got ${model::class.simpleName}")
         }

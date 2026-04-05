@@ -23,8 +23,8 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
 
     private val mCanBusListener = object : CanBusListener() {
 
-        override fun onVehicleStateChanged(vehicle: VehicleState, state: Int) {
-            this@TSRSpeedLimitHandler.handleVehicleStateChanged(vehicle, state)
+        override fun onVehicleStateChanged(vehicle: VehicleState, IState: Int) {
+            this@TSRSpeedLimitHandler.handleVehicleStateChanged(vehicle, IState)
         }
 
         override fun onVehicleSpeedChanged(speed: Int) {
@@ -32,12 +32,12 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
         }
     }
 
-    private fun handleVehicleStateChanged(vehicle: VehicleState, state: Int) {
-        //Log.w(TAG, "⚠️ VehicleState: ${vehicle.toString()} (state=$state)")
+    private fun handleVehicleStateChanged(vehicle: VehicleState, IState: Int) {
+        //Log.w(TAG, "⚠️ VehicleState: ${vehicle.toString()} (IState=$IState)")
         when (vehicle) { // Факт превышения скорости
             VehicleState.IPK_OVER_SPEED_WARNING -> {
-                val isOverSpeed = (state == 1)
-                Log.w(TAG, "⚠️ IPK_OVER_SPEED_WARNING: $isOverSpeed (state=$state)")
+                val isOverSpeed = (IState == 1)
+                Log.w(TAG, "⚠️ IPK_OVER_SPEED_WARNING: $isOverSpeed (IState=$IState)")
                 if (isOverSpeed && !isWarningPlayed) {
                     isWarningPlayed = true
                     ttsCallback.playWarning("Превышение скорости")
@@ -49,12 +49,12 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
 
             // Значение превышения (на сколько км/ч превысили)
             VehicleState.IPK_OVER_SPEED_VALUE -> {
-                Log.w(TAG, "📊 IPK_OVER_SPEED_VALUE: $state км/ч")
+                Log.w(TAG, "📊 IPK_OVER_SPEED_VALUE: $IState км/ч")
             }
 
             // Ограничение скорости от навигации
             VehicleState.NAVI_SPEED_LIMIT -> {
-                val limit = state
+                val limit = IState
                 Log.d(TAG, "🚦 NAVI_SPEED_LIMIT: $limit км/ч")
                 currentSpeedLimit = limit
                 checkSpeedLimit()
@@ -62,12 +62,12 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
 
             // Тип ограничения от навигации
             VehicleState.NAVI_SPEED_LIMIT_TYPE -> {
-                Log.d(TAG, "🚦 NAVI_SPEED_LIMIT_TYPE: $state")
+                Log.d(TAG, "🚦 NAVI_SPEED_LIMIT_TYPE: $IState")
             }
 
             // Ограничение от камеры TSR (Traffic Sign Recognition)
             VehicleState.TSR_SPEED_LIMIT -> {
-                val limit = state
+                val limit = IState
                 Log.d(TAG, "🚸 TSR_SPEED_LIMIT: $limit км/ч")
                 currentSpeedLimit = limit
 
@@ -78,13 +78,13 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
 
             // Единицы измерения ограничения
             VehicleState.TSR_SPEED_LIMIT_UNIT -> {
-                Log.d(TAG, "🚸 TSR_SPEED_LIMIT_UNIT: $state") // 0 = км/ч, 1 = mph
+                Log.d(TAG, "🚸 TSR_SPEED_LIMIT_UNIT: $IState") // 0 = км/ч, 1 = mph
             }
 
             // Переключатель предупреждения ISA (Intelligent Speed Assistance)
             VehicleState.ISA_ISLC_OVER_SPEED_WARNING_SWITCH -> {
-                Log.d(TAG, "🔧 ISA_OVER_SPEED_WARNING_SWITCH: $state")
-                isaWarningEnabled = (state == 1)
+                Log.d(TAG, "🔧 ISA_OVER_SPEED_WARNING_SWITCH: $IState")
+                isaWarningEnabled = (IState == 1)
             }
 
             // Остальные события игнорируем
@@ -159,7 +159,7 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
     fun isISAWarningEnabled(): Boolean = isaWarningEnabled
 
     companion object {
-        private const val TAG = "TSRSpeedLimitHandler"
+        const val TAG = "TSRSpeedLimitHandler"
     }
 }
 

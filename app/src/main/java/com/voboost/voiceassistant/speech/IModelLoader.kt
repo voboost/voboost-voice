@@ -4,7 +4,7 @@ package com.voboost.voiceassistant.speech
  * Универсальный интерфейс загрузчика моделей
  * Позволяет использовать любой движок (Vosk, Sherpa, и т.д.)
  */
-interface ModelLoader {
+interface IModelLoader {
     /**
      * Загрузить модель из указанного пути
      * @param modelPath Путь к директории модели

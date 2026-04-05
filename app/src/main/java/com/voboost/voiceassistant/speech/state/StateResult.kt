@@ -8,7 +8,7 @@ sealed class StateResult {
     /**
      * Нормальное завершение → переход к следующему состоянию
      */
-    data class Next(val state: State) : StateResult()
+    data class Next(val IState: IState) : StateResult()
 
     /**
      * Отмена пользователем → всегда возврат в IdleState

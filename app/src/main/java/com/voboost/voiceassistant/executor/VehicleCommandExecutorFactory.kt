@@ -3,90 +3,167 @@ package com.voboost.voiceassistant.executor
 import android.content.Context
 import android.util.Log
 import com.voboost.voiceassistant.canbus.CanBusServiceManager
+import com.voboost.voiceassistant.executor.handlers.ICommandHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerCloseHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerOpenHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerSetTempHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportCloseHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportOpenHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.phone.PhoneCallContactHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.phone.PhoneCallNumberHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.scuttle.FuelTankOpenHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeChildHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeLeisureHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeRomanticHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.window.WindowCloseAllHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.window.WindowCloseDriverHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.window.WindowOpenAllHandler
+import com.voboost.voiceassistant.executor.handlers.aidl.window.WindowOpenDriverHandler
+import com.voboost.voiceassistant.executor.handlers.intent.phone.PhoneCallContactIntentHandler
+import com.voboost.voiceassistant.executor.handlers.intent.phone.PhoneCallNumberIntentHandler
+import com.voboost.voiceassistant.executor.handlers.shell.airconditioner.AirConditionerCloseShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.airconditioner.AirConditionerOpenShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.airconditioner.AirConditionerSetTempShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.chargport.ChargportCloseShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.chargport.ChargportOpenShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.scuttle.FuelTankOpenShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.smartmode.SmartModeChildShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.smartmode.SmartModeLeisureShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.smartmode.SmartModeRomanticShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.window.WindowCloseAllShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.window.WindowCloseDriverShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.window.WindowOpenAllShellHandler
+import com.voboost.voiceassistant.executor.handlers.shell.window.WindowOpenDriverShellHandler
 
 /**
  * Фабрика для создания реализаций VehicleCommandExecutor
  *
- * Позволяет легко переключаться между способами выполнения команд:
- * - HYBRID - автоматический выбор (телефон=Intent, остальное=AIDL) ← РЕКОМЕНДУЕМЫЙ
- * - Intent (Broadcast) - стандартный способ через системный сервис
- * - Shell (CAN) - прямой вызов через shell-команды (требует привилегий)
- * - AIDL - прямой вызов CanBusService
- * - Auto - попытка Intent, при неудаче Shell
+ * Все реализации используют один интерфейс executeByCommandId()
+ * Разница только в наборе handlers (AIDL, Intent, Shell)
  */
 object VehicleCommandExecutorFactory {
 
-    private const val TAG = "VehicleCommandFactory"
+    const val TAG = "VehicleCommandFactory"
 
     enum class ExecutionMode {
-        HYBRID,      // Телефон=Intent, остальное=AIDL (рекомендуется)
-        INTENT,      // Только Broadcast Intent
-        SHELL,       // Только Shell CAN
-        AIDL,        // Только AIDL CanBusService
-        AUTO         // Intent с fallback на Shell
+        AIDL,        // Все 15 команд через AIDL CanBusService (рекомендуется)
+        INTENT,      // Телефон через Intent, остальное через AIDL
+        SHELL        // Все команды через Shell (требует root/привилегий)
     }
 
     /**
      * Создать реализацию VehicleCommandExecutor
-     *
-     * @param context Context приложения
-     * @param canBusManager Менеджер CanBusService (для AIDL режимов)
-     * @param mode Режим выполнения команд
-     * @return Реализация VehicleCommandExecutor
      */
     fun create(
         context: Context,
-        canBusManager: CanBusServiceManager,
-        mode: ExecutionMode = ExecutionMode.HYBRID
-    ): VehicleCommandExecutor {
+        mode: ExecutionMode = ExecutionMode.AIDL
+    ): IVehicleCommandExecutor {
         return when (mode) {
-            ExecutionMode.HYBRID -> {
-                Log.i(TAG, "Creating HybridVehicleCommandExecutor (RECOMMENDED)")
-                HybridVehicleCommandExecutor(context, canBusManager)
-            }
-            ExecutionMode.INTENT -> {
-                Log.i(TAG, "Creating IntentVehicleCommandExecutor")
-                IntentVehicleCommandExecutor(context)
-            }
-            ExecutionMode.SHELL -> {
-                Log.i(TAG, "Creating ShellVehicleCommandExecutor")
-                ShellVehicleCommandExecutor()
-            }
-            ExecutionMode.AIDL -> {
-                Log.i(TAG, "Creating AIDLVehicleCommandExecutor")
-                AIDLVehicleCommandExecutor(canBusManager)
-            }
-            ExecutionMode.AUTO -> {
-                Log.i(TAG, "Creating AutoVehicleCommandExecutor (Intent with Shell fallback)")
-                AutoVehicleCommandExecutor(context)
-            }
+            ExecutionMode.AIDL -> createAidl(context)
+            ExecutionMode.INTENT -> createHybridIntent(context)
+            ExecutionMode.SHELL -> createShell()
         }
     }
 
     /**
-     * Создать из строкового параметра (например, из config)
-     *
-     * @param context Context приложения
-     * @param canBusManager Менеджер CanBusService (для AIDL режимов)
-     * @param modeString Строка режима: "hybrid", "intent", "shell", "aidl", "auto"
-     * @return Реализация VehicleCommandExecutor
+     * AIDL — все 15 команд через CanBusService
+     */
+    fun createAidl(context: Context): IVehicleCommandExecutor {
+        Log.i(TAG, "Creating AIDLVehicleCommandExecutor (RECOMMENDED)")
+
+        val canBusManager = CanBusServiceManager(context)
+
+        val handlers: Map<String, ICommandHandler> = mapOf(
+            "window_open" to WindowOpenDriverHandler(canBusManager),
+            "window_close" to WindowCloseDriverHandler(canBusManager),
+            "window_all_open" to WindowOpenAllHandler(canBusManager),
+            "window_all_close" to WindowCloseAllHandler(canBusManager),
+            "charge_port_open" to ChargportOpenHandler(canBusManager),
+            "charge_port_close" to ChargportCloseHandler(canBusManager),
+            "fuel_tank_open" to FuelTankOpenHandler(canBusManager),
+            "smart_mode_leisure" to SmartModeLeisureHandler(canBusManager),
+            "smart_mode_child" to SmartModeChildHandler(canBusManager),
+            "smart_mode_romantic" to SmartModeRomanticHandler(canBusManager),
+            "ac_open" to AirConditionerOpenHandler(canBusManager),
+            "ac_close" to AirConditionerCloseHandler(canBusManager),
+            "ac_set_temp" to AirConditionerSetTempHandler(canBusManager),
+            "phone_call_contact" to PhoneCallContactHandler(canBusManager),
+            "phone_call_number" to PhoneCallNumberHandler(canBusManager)
+        )
+
+        return VehicleCommandExecutor(handlers) { canBusManager.isConnected() }
+    }
+
+    /**
+     * Гибрид — телефон через Intent, остальное через AIDL
+     */
+    fun createHybridIntent(context: Context): IVehicleCommandExecutor {
+        Log.i(TAG, "Creating Hybrid: Intent for phone, AIDL for vehicle")
+
+        val canBusManager = CanBusServiceManager(context)
+
+        val handlers: Map<String, ICommandHandler> = mapOf(
+            "phone_call_contact" to PhoneCallContactIntentHandler(context),
+            "phone_call_number" to PhoneCallNumberIntentHandler(context),
+            "window_open" to WindowOpenDriverHandler(canBusManager),
+            "window_close" to WindowCloseDriverHandler(canBusManager),
+            "window_all_open" to WindowOpenAllHandler(canBusManager),
+            "window_all_close" to WindowCloseAllHandler(canBusManager),
+            "charge_port_open" to ChargportOpenHandler(canBusManager),
+            "charge_port_close" to ChargportCloseHandler(canBusManager),
+            "fuel_tank_open" to FuelTankOpenHandler(canBusManager),
+            "smart_mode_leisure" to SmartModeLeisureHandler(canBusManager),
+            "smart_mode_child" to SmartModeChildHandler(canBusManager),
+            "smart_mode_romantic" to SmartModeRomanticHandler(canBusManager),
+            "ac_open" to AirConditionerOpenHandler(canBusManager),
+            "ac_close" to AirConditionerCloseHandler(canBusManager),
+            "ac_set_temp" to AirConditionerSetTempHandler(canBusManager)
+        )
+
+        return VehicleCommandExecutor(handlers) { canBusManager.isConnected() }
+    }
+
+    /**
+     * Shell — все 13 команд через shell (телефон не поддерживается)
+     */
+    fun createShell(): IVehicleCommandExecutor {
+        Log.i(TAG, "Creating ShellVehicleCommandExecutor")
+
+        val handlers: Map<String, ICommandHandler> = mapOf(
+            "window_open" to WindowOpenDriverShellHandler(),
+            "window_close" to WindowCloseDriverShellHandler(),
+            "window_all_open" to WindowOpenAllShellHandler(),
+            "window_all_close" to WindowCloseAllShellHandler(),
+            "charge_port_open" to ChargportOpenShellHandler(),
+            "charge_port_close" to ChargportCloseShellHandler(),
+            "fuel_tank_open" to FuelTankOpenShellHandler(),
+            "ac_open" to AirConditionerOpenShellHandler(),
+            "ac_close" to AirConditionerCloseShellHandler(),
+            "ac_set_temp" to AirConditionerSetTempShellHandler(),
+            "smart_mode_leisure" to SmartModeLeisureShellHandler(),
+            "smart_mode_child" to SmartModeChildShellHandler(),
+            "smart_mode_romantic" to SmartModeRomanticShellHandler()
+        )
+
+        return VehicleCommandExecutor(handlers) { true }
+    }
+
+    /**
+     * Создать из строкового параметра
      */
     fun createFromString(
         context: Context,
-        canBusManager: CanBusServiceManager,
         modeString: String?
-    ): VehicleCommandExecutor {
+    ): IVehicleCommandExecutor {
         val mode = when (modeString?.lowercase()?.trim()) {
             "shell" -> ExecutionMode.SHELL
-            "aidl" -> ExecutionMode.AIDL
-            "auto" -> ExecutionMode.AUTO
-            "hybrid", null -> ExecutionMode.HYBRID  // HYBRID по умолчанию
-            "intent" -> ExecutionMode.INTENT
+            "intent", "hybrid" -> ExecutionMode.INTENT
+            "aidl", null -> ExecutionMode.AIDL
             else -> {
-                Log.w(TAG, "Unknown mode: '$modeString', using HYBRID")
-                ExecutionMode.HYBRID
+                Log.w(TAG, "Unknown mode: '$modeString', using AIDL")
+                ExecutionMode.AIDL
             }
         }
-        return create(context, canBusManager, mode)
+        return create(context, mode)
     }
 }

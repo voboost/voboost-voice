@@ -11,7 +11,7 @@ import android.util.Log
 class VoiceCommandReceiver : BroadcastReceiver() {
     
     companion object {
-        private const val TAG = "VoiceCommandReceiver"
+        const val TAG = "VoiceCommandReceiver"
     }
     
     override fun onReceive(context: Context, intent: Intent) {

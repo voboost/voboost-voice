@@ -8,13 +8,13 @@ package com.voboost.voiceassistant.speech.state
  * 2. Вызывает finish(StateResult) или cancelled() через колбэки
  * 3. StateMachine переключает на следующее состояние
  *
- * Это классический State Machine паттерн:
+ * Это классический IState Machine паттерн:
  * - ✅ SRP: каждое состояние в отдельном классе
  * - ✅ OCP: новые состояния без изменения старых
  * - ✅ Тестируемость: каждое состояние отдельно
  * - ✅ Event-driven: состояния сами решают когда завершиться
  */
-interface State {
+interface IState {
     /**
      * Может ли это состояние быть отменено кнопкой.
      * false = кнопка игнорируется (например, во время выполнения команды)
@@ -50,5 +50,5 @@ interface State {
      * Активировать помощник (перейти к слушанию команды).
      * Только для IdleState → ActivatedState.
      */
-    suspend fun activate(): State? = null
+    suspend fun activate(): IState? = null
 }

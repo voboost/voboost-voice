@@ -4,7 +4,7 @@ package com.voboost.voiceassistant.core
  * Интерфейс для модуля синтеза речи (TTS)
  * Позволяет легко менять реализации (Sherpa-ONNX, Vosk TTS, System TTS, Yandex SpeechKit)
  */
-interface SpeechSynthesis {
+interface ISpeechSynthesis {
 
     /**
      * Инициализировать модуль синтеза

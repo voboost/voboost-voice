@@ -26,7 +26,7 @@ import com.qinggan.qinglink.api.hu.IMicphoneModeListener
  */
 class MicphoneModeManager(private val context: Context) {
     companion object {
-        private const val TAG = "MicphoneModeManager"
+        const val TAG = "MicphoneModeManager"
         private const val INTENT_MICPHONE_MODE = "com.qinggan.qinglink.hu.MICPHONEMODE"
 
         // Режимы микрофона из Constant.MicphoneMode.Mode

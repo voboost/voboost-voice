@@ -14,7 +14,7 @@ class NLUEngine(
     private val context: Context
 ) {
     companion object {
-        private const val TAG = "NLUEngine"
+        const val TAG = "NLUEngine"
     }
     
     private val configManager = ConfigManager.getInstance(context)

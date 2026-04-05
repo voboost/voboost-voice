@@ -1,7 +1,7 @@
 package com.voboost.voiceassistant.engine.vosk
 
 import android.util.Log
-import com.voboost.voiceassistant.speech.RecognitionEngine
+import com.voboost.voiceassistant.speech.IRecognitionEngine
 import com.voboost.voiceassistant.speech.RecognitionResult
 import org.json.JSONObject
 import org.vosk.Recognizer
@@ -10,16 +10,16 @@ import org.vosk.Recognizer
  * Поток распознавания речи Vosk
  * Отвечает ТОЛЬКО за преобразование PCM данных в текст
  *
- * Реализует RecognitionEngine напрямую — без лишних обёрток
+ * Реализует IRecognitionEngine напрямую — без лишних обёрток
  *
- * НЕ управляет состоянием, НЕ работает с AudioSource
+ * НЕ управляет состоянием, НЕ работает с IAudioSource
  * Только PCM → Text
  */
 class VoskStream(
     private val recognizer: Recognizer
-) : RecognitionEngine {
+) : IRecognitionEngine {
     companion object {
-        private const val TAG = "VoskStream"
+        const val TAG = "VoskStream"
     }
 
     @Volatile

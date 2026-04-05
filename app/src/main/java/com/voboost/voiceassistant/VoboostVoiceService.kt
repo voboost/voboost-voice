@@ -17,8 +17,9 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import com.voboost.voiceassistant.core.SpeechEngineFactory
+import com.voboost.voiceassistant.core.SpeechEngineFactory.RecognitionEngine
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.executor.VehicleCommandExecutorFactory
@@ -39,9 +40,10 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.Manifest
-import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.IAudioSource
 import com.voboost.voiceassistant.audio.AudioSourceFactory
 import com.voboost.voiceassistant.audio.VolumeManager
+import com.voboost.voiceassistant.audio.VoiceZoneDetector
 
 /**
  * Главный сервис голосового помощника
@@ -49,7 +51,7 @@ import com.voboost.voiceassistant.audio.VolumeManager
 class VoboostVoiceService : Service() {
 
     companion object {
-        private const val TAG = "VoboostVoiceService"
+        const val TAG = "VoboostVoiceService"
         private const val NOTIFICATION_CHANNEL_ID = "voboost_voice_channel"
         private const val NOTIFICATION_ID = 1001
 
@@ -60,24 +62,24 @@ class VoboostVoiceService : Service() {
 
         const val ACTION_CANCEL = "com.voboost.voiceassistant.CANCEL"
         const val ACTION_ACTIVATE = "com.voboost.voiceassistant.ACTIVATE"
-        val ASR_ENGINE_TYPE = SpeechEngineFactory.RecognitionEngine.VOSK  // ← Vosk (стабильный)
+        val ASR_ENGINE_TYPE = RecognitionEngine.VOSK  // ← Vosk (стабильный)
         val TTS_ENGINE_TYPE = SpeechEngineFactory.SynthesisEngine.SHERPA  // ← Sherpa TTS (русский есть)
         val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY  // ← TransProxy (системный, с шумоподавлением)
     }
 
     // Компоненты системы
     private lateinit var configManager: ConfigManager
-    private lateinit var stateMachine: StateMachine  // ← State Machine
+    private lateinit var stateMachine: StateMachine  // ← IState Machine
     private lateinit var speechRecognizer: SpeechRecognizer  // ← Распознавание речи
     private lateinit var commandHandler: CommandHandler  // ← Обработка команд
     private lateinit var nluEngine: NLUEngine
     private lateinit var commandExecutor: CommandExecutor
     private lateinit var overlayManager: OverlayManager
-    private lateinit var ttsEngine: SpeechSynthesis  // ← Интерфейс
+    private lateinit var ttsEngine: ISpeechSynthesis  // ← Интерфейс
     private lateinit var soundEffectManager: SoundEffectManager
     
-    // AudioSource - единый источник аудио данных
-    private lateinit var audioSource: AudioSource
+    // IAudioSource - единый источник аудио данных
+    private lateinit var audioSource: IAudioSource
 
     // CanBus Manager - единая точка доступа к CAN шине
     private lateinit var canBusManager: CanBusServiceManager
@@ -161,9 +163,9 @@ class VoboostVoiceService : Service() {
         overlayManager = OverlayManager(this)
         soundEffectManager = SoundEffectManager(this)
         
-        // AudioSource - создаётся ОДИН раз и передаётся в движок распознавания
+        // IAudioSource - создаётся ОДИН раз и передаётся в движок распознавания
         audioSource = AudioSourceFactory.create(this, AUDIO_SOURCE_TYPE)
-        Log.i(TAG, "AudioSource created: ${audioSource!!::class.simpleName}")
+        Log.i(TAG, "IAudioSource created: ${audioSource::class.simpleName}")
         
         // Volume Manager - управление громкостью
         volumeManager = VolumeManager(this)
@@ -210,11 +212,10 @@ class VoboostVoiceService : Service() {
         }
 
         // Создаём VehicleCommandExecutor через фабрику
-        // Используем HYBRID режим (телефон=Intent, остальное=AIDL)
-        val vehicleCommandExecutor = VehicleCommandExecutorFactory.createFromString(
-            context = this,
-            canBusManager = canBusManager,  // ← Передаем CanBusManager
-            modeString = "hybrid"  // "intent", "shell", "aidl", "auto", "hybrid"
+        // Все 15 команд (включая телефонные) выполняются через единый executeByCommandId()
+        val vehicleCommandExecutor = VehicleCommandExecutorFactory.create(
+            context = this
+            // mode = ExecutionMode.AIDL  // ← Раскомментируй для смены режима
         )
 
         commandExecutor = CommandExecutor(
@@ -245,7 +246,7 @@ class VoboostVoiceService : Service() {
         )
         Log.i(TAG, "SpeechRecognizer initialized")
 
-        // State Machine - управление состояниями
+        // IState Machine - управление состояниями
         val context = StateContext()
         context.soundEffectManager = soundEffectManager
         context.speechRecognizer = speechRecognizer
@@ -273,7 +274,7 @@ class VoboostVoiceService : Service() {
             context = context
         )
 
-        Log.i(TAG, "State Machine initialized")
+        Log.i(TAG, "IState Machine initialized")
 
         // Регистрируем receiver
         val filter = IntentFilter(ACTION_CANCEL)
@@ -361,13 +362,13 @@ class VoboostVoiceService : Service() {
         voiceZoneDetector = null
         Log.d(TAG, "VoiceZoneDetector disconnected")
         
-        // Освобождаем AudioSource (если инициализирован)
+        // Освобождаем IAudioSource (если инициализирован)
         if (::audioSource.isInitialized) {
             audioSource.stop()
             audioSource.release()
-            Log.d(TAG, "AudioSource released")
+            Log.d(TAG, "IAudioSource released")
         } else {
-            Log.w(TAG, "AudioSource not initialized, skipping release")
+            Log.w(TAG, "IAudioSource not initialized, skipping release")
         }
 
         // Отключаем CanBus Manager
@@ -391,7 +392,7 @@ class VoboostVoiceService : Service() {
      */
     private fun startKeywordSpotting() {
         Log.d(TAG, "startKeywordSpotting called")
-        Log.d(TAG, "  state=${stateMachine.getCurrentState()::class.simpleName}")
+        Log.d(TAG, "  IState=${stateMachine.getCurrentState()::class.simpleName}")
 
         if (stateMachine.getCurrentState() !is IdleState) {
             Log.w(TAG, "Not in IdleState, skipping keyword spotting")
@@ -402,7 +403,7 @@ class VoboostVoiceService : Service() {
             try {
                 Log.i(TAG, "Starting keyword spotting (waiting for activation phrase)...")
                 speechRecognizer.start()  // Запускаем непрерывный поток распознавания
-                stateMachine.start()      // Запускаем State Machine
+                stateMachine.start()      // Запускаем IState Machine
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start keyword spotting", e)
                 // Попытка перезапуска через 3 секунды
@@ -425,7 +426,7 @@ class VoboostVoiceService : Service() {
         
         serviceScope.launch {
             try {
-                // State Machine сам обработает активацию в текущем State
+                // IState Machine сам обработает активацию в текущем IState
                 stateMachine.activate()
             } catch (e: Exception) {
                 Log.e(TAG, "Error activating voice assistant", e)
@@ -441,7 +442,7 @@ class VoboostVoiceService : Service() {
 
         serviceScope.launch {
             try {
-                // State Machine сам обработает отмену в текущем State
+                // IState Machine сам обработает отмену в текущем IState
                 stateMachine.onButtonPressed()
 
                 Log.i(TAG, "✅ Recognition cancelled")

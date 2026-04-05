@@ -13,7 +13,7 @@ import java.util.*
 class TTSEngine(private val context: Context) : TextToSpeech.OnInitListener {
 
     companion object {
-        private const val TAG = "TTSEngine"
+        const val TAG = "TTSEngine"
     }
 
     private var tts: TextToSpeech? = null

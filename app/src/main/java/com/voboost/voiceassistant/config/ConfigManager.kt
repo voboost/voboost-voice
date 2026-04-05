@@ -17,7 +17,7 @@ class ConfigManager private constructor(private val context: Context) {
     private val gson = Gson()
 
     companion object {
-        private const val TAG = "ConfigManager"
+        const val TAG = "ConfigManager"
         private const val CONFIG_PATH = "config.json"
         private const val EXTERNAL_CONFIG_PATH = "config.json"
 

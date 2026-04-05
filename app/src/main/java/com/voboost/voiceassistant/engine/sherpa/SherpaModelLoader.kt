@@ -3,19 +3,19 @@ package com.voboost.voiceassistant.engine.sherpa
 import android.content.Context
 import android.util.Log
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.speech.ModelLoader
+import com.voboost.voiceassistant.speech.IModelLoader
 import java.io.File
 
 /**
  * Загрузчик моделей Sherpa-ONNX
- * Реализует универсальный интерфейс ModelLoader
+ * Реализует универсальный интерфейс IModelLoader
  */
 class SherpaModelLoader(
     private val context: Context
-) : ModelLoader {
+) : IModelLoader {
     
     companion object {
-        private const val TAG = "SherpaModelLoader"
+        const val TAG = "SherpaModelLoader"
     }
     
     private val configManager = ConfigManager.getInstance(context)

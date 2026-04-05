@@ -2,7 +2,7 @@ package com.voboost.voiceassistant.core
 
 import android.content.Context
 import android.util.Log
-import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.IAudioSource
 import com.voboost.voiceassistant.audio.AudioSourceFactory
 import com.voboost.voiceassistant.engine.sherpa.SherpaModelLoader
 import com.voboost.voiceassistant.engine.sherpa.SherpaStreamFactory
@@ -12,6 +12,8 @@ import com.voboost.voiceassistant.engine.vosk.VoskModelLoader
 import com.voboost.voiceassistant.engine.vosk.VoskStreamFactory
 import com.voboost.voiceassistant.speech.KeywordChecker
 import com.voboost.voiceassistant.speech.SpeechRecognizer
+import com.voboost.voiceassistant.speech.IRecognitionEngine
+import com.voboost.voiceassistant.speech.IModelLoader
 import com.voboost.voiceassistant.ui.OverlayManager
 import java.io.File
 
@@ -21,7 +23,7 @@ import java.io.File
  */
 object SpeechEngineFactory {
 
-    private const val TAG = "SpeechEngineFactory"
+    const val TAG = "SpeechEngineFactory"
 
     enum class RecognitionEngine {
         VOSK,       // Текущая реализация (стабильная)
@@ -37,14 +39,14 @@ object SpeechEngineFactory {
      * Создать распознаватель речи (утилита без состояний)
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
-     * @param audioSource Источник аудио (создаётся через AudioSourceFactory)
+     * @param IAudioSource Источник аудио (создаётся через AudioSourceFactory)
      * @param zoneDetector Детектор зоны говорящего (опционально)
      * @return SpeechRecognizer для управления распознаванием
      */
     fun createSpeechRecognizer(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
-        audioSource: AudioSource,
+        audioSource: IAudioSource,
         zoneDetector: com.voboost.voiceassistant.audio.VoiceZoneDetector? = null
     ): SpeechRecognizer {
         val configManager = com.voboost.voiceassistant.config.ConfigManager.getInstance(context)
@@ -53,17 +55,17 @@ object SpeechEngineFactory {
         val recognitionEngine = when (engine) {
             RecognitionEngine.VOSK -> {
                 Log.i(TAG, "Creating Vosk recognition engine")
-                val modelLoader = VoskModelLoader(context)
-                val modelPath = modelLoader.getModelPath()
-                val model = modelLoader.loadModel(modelPath)
+                val IModelLoader = VoskModelLoader(context)
+                val modelPath = IModelLoader.getModelPath()
+                val model = IModelLoader.loadModel(modelPath)
                 VoskStreamFactory().create(model)
             }
 
             RecognitionEngine.SHERPA -> {
                 Log.i(TAG, "Creating Sherpa recognition engine")
-                val modelLoader = SherpaModelLoader(context)
-                val modelPath = modelLoader.getModelPath()
-                val model = modelLoader.loadModel(modelPath)
+                val IModelLoader = SherpaModelLoader(context)
+                val modelPath = IModelLoader.getModelPath()
+                val model = IModelLoader.loadModel(modelPath)
                 SherpaStreamFactory().create(model)
             }
         }
@@ -88,7 +90,7 @@ object SpeechEngineFactory {
         engine: SynthesisEngine = SynthesisEngine.SYSTEM,
         modelPath: String? = null,
         speakerId: Int = 0
-    ): SpeechSynthesis {
+    ): ISpeechSynthesis {
         return when (engine) {
             SynthesisEngine.SYSTEM -> {
                 Log.i(TAG, "Creating System TTS engine")

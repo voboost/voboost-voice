@@ -13,7 +13,7 @@ package com.voboost.voiceassistant.audio
  * 2. Подписаться через addListener() для получения PCM данных
  * 3. Вызвать stop() для остановки
  */
-interface AudioSource {
+interface IAudioSource {
     
     /**
      * Слушатель аудио-данных

@@ -22,7 +22,7 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
     }
 
     companion object {
-        private const val TAG = "VoiceButtonHandler"
+        const val TAG = "VoiceButtonHandler"
         private const val DEBOUNCE_DELAY_MS = 500L
         private var lastPressTime = 0L
         

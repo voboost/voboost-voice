@@ -4,7 +4,7 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -12,11 +12,11 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * Обёртка над системным TextToSpeech для совместимости с новым интерфейсом
  * Используется как запасной вариант если Sherpa-ONNX не доступен
  */
-class SystemTtsSynthesis(private val context: Context) : SpeechSynthesis,
+class SystemTtsSynthesis(private val context: Context) : ISpeechSynthesis,
         TextToSpeech.OnInitListener {
 
     companion object {
-        private const val TAG = "SystemTtsSynthesis"
+        const val TAG = "SystemTtsSynthesis"
         private const val RUSSIAN_LANG_TAG = "ru-RU"
     }
 

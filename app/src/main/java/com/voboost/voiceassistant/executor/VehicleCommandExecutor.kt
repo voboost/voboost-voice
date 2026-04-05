@@ -1,44 +1,48 @@
 package com.voboost.voiceassistant.executor
 
+import android.util.Log
+import com.voboost.voiceassistant.config.ActionConfig
+import com.voboost.voiceassistant.executor.handlers.ICommandHandler
+
 /**
- * Интерфейс для выполнения команд автомобилю
- * Позволяет легко переключаться между разными способами отправки команд
+ * Универсальный исполнитель команд через реестр handlers
+ * Может работать с любым набором handlers (AIDL, Intent, Shell, микс)
+ *
+ * @param handlers Реестр команд: commandId → ICommandHandler
+ * @param isConnectedChecker Функция проверки подключения
  */
-interface VehicleCommandExecutor {
+class VehicleCommandExecutor(
+    private val handlers: Map<String, ICommandHandler>,
+    private val isConnectedChecker: () -> Boolean = { true }
+) : IVehicleCommandExecutor {
 
-    /**
-     * Выполнить команду
-     * @param target Цель команды (например, "Chargport", "Window", "AirConditioner")
-     * @param classify Класс команды (числовой идентификатор типа устройства)
-     * @param command Команда (0 = открыть/вкл, 1 = закрыть/выкл, и т.д.)
-     * @param params Дополнительные параметры команды
-     * @return true если команда успешно отправлена
-     */
-    fun execute(
-        target: String,
-        classify: Int,
-        command: Int,
-        params: Map<String, Any> = emptyMap()
-    ): Boolean
+    companion object {
+        const val TAG = "VehicleCommandExec"
+    }
 
-    /**
-     * Выполнить команду для телефона
-     * @param classify Класс команды (1 = звонок)
-     * @param command Команда (1 = позвонить)
-     * @param contact Контакт или номер
-     * @param callType Тип вызова ("contact" или "number")
-     * @return true если команда успешно отправлена
-     */
-    fun executePhoneCommand(
-        classify: Int,
-        command: Int,
-        contact: String? = null,
-        number: String? = null,
-        callType: String = "contact"
-    ): Boolean
+    override val executionMethod: String = handlers.values.firstOrNull()?.let {
+        it.javaClass.simpleName.replace("Handler", "")
+    } ?: "Unknown"
 
-    /**
-     * Название метода выполнения (для логирования)
-     */
-    val executionMethod: String
+    override fun executeByCommandId(
+        commandId: String,
+        config: ActionConfig,
+        voiceParams: Map<String, Any>
+    ): Boolean {
+        if (!isConnectedChecker()) {
+            Log.w(TAG, "Not connected")
+            return false
+        }
+
+        val handler = handlers[commandId]
+            ?: return false.also { Log.w(TAG, "No handler for command: '$commandId'") }
+
+        Log.d(TAG, "Executing: commandId='$commandId', handler=${handler.javaClass.simpleName}")
+        return try {
+            handler.execute(config, voiceParams)
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during command execution: $commandId", e)
+            false
+        }
+    }
 }

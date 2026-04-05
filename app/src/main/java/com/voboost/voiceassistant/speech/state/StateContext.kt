@@ -2,7 +2,7 @@ package com.voboost.voiceassistant.speech.state
 
 import com.voboost.voiceassistant.SoundEffectManager
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.nlu.RecognizedCommand
@@ -21,14 +21,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Преимущества:
  * - ✅ Явная передача данных между стейтами
  * - ✅ Легко тестировать (мокаем контекст)
- * - ✅ State Machine не знает о бизнес-логике
+ * - ✅ IState Machine не знает о бизнес-логике
  */
 data class StateContext(
     // Зависимости (для создания новых состояний)
     var speechRecognizer: SpeechRecognizer? = null,
     var overlayManager: OverlayManager? = null,
     var volumeManager: com.voboost.voiceassistant.audio.VolumeManager? = null,
-    var ttsEngine: SpeechSynthesis? = null,
+    var ttsEngine: ISpeechSynthesis? = null,
     var configManager: ConfigManager? = null,
     var nluEngine: NLUEngine? = null,
     var commandExecutor: CommandExecutor? = null,

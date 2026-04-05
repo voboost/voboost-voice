@@ -17,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.max
 
 /**
- * AudioSource на основе стандартного Android AudioRecord
+ * IAudioSource на основе стандартного Android AudioRecord
  * 
  * Используется как fallback если системный RecorderManager недоступен.
  * Применяет аудио-эффекты (шумоподавление, эхокомпенсация, авто-гейн)
@@ -25,17 +25,17 @@ import kotlin.math.max
  */
 class AndroidAudioSource(
     private val context: Context,
-    private val sampleRate: Int = AudioSource.SAMPLE_RATE,
+    private val sampleRate: Int = IAudioSource.SAMPLE_RATE,
     // VOICE_RECOGNITION = 6, оптимизирован для распознавания речи (как в MyVoya)
     private val audioSource: Int = MediaRecorder.AudioSource.VOICE_RECOGNITION
-) : AudioSource {
+) : IAudioSource {
     
     companion object {
-        private const val TAG = "AndroidAudioSource"
+        const val TAG = "AndroidAudioSource"
         private const val BUFFER_SIZE_MS = 20 // размер буфера в миллисекундах
     }
     
-    private val listeners = CopyOnWriteArrayList<AudioSource.Listener>()
+    private val listeners = CopyOnWriteArrayList<IAudioSource.Listener>()
     private var audioRecord: AudioRecord? = null
     private var recordThread: Thread? = null
     
@@ -242,11 +242,11 @@ class AndroidAudioSource(
         }
     }
     
-    override fun addListener(listener: AudioSource.Listener) {
+    override fun addListener(listener: IAudioSource.Listener) {
         listeners.add(listener)
     }
     
-    override fun removeListener(listener: AudioSource.Listener) {
+    override fun removeListener(listener: IAudioSource.Listener) {
         listeners.remove(listener)
     }
     

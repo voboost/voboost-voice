@@ -27,7 +27,7 @@ import com.qinggan.canbus.WindowStatus
 class CanBusServiceManager(context: Context) {
 
     companion object {
-        private const val TAG = "CanBusServiceManager"
+        const val TAG = "CanBusServiceManager"
         private const val CANBUS_SERVICE_PACKAGE = "com.qinggan.canbus.service"
         private const val CANBUS_SERVICE_ACTION = "com.qinggan.canbus.CanBusService"
 
@@ -165,19 +165,19 @@ class CanBusServiceManager(context: Context) {
     /**
      * Установить состояние автомобиля
      *
-     * @param state Состояние автомобиля (VehicleState)
+     * @param IState Состояние автомобиля (VehicleState)
      * @param value Значение (1=CLOSE, 2=OPEN, и т.д.)
      * @return true если успешно
      */
-    fun setVehicleState(state: VehicleState, value: Int): Boolean {
+    fun setVehicleState(IState: VehicleState, value: Int): Boolean {
         if (!ensureConnected()) return false
 
         return try {
-            canBusService?.setVehicleState(state, value)
-            Log.d(TAG, "setVehicleState: $state = $value")
+            canBusService?.setVehicleState(IState, value)
+            Log.d(TAG, "setVehicleState: $IState = $value")
             true
         } catch (e: RemoteException) {
-            Log.e(TAG, "Failed to set vehicle state", e)
+            Log.e(TAG, "Failed to set vehicle IState", e)
             false
         }
     }
@@ -185,16 +185,16 @@ class CanBusServiceManager(context: Context) {
     /**
      * Получить состояние автомобиля
      *
-     * @param state Состояние автомобиля
+     * @param IState Состояние автомобиля
      * @return Значение или -1 если ошибка
      */
-    fun getVehicleState(state: VehicleState): Int {
+    fun getVehicleState(IState: VehicleState): Int {
         if (!ensureConnected()) return -1
 
         return try {
-            canBusService?.getVehicleState(state) ?: -1
+            canBusService?.getVehicleState(IState) ?: -1
         } catch (e: RemoteException) {
-            Log.e(TAG, "Failed to get vehicle state", e)
+            Log.e(TAG, "Failed to get vehicle IState", e)
             -1
         }
     }
@@ -241,19 +241,19 @@ class CanBusServiceManager(context: Context) {
     /**
      * Установить состояние кондиционера
      *
-     * @param state Состояние кондиционера (AirConditionState)
+     * @param IState Состояние кондиционера (AirConditionState)
      * @param value Значение (1=CLOSE, 2=OPEN, 3=ACTIVE, и т.д.)
      * @return true если успешно
      */
-    fun setAirConditionState(state: AirConditionState, value: Int): Boolean {
+    fun setAirConditionState(IState: AirConditionState, value: Int): Boolean {
         if (!ensureConnected()) return false
 
         return try {
-            canBusService?.setAirConditionState(state, value)
-            Log.d(TAG, "setAirConditionState: $state = $value")
+            canBusService?.setAirConditionState(IState, value)
+            Log.d(TAG, "setAirConditionState: $IState = $value")
             true
         } catch (e: RemoteException) {
-            Log.e(TAG, "Failed to set air condition state", e)
+            Log.e(TAG, "Failed to set air condition IState", e)
             false
         }
     }

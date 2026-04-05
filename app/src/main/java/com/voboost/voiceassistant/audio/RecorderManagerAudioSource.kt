@@ -5,7 +5,7 @@ import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * AudioSource через RecorderManager (системный микрофон QGSpeechService)
+ * IAudioSource через RecorderManager (системный микрофон QGSpeechService)
  * 
  * Использует тот же механизм что и внутренние компоненты QGSpeechService:
  * - SpeechPcmSource
@@ -17,16 +17,16 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - ✅ Нет конфликтов с QGSpeechService
  * - ✅ PCM данные уже обработаны (AEC, NS, AGC)
  */
-class RecorderManagerAudioSource(private val context: Context) : AudioSource {
+class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
 
     companion object {
-        private const val TAG = "RecorderManagerAudio"
+        const val TAG = "RecorderManagerAudio"
         private const val RECORD_TYPE_AOSP = "aosp"
         private const val RECORD_TYPE_NATIVE = "native"
         private const val RECORD_TYPE_HARDAEC = "hardaec"
     }
 
-    private val listeners = CopyOnWriteArrayList<AudioSource.Listener>()
+    private val listeners = CopyOnWriteArrayList<IAudioSource.Listener>()
     private var isRecording = false
     private var isInitialized = false
 
@@ -166,11 +166,11 @@ class RecorderManagerAudioSource(private val context: Context) : AudioSource {
         isInitialized = false
     }
 
-    override fun addListener(listener: AudioSource.Listener) {
+    override fun addListener(listener: IAudioSource.Listener) {
         listeners.add(listener)
     }
 
-    override fun removeListener(listener: AudioSource.Listener) {
+    override fun removeListener(listener: IAudioSource.Listener) {
         listeners.remove(listener)
     }
 

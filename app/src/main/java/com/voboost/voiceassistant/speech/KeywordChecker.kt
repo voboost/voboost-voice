@@ -14,7 +14,7 @@ class KeywordChecker(
 ) {
     
     companion object {
-        private const val TAG = "KeywordChecker"
+        const val TAG = "KeywordChecker"
     }
     
     /**

@@ -15,7 +15,7 @@ class CommandHandler(
     private val commandExecutor: CommandExecutor
 ) {
     companion object {
-        private const val TAG = "CommandHandler"
+        const val TAG = "CommandHandler"
     }
 
     /**

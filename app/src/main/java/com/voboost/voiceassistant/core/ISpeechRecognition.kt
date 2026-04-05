@@ -4,7 +4,7 @@ package com.voboost.voiceassistant.core
  * Интерфейс для модуля распознавания речи (STT)
  * Позволяет легко менять реализации (Vosk, Sherpa-ONNX, Google Speech API)
  */
-interface SpeechRecognition {
+interface ISpeechRecognition {
 
     /**
      * Инициализировать модуль распознавания

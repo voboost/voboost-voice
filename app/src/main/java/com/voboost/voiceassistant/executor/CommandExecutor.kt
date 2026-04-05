@@ -8,7 +8,7 @@ import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.config.CommandConfig
 import com.voboost.voiceassistant.nlu.RecognizedCommand
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.CoroutineScope
@@ -24,14 +24,14 @@ import kotlinx.coroutines.launch
  */
 class CommandExecutor(
     private val context: Context,
-    private val ttsEngine: SpeechSynthesis,
+    private val ttsEngine: ISpeechSynthesis,
     private val nluEngine: NLUEngine,
     private val overlayManager: OverlayManager,
     private val coroutineScope: CoroutineScope,
-    private val vehicleCommandExecutor: VehicleCommandExecutor  // ← Интерфейс выполнения
+    private val vehicleCommandExecutor: IVehicleCommandExecutor  // ← Интерфейс выполнения
 ) {
     companion object {
-        private const val TAG = "CommandExecutor"
+        const val TAG = "CommandExecutor"
     }
 
     private val configManager = ConfigManager.getInstance(context)
@@ -141,29 +141,17 @@ class CommandExecutor(
         Log.d(TAG, "Executing via ${vehicleCommandExecutor.executionMethod}")
         Log.d(
             TAG,
-            "Target: ${action.target}, Classify: ${action.classify}, Command: ${action.command}"
+            "Command: ${commandConfig.id}, Target: ${action.target}, Classify: ${action.classify}, Command: ${action.command}"
         )
 
         return try {
-            val success = if (action.target == "telephone") {
-                // Телефонные команды
-                vehicleCommandExecutor.executePhoneCommand(
-                    classify = action.classify,
-                    command = action.command,
-                    contact = params["contact"],
-                    number = params["number"],
-                    callType = params["call_type"] ?: "contact"
-                )
-            } else {
-                // Команды автомобиля
-                val vehicleParams = buildVehicleParams(action, params)
-                vehicleCommandExecutor.execute(
-                    target = action.target,
-                    classify = action.classify,
-                    command = action.command,
-                    params = vehicleParams
-                )
-            }
+            val vehicleParams = buildVehicleParams(action, params)
+
+            val success = vehicleCommandExecutor.executeByCommandId(
+                commandId = commandConfig.id,
+                config = action,
+                voiceParams = vehicleParams
+            )
 
             if (success) {
                 Log.i(TAG, "Command executed successfully")

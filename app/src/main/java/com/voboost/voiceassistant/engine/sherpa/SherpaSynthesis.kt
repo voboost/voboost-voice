@@ -7,7 +7,7 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
-import com.voboost.voiceassistant.core.SpeechSynthesis
+import com.voboost.voiceassistant.core.ISpeechSynthesis
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -29,10 +29,10 @@ class SherpaSynthesis(
     private val context: Context,
     modelPath: String? = null,  // null = автоопределение (SD-карта → внутренняя память → assets)
     private val speakerId: Int = 0
-) : SpeechSynthesis {
+) : ISpeechSynthesis {
 
     companion object {
-        private const val TAG = "SherpaSynthesis"
+        const val TAG = "SherpaSynthesis"
         private const val DEFAULT_MODEL_PATH = "models/sherpa/tts-ru-model"
         private const val DEFAULT_SAMPLE_RATE = 24000
     }

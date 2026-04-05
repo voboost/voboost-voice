@@ -4,7 +4,7 @@ package com.voboost.voiceassistant.speech
  * Универсальный интерфейс движка распознавания
  * Позволяет использовать любой движок (Vosk, Sherpa, и т.д.)
  */
-interface RecognitionEngine {
+interface IRecognitionEngine {
     /**
      * Принять порцию PCM данных и распознать
      * @param pcm PCM данные (16-bit, mono, 16000 Hz)

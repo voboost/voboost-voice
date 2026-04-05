@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 
 /**
- * Фабрика AudioSource
+ * Фабрика IAudioSource
  * Автоматически выбирает лучший доступный аудио-источник
  * 
  * Приоритет:
@@ -14,7 +14,7 @@ import android.util.Log
  */
 object AudioSourceFactory {
     
-    private const val TAG = "AudioSourceFactory"
+    const val TAG = "AudioSourceFactory"
     
     /**
      * Тип аудио-источника
@@ -32,16 +32,16 @@ object AudioSourceFactory {
     }
     
     /**
-     * Создать AudioSource с автоматическим выбором лучшего источника
+     * Создать IAudioSource с автоматическим выбором лучшего источника
      *
      * @param context Android Context
      * @param preferredType Предпочтительный тип (по умолчанию RECORDER_MANAGER)
-     * @return AudioSource (никогда null)
+     * @return IAudioSource (никогда null)
      */
     fun create(
         context: Context,
         preferredType: SourceType = SourceType.RECORDER_MANAGER
-    ): AudioSource {
+    ): IAudioSource {
         return when (preferredType) {
             SourceType.RECORDER_MANAGER -> {
                 val recorderManagerSource = RecorderManagerAudioSource(context)
@@ -93,7 +93,7 @@ object AudioSourceFactory {
         }
     }
     
-    private fun createAndroidSource(context: Context): AudioSource {
+    private fun createAndroidSource(context: Context): IAudioSource {
         return AndroidAudioSource(context).apply {
             if (!initialize()) {
                 throw IllegalStateException("Failed to initialize AndroidAudioSource")

@@ -2,22 +2,22 @@ package com.voboost.voiceassistant.engine.sherpa
 
 import android.util.Log
 import com.k2fsa.sherpa.onnx.*
-import com.voboost.voiceassistant.speech.RecognitionEngine
+import com.voboost.voiceassistant.speech.IRecognitionEngine
 import com.voboost.voiceassistant.speech.RecognitionResult
 import java.io.File
 
 /**
  * Поток распознавания речи Sherpa-ONNX
- * Реализует универсальный интерфейс RecognitionEngine
+ * Реализует универсальный интерфейс IRecognitionEngine
  * 
  * Использует Zipformer модель для распознавания
  */
 class SherpaStream private constructor(
     private val recognizer: OfflineRecognizer
-) : RecognitionEngine {
+) : IRecognitionEngine {
     
     companion object {
-        private const val TAG = "SherpaStream"
+        const val TAG = "SherpaStream"
         private const val SAMPLE_RATE = 16000
         
         /**

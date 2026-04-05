@@ -16,7 +16,7 @@ import android.util.Log
 class SoundEffectManager(private val context: Context) {
 
     companion object {
-        private const val TAG = "SoundEffectManager"
+        const val TAG = "SoundEffectManager"
         private const val SOUND_START = 1
         private const val SOUND_END = 2
         private const val SOUND_CANCEL = 3

@@ -12,7 +12,7 @@ import com.qinggan.qinglink.transProxy.api.IPcmModule
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * AudioSource через TransProxy (QGSpeechService)
+ * IAudioSource через TransProxy (QGSpeechService)
  *
  * Получает PCM данные из системного сервиса через AIDL интерфейс IPcmModule.
  * Преимущества:
@@ -21,15 +21,15 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - ✅ PCM данные уже с автоматическим гейном (AutomaticGainControl)
  * - ✅ Нет конфликтов с другими приложениями
  */
-class MicrophoneStreamAudioSource(private val context: Context) : AudioSource {
+class MicrophoneStreamAudioSource(private val context: Context) : IAudioSource {
 
     companion object {
-        private const val TAG = "MicrophoneStreamAudio"
+        const val TAG = "MicrophoneStreamAudio"
         private const val INTENT_TRANSPROXY = "com.qinggan.qinglink.transproxy"
         private const val QGSPEECH_PACKAGE = "com.qinggan.sttservice"
     }
 
-    private val listeners = CopyOnWriteArrayList<AudioSource.Listener>()
+    private val listeners = CopyOnWriteArrayList<IAudioSource.Listener>()
     private var pcmModule: IPcmModule? = null
     private var pcmListener: IPcmListener.Stub? = null
 
@@ -181,11 +181,11 @@ class MicrophoneStreamAudioSource(private val context: Context) : AudioSource {
         }
     }
 
-    override fun addListener(listener: AudioSource.Listener) {
+    override fun addListener(listener: IAudioSource.Listener) {
         listeners.add(listener)
     }
 
-    override fun removeListener(listener: AudioSource.Listener) {
+    override fun removeListener(listener: IAudioSource.Listener) {
         listeners.remove(listener)
     }
 

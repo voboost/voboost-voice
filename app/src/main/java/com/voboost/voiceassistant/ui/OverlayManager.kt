@@ -21,7 +21,7 @@ class OverlayManager(
     private val context: Context
 ) {
     companion object {
-        private const val TAG = "OverlayManager"
+        const val TAG = "OverlayManager"
     }
     
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager

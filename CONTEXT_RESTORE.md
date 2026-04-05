@@ -1,6 +1,6 @@
 # 🔄 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Дата последнего обновления:** 2026-04-04 22:00
+**Дата последнего обновления:** 2026-04-05
 **Версия:** 18.0 (Voice Zone Detection)
 **Статус:** ✅ ГОТОВО К ТЕСТИРОВАНИЮ
 
@@ -10,195 +10,255 @@
 
 **Проект:** `VoboostVoiceAssistant`
 **Папка:** `D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant`
-**Задача:** Голосовой помощник для автомобиля на русском языке
+**Задача:** Голосовой помощник для автомобиля на русском языке с офлайн распознаванием
 
 ---
 
-## ✅ ЧТО РАБОТАЕТ
+## 🎯 ОСНОВНАЯ ФУНКЦИОНАЛЬНОСТЬ
 
-### 1. State Machine Pattern (НОВОЕ в v16.0)
-- ✅ `StateMachine` — главный цикл состояний
-- ✅ `StateContext` — передача данных между состояниями
-- ✅ 9 состояний: Idle, Activated, ListeningCommand, RecognizedCommand, Confirmation, ExecutingCommand, Timeout, CommandError, KeywordError
-- ✅ Автоматические переходы между состояниями
-- ✅ `SpeechStateMachine` упрощён — только распознавание
-
-### 2. AudioSource
-- ✅ `AudioSource` интерфейс
-- ✅ `MicrophoneStreamAudioSource` — через TransProxy (QGSpeechService)
-- ✅ `AndroidAudioSource` — fallback с аудио-эффектами
-- ✅ `AudioSourceFactory` — автоматический выбор
-
-### 3. Распознавание речи
-- ✅ `VoskStream` — распознавание через Vosk
-- ✅ `SherpaStream` — распознавание через Sherpa (заглушка)
-- ✅ `CommandHandler` — NLU → CommandExecutor
-
-### 4. CAN-шина через Frida
-- ✅ Frida hook обходит `checkPermission("com.qinggan.permission.WRITE_CANBUS")`
-- ✅ Скрипт: `/data/local/tmp/voboost/canbus-permission-bypass.js`
-- ✅ Все 13 команд работают (окна, кондиционер и т.д.)
-
-### 5. TSR Speed Limit Warnings
-- ✅ Предупреждения о превышении скорости
-- ✅ Ограничения от камеры (TSR)
-- ✅ Ограничения от навигации
-
-### 6. Audio Channel Fix
-- ✅ `USAGE_ASSISTANT` вместо `USAGE_MEDIA`
-- ✅ Голос не приглушает музыку
+### Что умеет:
+- ✅ **Распознавание речи (офлайн)** — Vosk, русская модель
+- ✅ **Синтез речи (TTS)** — Sherpa-ONNX, русский язык
+- ✅ **Активация по ключевому слову** — "Привет машина" или "Привет, Вобуст"
+- ✅ **Активация кнопкой на руле** — через CAN-шину
+- ✅ **Выполнение команд автомобиля** — лючки, окна, кондиционер, режимы
+- ✅ **TSR Speed Limit Warnings** — предупреждения о превышении скорости
+- ✅ **Определение зоны говорящего** — через IMicphoneMode AIDL
+- ✅ **State Machine архитектура** — 9 состояний
 
 ---
 
 ## 🏗️ АРХИТЕКТУРА
 
+### Главный сервис: `VoboostVoiceService.kt` (495 строк)
+
+**Компоненты:**
+```kotlin
+- StateMachine                    // State machine с 9 состояниями
+- SpeechRecognizer                // Распознавание речи (SharedFlow-based)
+- CommandHandler                  // NLU → CommandExecutor
+- ConfigManager                   // Загрузка config.json
+- NLUEngine                       // Парсинг команд
+- CommandExecutor                 // Выполнение команд
+- OverlayManager                  // UI оверлеи
+- SpeechSynthesis (Sherpa TTS)    // Синтез речи
+- SoundEffectManager              // Звуковые эффекты
+- AudioSource (TransProxy)        // Аудио поток
+- CanBusServiceManager            // CAN-шина
+- VoiceButtonHandler              // Кнопка на руле
+- TSRSpeedLimitHandler            // TSR предупреждения
+- VolumeManager                   // Громкость
+- VoiceZoneDetector               // Зона говорящего
+- MicphoneModeManager             // AIDL IMicphoneMode
 ```
-VoboostVoiceService (координатор, ~485 строк)
-├── StateMachine (с StateContext)
-│   ├── IdleState → ActivatedState → ListeningCommandState
-│   ├── RecognizedCommandState → ConfirmationState → ExecutingCommandState
-│   ├── TimeoutState, CommandErrorState, KeywordErrorState
-│
-├── SpeechRecognizer (распознавание, ~270 строк)
-│   ├── start() — один непрерывный поток
-│   ├── setMode(KEYWORD/COMMAND) — переключение режима
-│   ├── results: MutableSharedFlow<SpeechResult> — результаты с зоной
-│   └── zoneDetector: VoiceZoneDetector? — опционально
-│
-├── VoiceZoneDetector (определение зоны говорящего)
-│   ├── micphoneModeManager — подключение к IMicphoneMode AIDL
-│   ├── detectZone() → front_left/front_right/second_left/second_right
-│   └── fallback на front_left если сервис недоступен
-│
-├── CommandHandler (NLU → CommandExecutor)
-├── VolumeManager (управление громкостью)
-└── AudioSource (TransProxy/Android)
+
+### State Machine (9 состояний):
+
 ```
+IdleState
+    ↓ (ключевое слово / кнопка)
+ActivatedState
+    ↓
+ListeningCommandState
+    ↓ (распознана команда)
+RecognizedCommandState
+    ↓ (нужно подтверждение?)
+ConfirmationState / ExecutingCommandState
+    ↓
+ExecutingCommandState
+    ↓ (команда выполнена)
+IdleState (цикл повторяется)
+```
+
+**Дополнительные состояния:**
+- `TimeoutState` — таймаут ожидания
+- `CommandErrorState` — ошибка выполнения команды
+- `KeywordErrorState` — ошибка распознавания ключевого слова
 
 ---
 
 ## 📁 СТРУКТУРА ПРОЕКТА
 
 ```
-speech/
-├── state/
-│   ├── State.kt                    ← Интерфейс состояния
-│   ├── StateMachine.kt             ← Главный цикл состояний (+stateJob для прерываний)
-│   ├── StateContext.kt             ← Передача данных (zone поле добавлено)
-│   ├── IdleState.kt                ← Ожидание ключевого слова (+zone)
-│   ├── ActivatedState.kt           ← Активация
-│   ├── ListeningCommandState.kt    ← Слушаем команду (+zone)
-│   ├── RecognizedCommandState.kt   ← Распознавание команды
-│   ├── ConfirmationState.kt        ← Запрос подтверждения
-│   ├── ExecutingCommandState.kt    ← Выполнение команды
-│   ├── TimeoutState.kt             ← Таймаут
-│   ├── CommandErrorState.kt        ← Ошибка команды
-│   └── KeywordErrorState.kt        ← Ошибка ключевого слова
+app/src/main/java/com/voboost/voiceassistant/
+├── VoboostVoiceService.kt           # Главный сервис (495 строк)
+├── VoiceCommandReceiver.kt          # Broadcast receiver
+├── BootReceiver.kt                  # Автозапуск
+├── SoundEffectManager.kt            # Звуковые эффекты
 │
-├── SpeechRecognizer.kt             ← Распознавание (SharedFlow-based, +zone)
-├── RecognitionEngine.kt            ← Интерфейс движка
-├── RecognitionResult.kt            ← Результат распознавания
-├── SpeechResult.kt                 ← sealed class (+zone поле)
-├── KeywordChecker.kt               ← Проверка ключевых слов
-└── CommandHandler.kt               ← NLU → CommandExecutor
-
-audio/
-├── AudioSource.kt                  ← Интерфейс аудио
-├── AudioSourceFactory.kt           ← Фабрика аудио
-├── MicrophoneStreamAudioSource.kt  ← TransProxy (+логирование PCM)
-├── AndroidAudioSource.kt           ← Fallback
-├── VolumeManager.kt                ← Громкость
-├── MicphoneModeManager.kt          ← AIDL IMicphoneMode клиент (v18.0 NEW)
-└── VoiceZoneDetector.kt            ← Определение зоны говорящего (v18.0 NEW)
-
-engine/
-├── vosk/
-│   ├── VoskModelLoader.kt
-│   ├── VoskStream.kt               ← реализует RecognitionEngine
-│   └── VoskStreamFactory.kt
-└── sherpa/
-    ├── SherpaModelLoader.kt
-    ├── SherpaStream.kt             ← реализует RecognitionEngine
-    └── SherpaStreamFactory.kt
-
-aidl/ (v18.0 NEW)
-└── com/qinggan/qinglink/api/hu/
-    ├── IMicphoneMode.aidl          ← AIDL интерфейс зоны
-    └── IMicphoneModeListener.aidl  ← AIDL listener
+├── speech/
+│   ├── SpeechRecognizer.kt          # Распознавание (SharedFlow)
+│   ├── CommandHandler.kt            # NLU → CommandExecutor
+│   ├── KeywordChecker.kt            # Проверка ключевых слов
+│   ├── RecognitionEngine.kt         # Интерфейс движка
+│   ├── RecognitionResult.kt         # Результат
+│   ├── SpeechResult.kt              # sealed class (+zone)
+│   ├── ModelLoader.kt               # Интерфейс загрузчика
+│   ├── StreamFactory.kt             # Фабрика потоков
+│   │
+│   └── state/
+│       ├── State.kt                 # Интерфейс состояния
+│       ├── StateMachine.kt          # Главный цикл
+│       ├── StateContext.kt          # Передача данных (+zone)
+│       ├── BaseState.kt             # Базовый класс
+│       ├── StateResult.kt           # Результат состояния
+│       ├── IdleState.kt             # Ожидание ключевого слова
+│       ├── ActivatedState.kt        # Активация
+│       ├── ListeningCommandState.kt # Слушаем команду
+│       ├── RecognizedCommandState.kt
+│       ├── ConfirmationState.kt
+│       ├── ExecutingCommandState.kt
+│       ├── TimeoutState.kt
+│       ├── CommandErrorState.kt
+│       └── KeywordErrorState.kt
+│
+├── audio/
+│   ├── AudioSource.kt               # Интерфейс
+│   ├── AudioSourceFactory.kt        # Фабрика
+│   ├── MicrophoneStreamAudioSource.kt  # TransProxy
+│   ├── AndroidAudioSource.kt        # Fallback
+│   ├── RecorderManagerAudioSource.kt
+│   ├── VolumeManager.kt             # Громкость
+│   ├── MicphoneModeManager.kt       # AIDL IMicphoneMode
+│   └── VoiceZoneDetector.kt         # Зона говорящего
+│
+├── engine/
+│   ├── vosk/
+│   │   ├── VoskModelLoader.kt
+│   │   ├── VoskStream.kt
+│   │   └── VoskStreamFactory.kt
+│   ├── sherpa/
+│   │   ├── SherpaModelLoader.kt
+│   │   ├── SherpaStream.kt
+│   │   ├── SherpaStreamFactory.kt
+│   │   └── SherpaSynthesis.kt
+│   └── system/
+│       └── SystemTtsSynthesis.kt
+│
+├── config/
+│   ├── AppConfig.kt                 # Data классы
+│   ├── CommandConfig.kt             # Конфиг команд
+│   ├── ApiKeys.kt                   # API ключи
+│   └── ConfigManager.kt             # Загрузка конфига
+│
+├── nlu/
+│   ├── NLUEngine.kt                 # Парсинг команд
+│   └── Command.kt                   # Data классы
+│
+├── executor/
+│   ├── CommandExecutor.kt           # Главный executor
+│   ├── VehicleCommandExecutor.kt    # Интерфейс
+│   ├── VehicleCommandExecutorFactory.kt
+│   ├── IntentVehicleCommandExecutor.kt
+│   ├── AIDLVehicleCommandExecutor.kt
+│   ├── ShellVehicleCommandExecutor.kt
+│   └── AutoVehicleCommandExecutor.kt
+│
+├── canbus/
+│   ├── CanBusServiceManager.kt      # CAN-шина
+│   ├── VoiceButtonHandler.kt        # Кнопка на руле
+│   └── TSRSpeedLimitHandler.kt      # TSR warnings
+│
+├── ui/
+│   ├── OverlayManager.kt            # UI оверлеи
+│   └── VoiceClickView.kt            # Анимация
+│
+└── tts/
+    └── TTSEngine.kt                 # TTS движок
 ```
 
 ---
 
-## 🔄 ЦЕПОЧКА ВЫПОЛНЕНИЯ
+## 🔧 ТЕХНОЛОГИИ
 
-```
-IdleState.execute()
-    → waitForKeyword() ← Блокирует до ключевого слова
-    → ActivatedState.execute()
-        → ListeningCommandState.execute()
-            → waitForCommand() ← Блокирует до команды
-            → RecognizedCommandState.execute()
-                → Если подтверждение → ConfirmationState
-                    → ExecutingCommandState
-                → Если нет → ExecutingCommandState
-                    → IdleState (цикл повторяется)
-```
+### Build конфигурация:
+- **Gradle:** 8.13.2
+- **Kotlin:** 2.1.0
+- **Compile SDK:** 36
+- **Min SDK:** 26
+- **Target SDK:** 33
+- **JVM Target:** 1.8
 
----
+### Зависимости:
+- **Vosk:** `com.alphacephei:vosk-android:0.3.45` (офлайн STT)
+- **Sherpa-ONNX:** `libs/sherpa-onnx-v1.12.34-java8.jar` (STT + TTS)
+- **JNA:** `net.java.dev.jna:jna:5.13.0@aar`
+- **Coroutines:** `kotlinx-coroutines-android:1.7.1`
+- **Gson:** `com.google.code.gson:gson:2.10.1`
+- **AndroidX:** Core, AppCompat, Lifecycle
 
-## 📊 ИЗМЕНЕНИЯ ВЕРСИИ 16.0
-
-**State Machine Pattern:**
-- ✅ Создан `StateMachine` с `StateContext`
-- ✅ Созданы 9 State классов
-- ✅ Удалён `processVoiceCommand()` из VoboostVoiceService
-- ✅ Удалены `cancelCurrentCommand()`, `updateNetworkState()`, `requestRecordPermission()`
-- ✅ Упрощён `SpeechStateMachine` (~150 строк вместо ~300)
-- ✅ VoboostVoiceService стал тонким координатором (~470 строк)
+### Модели:
+- **Vosk STT:** `vosk-model-small-ru-0.22` (50MB, русский язык)
+- **Sherpa TTS:** Piper Russian model
 
 ---
 
-## 🚀 БЫСТРЫЙ СТАРТ
+## 🚀 ЗАПУСК
 
+### Сборка:
 ```batch
-REM 1. Сборка
 cd D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant
 gradlew.bat assembleRelease
+```
 
-REM 2. Загрузка библиотек
-copy-libs-to-device.bat
-
-REM 3. Установка
+### Установка:
+```batch
 adb root
 adb remount
 adb push app\build\outputs\apk\release\app-release-unsigned.apk ^
   /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
+```
 
-REM 4. Разрешения
+### Разрешения:
+```batch
 adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
+```
 
-REM 5. Перезапуск
+### Запуск:
+```batch
 adb shell am force-stop com.voboost.voiceassistant
 adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+```
 
-REM 6. Логи
+### Логи:
+```batch
 adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
 ```
 
 ---
 
-## 🎯 ТЕКУЩИЙ СТАТУС
+## 📊 КОМАНДЫ (из config.json)
+
+| ID | Команды | Действие |
+|----|---------|----------|
+| charge_port_open | "Открой лючок зарядки" | Открыть порт зарядки |
+| charge_port_close | "Закрой лючок зарядки" | Закрыть порт зарядки |
+| fuel_tank_open | "Открой бензобак" | Открыть бензобак |
+| smart_mode_leisure | "Включи режим отдыха" | Режим LEISURE |
+| smart_mode_child | "Включи детский режим" | Режим CHILD |
+| smart_mode_romantic | "Включи романтику" | Режим ROMANTIC |
+| ac_open | "Включи кондиционер" | Включить AC |
+| ac_close | "Выключи кондиционер" | Выключить AC |
+| ac_set_temp | "Установи 22 градуса" | Установка температуры |
+| phone_call_contact | "Позвони маме" | Звонок контакту |
+| phone_call_number | "Набери 123-45-67" | Звонок номеру |
+| window_open | "Открой окно" | Открыть окно |
+| window_close | "Закрой окно" | Закрыть окно |
+
+---
+
+## ✅ СТАТУС КОМПОНЕНТОВ
 
 | Компонент | Статус | Примечание |
 |-----------|--------|------------|
 | **Keyword Spotting** | ✅ Работает | "Привет машина" |
 | **Command Recognition** | ✅ Работает | После ключевой фразы И кнопки |
-| **Кнопка на руле** | ✅ Работает | Через State Machine |
+| **Кнопка на руле** | ✅ Работает | Через CAN-шину |
 | **TTS (Sherpa)** | ✅ Работает | Говорит "Слушаю вас" |
-| **CAN-шина** | ✅ Работает | Через Frida hook |
+| **CAN-шина** | ✅ Работает | CanBusServiceManager |
 | **TSR Speed Limit** | ✅ Работает | Предупреждения |
-| **Audio Channel** | ✅ Работает | USAGE_ASSISTANT |
+| **Audio Channel** | ✅ Работает | TransProxy (USAGE_ASSISTANT) |
 | **State Machine** | ✅ Работает | 9 состояний |
 | **SpeechRecognizer** | ✅ Работает | SharedFlow-based |
 | **VoiceZoneDetector** | ✅ Работает | IMicphoneMode AIDL |
@@ -206,42 +266,81 @@ adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
 
 ---
 
-## 📝 ФАЙЛЫ ДОКУМЕНТАЦИИ
+## 📝 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
-| Файл | Описание |
-|------|----------|
-| `CONTEXT_RESTORE.md` | 📋 **ЭТОТ ФАЙЛ** — текущий контекст |
-| `ARCHITECTURE_V17.md` | 🏗️ SpeechRecognizer рефакторинг |
-| `AUDIO_SOURCE_REFACTORING.md` | 🎤 AudioSource рефакторинг |
-| `TRANSPROXY_INTEGRATION.md` | 🔌 TransProxy интеграция |
-| `AUDIO_SOURCE_FACTORY.md` | 🏭 Фабрика аудио-источников |
-| `ARCHITECTURE_V2.md` | 🏗️ Архитектура v2 (устарела) |
+1. **ConfirmationState** — не ждёт ответ пользователя (заглушка)
+2. **Модели не в APK** — загружаются вручную на SD-карту
+3. **Библиотеки вынесены** — загружаются через `copy-libs-to-device.bat`
+4. **Frida CAN-bypass** — опционально, если нет системных разрешений
 
 ---
 
-## 📞 КОНТАКТЫ ДЛЯ ВОССТАНОВЛЕНИЯ
+## 🔄 ЦЕПОЧКА ВЫПОЛНЕНИЯ
+
+```
+Пользователь говорит "Привет машина"
+    ↓
+SpeechRecognizer распознаёт ключевое слово
+    ↓
+State Machine: Idle → Activated → ListeningCommand
+    ↓
+Пользователь говорит команду "Открой окно"
+    ↓
+SpeechRecognizer распознаёт команду
+    ↓
+State Machine: RecognizedCommand → ExecutingCommand
+    ↓
+NLUEngine парсит команду → CommandExecutor
+    ↓
+CommandExecutor отправляет Intent / AIDL / Shell
+    ↓
+Автомобиль выполняет команду
+    ↓
+TTS говорит "Открываю окно" + Overlay
+    ↓
+State Machine: Idle (цикл повторяется)
+```
+
+---
+
+## 📞 ВОССТАНОВЛЕНИЕ КОНТЕКСТА
 
 **Если нужно продолжить работу:**
 
 1. **Открыть этот файл** (`CONTEXT_RESTORE.md`)
-2. **Проверить логи:**
+2. **Проверить текущий статус компонентов** (таблица выше)
+3. **Проверить логи:**
    ```bash
-   adb logcat -s StateMachine:* SpeechStateMachine:* VoboostVoiceService:*
+   adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
    ```
-3. **Протестировать:**
+4. **Протестировать:**
    - Сказать "привет машина"
    - Проверить переходы состояний
    - Проверить выполнение команд
 
-**Пример запроса:**
-```
-Продолжи работу над VoboostVoiceAssistant.
-Нужно реализовать ConfirmationState для ожидания ответа пользователя.
-```
+---
+
+## 📚 ДОКУМЕНТАЦИЯ
+
+| Файл | Описание |
+|------|----------|
+| `CONTEXT_RESTORE.md` | 📋 **ЭТОТ ФАЙЛ** — текущий контекст |
+| `ARCHITECTURE_V2.md` | 🏗️ State Machine архитектура v16.0 |
+| `README.md` | 📖 Основная документация |
+| `QUICKSTART.md` | 🚀 Быстрый старт |
+| `PROJECT_SUMMARY.md` | 📦 Обзор проекта |
+| `READY_TO_USE.md` | ✅ Готовые классы из decompile |
+| `BUILD_INSTRUCTIONS.md` | 🔨 Сборка и установка |
+| `AUDIO_SOURCE_REFACTORING.md` | 🎤 AudioSource рефакторинг |
+| `TRANSPROXY_INTEGRATION.md` | 🔌 TransProxy интеграция |
+| `CANBUS_LISTENER_DOCS.md` | 🚗 CAN-шина документация |
+| `TSR_SPEED_LIMIT.md` | ⚡ TSR warnings |
+| `SPEAKER_ZONE_DETECTION.md` | 🎤 Зона говорящего |
+| `FRIDA_VOICE_ASSISTANT.md` | 🔧 Frida CAN-bypass |
 
 ---
 
-## 📊 ВЕРСИИ
+## 📊 ВЕРСИИ ПРОЕКТА
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
@@ -262,5 +361,14 @@ adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
 
 ---
 
-**Последнее обновление:** 2026-04-04 22:00
+## 🎯 СЛЕДУЮЩИЕ ЗАДАЧИ
+
+1. ⚠️ **Реализовать ConfirmationState** — ждать ответ пользователя ("Да"/"Нет")
+2. ⚠️ **Тестирование на устройстве** — полная проверка всех команд
+3. ⚠️ **Оптимизация моделей** — возможно заменить на более точные
+4. ⚠️ **Онлайн режим** — Yandex SpeechKit (опционально)
+
+---
+
+**Последнее обновление:** 2026-04-05
 **Следующая задача:** Реализовать ConfirmationState для ожидания ответа пользователя

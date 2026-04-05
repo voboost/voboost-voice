@@ -12,7 +12,7 @@ import android.util.Log
 class BootReceiver : BroadcastReceiver() {
 
     companion object {
-        private const val TAG = "BootReceiver"
+        const val TAG = "BootReceiver"
     }
 
     override fun onReceive(context: Context, intent: Intent) {

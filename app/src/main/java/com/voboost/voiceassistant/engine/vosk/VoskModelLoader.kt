@@ -3,20 +3,20 @@ package com.voboost.voiceassistant.engine.vosk
 import android.content.Context
 import android.util.Log
 import com.voboost.voiceassistant.config.ConfigManager
-import com.voboost.voiceassistant.speech.ModelLoader
+import com.voboost.voiceassistant.speech.IModelLoader
 import org.vosk.Model
 import java.io.File
 
 /**
  * Загрузчик моделей Vosk
- * Реализует универсальный интерфейс ModelLoader
+ * Реализует универсальный интерфейс IModelLoader
  */
 class VoskModelLoader(
     private val context: Context
-) : ModelLoader {
+) : IModelLoader {
     
     companion object {
-        private const val TAG = "VoskModelLoader"
+        const val TAG = "VoskModelLoader"
     }
     
     private val configManager = ConfigManager.getInstance(context)

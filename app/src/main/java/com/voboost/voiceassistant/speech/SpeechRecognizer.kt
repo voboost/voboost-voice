@@ -1,7 +1,7 @@
 package com.voboost.voiceassistant.speech
 
 import android.util.Log
-import com.voboost.voiceassistant.audio.AudioSource
+import com.voboost.voiceassistant.audio.IAudioSource
 import com.voboost.voiceassistant.audio.VoiceZoneDetector
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Распознаватель речи (утилита без состояний)
  *
  * Один непрерывный поток аудио → результаты через Channel.
- * State Machine управляет бизнес-логикой, SpeechRecognizer только распознаёт.
+ * IState Machine управляет бизнес-логикой, SpeechRecognizer только распознаёт.
  *
  * Преимущества:
  * - ✅ Нет дублирования состояний
@@ -24,13 +24,13 @@ import java.util.concurrent.atomic.AtomicReference
  * - ✅ Легко тестировать
  */
 class SpeechRecognizer(
-    private val audioSource: AudioSource,
-    private val recognitionEngine: RecognitionEngine,
+    private val audioSource: IAudioSource,
+    private val recognitionEngine: IRecognitionEngine,
     private val keywordChecker: KeywordChecker,
     private val zoneDetector: VoiceZoneDetector? = null
 ) {
     companion object {
-        private const val TAG = "SpeechRecognizer"
+        const val TAG = "SpeechRecognizer"
         private const val KEYWORD_TIMEOUT_MS = 30000L
         private const val COMMAND_TIMEOUT_MS = 5000L
     }
@@ -78,9 +78,9 @@ class SpeechRecognizer(
 
         recognitionJob = scope.launch {
             try {
-                Log.i(TAG, "Starting recognition via ${audioSource::class.simpleName}")
+                Log.i(TAG, "Starting recognition via ${IAudioSource::class.simpleName}")
 
-                val audioListener = AudioSource.Listener { data, bytesRead ->
+                val audioListener = IAudioSource.Listener { data, bytesRead ->
                     if (isRunning.get()) {
                         val currentBuffer = audioBuffer.get()
                         val newBuffer = ByteArray(currentBuffer.size + bytesRead)
@@ -133,7 +133,7 @@ class SpeechRecognizer(
      */
     private fun drainResults() {
         // SharedFlow не поддерживает drain напрямую, но при смене режима
-        // старые события будут проигнорированы фильтрами в State-классах
+        // старые события будут проигнорированы фильтрами в IState-классах
         Log.d(TAG, "Results buffer drained (SharedFlow auto-cleanup)")
     }
 

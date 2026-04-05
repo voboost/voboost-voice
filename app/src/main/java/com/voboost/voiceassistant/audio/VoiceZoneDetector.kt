@@ -25,7 +25,7 @@ class VoiceZoneDetector(
     private val micphoneModeManager: MicphoneModeManager
 ) {
     companion object {
-        private const val TAG = "VoiceZoneDetector"
+        const val TAG = "VoiceZoneDetector"
 
         // Угловые пороги для определения зоны
         private const val ANGLE_FRONT_LEFT_MIN = 315
