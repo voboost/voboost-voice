@@ -99,29 +99,38 @@ class AIDLVehicleCommandExecutor(
 
     /**
      * Выполнение команд окон
-     * @param classify класс команды (2=окна)
+     * @param classify класс команды (2=одно окно водителя, 3=все окна)
      * @param command команда (0=открыть, 1=закрыть)
      *
-     * Используем VehicleState.ALL_WINDOW_CONTROL для управления всеми окнами
+     * classify=2 → DRIVER_WINDOW_CONTROL (value=51 open, 97 close)
+     * classify=3 → ALL_WINDOW_CONTROL (value=3 open, 1 close)
      */
     private fun executeWindow(classify: Int, command: Int): Boolean {
-        val windowState = when (command) {
-            0 -> {
-                Log.d(TAG, "Window OPEN command")
-                CanBusServiceManager.VALUE_OPEN
+        val (vehicleState, windowState) = when (classify) {
+            2 -> {
+                // Одно окно водителя
+                val value = when (command) {
+                    0 -> CanBusServiceManager.VALUE_WINDOW_DRIVER_OPEN.also { Log.d(TAG, "Window OPEN (driver) command") }
+                    1 -> CanBusServiceManager.VALUE_WINDOW_DRIVER_CLOSE.also { Log.d(TAG, "Window CLOSE (driver) command") }
+                    else -> { Log.w(TAG, "Unknown window command: $command"); return false }
+                }
+                VehicleState.DRIVER_WINDOW_CONTROL to value
             }
-            1 -> {
-                Log.d(TAG, "Window CLOSE command")
-                CanBusServiceManager.VALUE_CLOSE
+            3 -> {
+                // Все окна
+                val value = when (command) {
+                    0 -> CanBusServiceManager.VALUE_WINDOW_ALL_OPEN.also { Log.d(TAG, "All windows OPEN command") }
+                    1 -> CanBusServiceManager.VALUE_WINDOW_ALL_CLOSE.also { Log.d(TAG, "All windows CLOSE command") }
+                    else -> { Log.w(TAG, "Unknown window command: $command"); return false }
+                }
+                VehicleState.ALL_WINDOW_CONTROL to value
             }
             else -> {
-                Log.w(TAG, "Unknown window command: $command")
+                Log.w(TAG, "Unknown window classify: $classify")
                 return false
             }
         }
 
-        // Используем IVI для управления окнами
-        val vehicleState = VehicleState.ALL_WINDOW_CONTROL
         Log.d(TAG, "Window Command: state=$vehicleState (${vehicleState.ordinal}), value=$windowState")
         canBusManager.setVehicleState(vehicleState, windowState)
         return true
@@ -155,8 +164,14 @@ class AIDLVehicleCommandExecutor(
     private fun executeChargport(command: Int): Boolean {
         // command: 1=OPEN, 2=CLOSE (из config.json)
         val value = when (command) {
-            1 -> CanBusServiceManager.VALUE_OPEN   // открыть
-            2 -> CanBusServiceManager.VALUE_CLOSE  // закрыть
+            1 -> {
+                Log.d(TAG, "Chargport OPEN command")
+                CanBusServiceManager.VALUE_OPEN   // открыть
+            }
+            2 -> {
+                Log.d(TAG, "Chargport CLOSE command")
+                CanBusServiceManager.VALUE_CLOSE  // закрыть
+            }
             else -> {
                 Log.w(TAG, "Unknown chargport command: $command")
                 return false
@@ -164,7 +179,7 @@ class AIDLVehicleCommandExecutor(
         }
 
         val state = VehicleState.IVI_CHRG_PORT_CAP
-        Log.d(TAG, "Chargport Command: state=$state (${state.ordinal}), value=$value")
+        Log.d(TAG, "Chargport Command: state=$state (ordinal=${state.ordinal}), value=$value")
         canBusManager.setVehicleState(state, value)
         return true
     }
@@ -179,8 +194,14 @@ class AIDLVehicleCommandExecutor(
     private fun executeScuttle(command: Int): Boolean {
         // command: 0=OPEN, 1=CLOSE (из config.json)
         val value = when (command) {
-            0 -> CanBusServiceManager.VALUE_OPEN   // открыть
-            1 -> CanBusServiceManager.VALUE_CLOSE  // закрыть
+            0 -> {
+                Log.d(TAG, "Scuttle OPEN command")
+                CanBusServiceManager.VALUE_OPEN   // открыть
+            }
+            1 -> {
+                Log.d(TAG, "Scuttle CLOSE command")
+                CanBusServiceManager.VALUE_CLOSE  // закрыть
+            }
             else -> {
                 Log.w(TAG, "Unknown scuttle command: $command")
                 return false
@@ -188,7 +209,7 @@ class AIDLVehicleCommandExecutor(
         }
 
         val state = VehicleState.IVI_FUEL_PORT_CAP
-        Log.d(TAG, "Scuttle Command: state=$state (${state.ordinal}), value=$value")
+        Log.d(TAG, "Scuttle Command: state=$state (ordinal=${state.ordinal}), value=$value")
         canBusManager.setVehicleState(state, value)
         return true
     }

@@ -38,6 +38,13 @@ class CanBusServiceManager(context: Context) {
         const val VALUE_CLOSE = 1
         const val VALUE_OPEN = 2
         const val VALUE_ACTIVE = 2
+
+        // Окна — разные значения для одного и всех окон
+        // (DRIVER_WINDOW: 97=OPEN/down, 51=CLOSE/up — инвертировано относительно MyVoya)
+        const val VALUE_WINDOW_DRIVER_OPEN = 97
+        const val VALUE_WINDOW_DRIVER_CLOSE = 51
+        const val VALUE_WINDOW_ALL_OPEN = 3
+        const val VALUE_WINDOW_ALL_CLOSE = 1
     }
 
     // Состояние подключения
