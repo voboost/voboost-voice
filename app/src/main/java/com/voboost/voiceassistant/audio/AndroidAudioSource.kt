@@ -26,7 +26,8 @@ import kotlin.math.max
 class AndroidAudioSource(
     private val context: Context,
     private val sampleRate: Int = AudioSource.SAMPLE_RATE,
-    private val audioSource: Int = MediaRecorder.AudioSource.MIC
+    // VOICE_RECOGNITION = 6, оптимизирован для распознавания речи (как в MyVoya)
+    private val audioSource: Int = MediaRecorder.AudioSource.VOICE_RECOGNITION
 ) : AudioSource {
     
     companion object {
@@ -49,42 +50,71 @@ class AndroidAudioSource(
             Log.d(TAG, "Already initialized")
             return true
         }
-        
+
         if (!hasRecordPermission()) {
             Log.e(TAG, "RECORD_AUDIO permission not granted")
             return false
         }
-        
+
         return try {
             val bufferSize = calculateBufferSize()
-            
-            Log.d(TAG, "Creating AudioRecord: sampleRate=$sampleRate, source=$audioSource, bufferSize=$bufferSize")
-            
-            audioRecord = AudioRecord(
-                audioSource,
+
+            // Пробуем VOICE_RECOGNITION, если не работает — fallback на MIC
+            audioRecord = tryCreateAudioRecord(
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 sampleRate,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            ) ?: tryCreateAudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
                 bufferSize
             )
-            
+
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord failed to initialize, state: ${audioRecord?.state}")
                 audioRecord?.release()
                 audioRecord = null
                 return false
             }
-            
+
             // Применяем аудио-эффекты (как в MyVoya)
             applyAudioEffects()
-            
+
             isInitialized = true
             Log.i(TAG, "✅ AudioRecord initialized successfully")
             true
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to initialize AudioRecord", e)
             false
+        }
+    }
+
+    /**
+     * Безопасно создать AudioRecord с конкретным источником
+     */
+    private fun tryCreateAudioRecord(source: Int, sampleRate: Int, bufferSize: Int): AudioRecord? {
+        return try {
+            Log.d(TAG, "Trying AudioRecord source=$source, sampleRate=$sampleRate, bufferSize=$bufferSize")
+            val record = AudioRecord(
+                source,
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+            
+            if (record.state == AudioRecord.STATE_INITIALIZED) {
+                Log.i(TAG, "✅ AudioRecord initialized with source=$source")
+                record
+            } else {
+                Log.w(TAG, "⚠️ AudioRecord not initialized (state=${record.state}), releasing")
+                record.release()
+                null
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Failed to create AudioRecord with source=$source: ${e.message}")
+            null
         }
     }
     
@@ -158,19 +188,21 @@ class AndroidAudioSource(
             Log.e(TAG, "AudioRecord is null")
             return
         }
-        
+
         try {
             recorder.startRecording()
             isRecording = true
-            
-            // Запускаем поток чтения аудио
+
+            // Запускаем поток чтения аудио с правильным приоритетом
             recordThread = Thread(AudioRecordRunnable(recorder), "AudioRecord-Thread").apply {
-                priority = Process.THREAD_PRIORITY_URGENT_AUDIO
+                // Thread.MAX_PRIORITY = 10, что соответствует высокому приоритету
+                // Thread.MIN_PRIORITY = 1, NORM_PRIORITY = 5
+                priority = Thread.MAX_PRIORITY
                 start()
             }
-            
+
             Log.i(TAG, "✅ Recording started")
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to start recording", e)
             isRecording = false

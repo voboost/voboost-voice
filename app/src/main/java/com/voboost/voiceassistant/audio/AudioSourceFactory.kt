@@ -20,50 +20,47 @@ object AudioSourceFactory {
      * Тип аудио-источника
      */
     enum class SourceType {
-        /** TransProxy через QGSpeechService (рекомендуется) */
-        TRANSPROXY,
-        
-        /** Системный RecorderManager */
+        /** RecorderManager через QGSpeechService (рекомендуется) */
         RECORDER_MANAGER,
-        
+
+        /** TransProxy через QGSpeechService (НЕ работает - только выход на телефон) */
+        @Deprecated("TransProxy does NOT provide microphone input")
+        TRANSPROXY,
+
         /** Стандартный Android AudioRecord (fallback) */
         ANDROID
     }
     
     /**
      * Создать AudioSource с автоматическим выбором лучшего источника
-     * 
+     *
      * @param context Android Context
-     * @param preferredType Предпочтительный тип (по умолчанию TRANSPROXY)
+     * @param preferredType Предпочтительный тип (по умолчанию RECORDER_MANAGER)
      * @return AudioSource (никогда null)
      */
     fun create(
         context: Context,
-        preferredType: SourceType = SourceType.TRANSPROXY
+        preferredType: SourceType = SourceType.RECORDER_MANAGER
     ): AudioSource {
         return when (preferredType) {
-            SourceType.TRANSPROXY -> {
-                val transProxySource = MicrophoneStreamAudioSource(context)
-                if (transProxySource.initialize()) {
-                    Log.i(TAG, "✅ Using MicrophoneStreamAudioSource (TransProxy)")
-                    transProxySource
-                } else {
-                    Log.w(TAG, "⚠️ TransProxy unavailable, falling back to AndroidAudioSource")
-                    createAndroidSource(context)
-                }
-            }
-            
             SourceType.RECORDER_MANAGER -> {
                 val recorderManagerSource = RecorderManagerAudioSource(context)
                 if (recorderManagerSource.initialize()) {
-                    Log.i(TAG, "✅ Using RecorderManagerAudioSource (system)")
+                    Log.i(TAG, "✅ Using RecorderManagerAudioSource (system microphone)")
                     recorderManagerSource
                 } else {
                     Log.w(TAG, "⚠️ RecorderManager unavailable, falling back to AndroidAudioSource")
                     createAndroidSource(context)
                 }
             }
-            
+
+            SourceType.TRANSPROXY -> {
+                // TransProxy НЕ работает для получения микрофона!
+                Log.w(TAG, "⚠️ TransProxy deprecated - does NOT provide microphone input")
+                Log.w(TAG, "⚠️ Falling back to AndroidAudioSource")
+                createAndroidSource(context)
+            }
+
             SourceType.ANDROID -> {
                 Log.i(TAG, "Using AndroidAudioSource (fallback)")
                 createAndroidSource(context)

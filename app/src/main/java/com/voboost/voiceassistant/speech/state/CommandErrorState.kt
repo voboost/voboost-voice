@@ -46,7 +46,8 @@ class CommandErrorState(
     }
 
     override suspend fun activate(): State {
-        Log.i(TAG, "Cannot activate from CommandErrorState, ignoring")
-        return this
+        Log.i(TAG, "Activate from CommandErrorState → ActivatedState")
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 }

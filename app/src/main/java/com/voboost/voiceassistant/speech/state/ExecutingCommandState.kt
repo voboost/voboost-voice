@@ -8,6 +8,9 @@ import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Состояние: Выполнение команды
@@ -40,16 +43,33 @@ class ExecutingCommandState(
         Log.i(TAG, "Entering EXECUTING_COMMAND state: ${command.id}")
 
         return try {
-            // Выполняем команду
+            // ОТКЛЮЧИТЬ распознавание пока TTS говорит ответ (чтобы не было ЭХО)
+            speechRecognizer.setMode(SpeechRecognizer.Mode.MUTED)
+
+            // Выполняем команду (внутри TTS скажет "Закрываю окно")
             commandExecutor.executeCommand(command)
             Log.i(TAG, "Command executed successfully: ${command.id}")
 
-            // Успех → возвращаемся к ожиданию ключевого слова
+            // Ждём пока TTS закончит говорить (короткая задержка)
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                delay(2500) // Даем TTS время договорить
+            }
+
+            // ВКЛЮЧИТЬ распознавание ключевых слов (TTS закончил)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+            // Успех → возвращаемся к ожиданию ключевого слова
             IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+
+        } catch (e: CancellationException) {
+            Log.d(TAG, "ExecutingCommandState cancelled")
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error executing command: ${command.id}", e)
+            // Восстановить распознавание при ошибке
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
             CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
         }
     }

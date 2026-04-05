@@ -9,6 +9,7 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.speech.SpeechResult
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /**
@@ -49,6 +50,11 @@ class IdleState(
 
             // Ключевое слово получено → ActivatedState
             ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+
+        } catch (e: CancellationException) {
+            // Это нормально — coroutine отменён при активации через кнопку или другое состояние
+            Log.d(TAG, "IdleState coroutine cancelled (normal during activation)")
+            throw e // Пробрасываем дальше чтобы State Machine мог корректно обработать
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)

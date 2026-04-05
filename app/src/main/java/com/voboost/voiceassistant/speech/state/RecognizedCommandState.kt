@@ -8,6 +8,7 @@ import com.voboost.voiceassistant.executor.CommandExecutor
 import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CancellationException
 
 /**
  * Состояние: Распознана команда
@@ -62,6 +63,10 @@ class RecognizedCommandState(
                 Log.w(TAG, "Unrecognized command: '$text'")
                 CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
             }
+
+        } catch (e: CancellationException) {
+            Log.d(TAG, "RecognizedCommandState cancelled")
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing command", e)

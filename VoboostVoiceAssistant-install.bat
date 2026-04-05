@@ -85,6 +85,8 @@ adb shell am start-foreground-service -a com.voboost.voiceassistant.START com.vo
 
 adb shell am force-stop com.voboost.voiceassistant
 
+adb.exe" shell pm enable com.voboost.voiceassistant 
+
 adb.exe shell am start-foreground-service com.voboost.voiceassistant/.VoboostVoiceService
 
  Starting service: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.v    │
@@ -101,6 +103,37 @@ adb.exe shell am start-foreground-service com.voboost.voiceassistant/.VoboostVoi
      12 # ИЛИ через компонент:
      13 adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
 
+
+ Вот набор ADB команд для поиска сервиса:
+
+      1 # 1. Найти все пакеты с "qinggan" в имени
+      2 adb shell pm list packages | grep qinggan
+      3
+      4 # 2. Найти конкретно com.qinggan.qinglink
+      5 adb shell pm list packages | grep qinglink
+      6
+      7 # 3. Найти кто обрабатывает intent MICPHONEMODE
+      8 adb shell dumpsys package | grep -A5 "MICPHONEMODE"
+      9
+     10 # 4. Или найти через activity services
+     11 adb shell dumpsys activity services | grep -i MICPHONEMODE
+     12
+     13 # 5. Получить информацию о найденном пакете
+     14 adb shell dumpsys package com.qinggan.qinglink
+     15
+     16 # 6. Найти путь к APK
+     17 adb shell pm path com.qinggan.qinglink
+     18
+     19 # 7. Вытащить APK для декомпиляции
+     20 adb pull /system/priv-app/QingLink/QingLink.apk
+     21
+     22 # 8. Декомпилировать (на ПК)
+     23 jadx -d decompiled_qinglink QingLink.apk
+
+    Самый быстрый способ:
+
+     1 # Одна команда - найти всё что связано с MICPHONEMODE
+     2 adb shell dumpsys package | grep -B20 "MICPHONEMODE" | grep -E "Package|Service|intent"
 
 
 echo [OK] Сервис запущен

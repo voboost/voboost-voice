@@ -9,7 +9,11 @@ import com.voboost.voiceassistant.nlu.NLUEngine
 import com.voboost.voiceassistant.speech.SpeechRecognizer
 import com.voboost.voiceassistant.speech.SpeechResult
 import com.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Состояние: Слушаем команду
@@ -20,6 +24,7 @@ import kotlinx.coroutines.flow.first
  * 3. Если команда получена → RecognizedCommandState
  * 4. Если таймаут → TimeoutState
  * 5. Если ошибка → CommandErrorState
+ * 6. Если нажата кнопка (cancel) → звук отмены + TTS "Отмена" → IdleState
  */
 class ListeningCommandState(
     private val speechRecognizer: SpeechRecognizer,
@@ -88,6 +93,24 @@ class ListeningCommandState(
                     IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
                 }
             }
+
+        } catch (e: CancellationException) {
+            // Нормальная ситуация при нажатии кнопки во время слушания команды
+            Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
+            
+            // Воспроизводим звук отмены и говорим "Отмена"
+            context.soundEffectManager?.playCancelSound()
+            
+            // Ждём пока TTS закончит говорить "Отмена"
+            val ttsLatch = CountDownLatch(1)
+            ttsEngine.speak("Отмена") {
+                ttsLatch.countDown()
+            }
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                ttsLatch.await(3, TimeUnit.SECONDS)
+            }
+            
+            throw e // Пробрасываем дальше для корректной отмены
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)

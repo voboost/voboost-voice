@@ -39,7 +39,9 @@ class SpeechRecognizer(
         /** Ожидание ключевого слова */
         KEYWORD,
         /** Ожидание команды */
-        COMMAND
+        COMMAND,
+        /** МИКРОФОН ОТКЛЮЧЁН — TTS говорит, не распознаём */
+        MUTED
     }
 
     /** Результаты распознавания (SharedFlow — не накапливает, всегда актуальные) */
@@ -171,6 +173,12 @@ class SpeechRecognizer(
      */
     private suspend fun recognitionLoop() {
         while (isRunning.get()) {
+            // В режиме MUTED — пропускаем обработку (TTS говорит)
+            if (mode == Mode.MUTED) {
+                delay(50)
+                continue
+            }
+
             // Проверка таймаута
             if (hasTimedOut()) {
                 handleTimeout()
@@ -223,6 +231,11 @@ class SpeechRecognizer(
                 Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text} (zone=$zone)")
                 results.tryEmit(SpeechResult.CommandReceived(result.text, zone))
             }
+
+            Mode.MUTED -> {
+                // Игнорируем результаты когда TTS говорит
+                Log.d(TAG, "Ignoring result during TTS: ${result.text}")
+            }
         }
     }
 
@@ -240,6 +253,10 @@ class SpeechRecognizer(
                 Log.d(TAG, "Command timeout reached")
                 results.tryEmit(SpeechResult.Timeout)
             }
+
+            Mode.MUTED -> {
+                // Нет таймаута когда TTS говорит
+            }
         }
     }
 
@@ -251,6 +268,7 @@ class SpeechRecognizer(
         return when (mode) {
             Mode.KEYWORD -> elapsed > KEYWORD_TIMEOUT_MS
             Mode.COMMAND -> elapsed > COMMAND_TIMEOUT_MS
+            Mode.MUTED -> false // Нет таймаута когда MUTE
         }
     }
 }

@@ -56,9 +56,18 @@ class StateMachine(
                 while (isActive) {
                     // Создаём дочерний job для текущего состояния
                     stateJob = launch {
-                        state = state.execute()  // ← Цепочка!
-                        Log.d(TAG, "State transition: ${currentState::class.simpleName} → ${state::class.simpleName}")
-                        currentState = state
+                        try {
+                            state = state.execute()  // ← Цепочка!
+                            Log.d(TAG, "State transition: ${currentState::class.simpleName} → ${state::class.simpleName}")
+                            currentState = state
+                        } catch (e: CancellationException) {
+                            // Нормальная ситуация при activate/cancel — состояние уже обновлено через activate()/cancel()
+                            Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
+                            // currentState уже обновлён через activate()/cancel(), продолжаем цикл
+                        } catch (e: Exception) {
+                            Log.e(TAG, "State execution error", e)
+                            currentState = state  // Остаёмся на текущем состоянии
+                        }
                     }
 
                     // Ждём завершения состояния

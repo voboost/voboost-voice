@@ -247,6 +247,7 @@ class VoboostVoiceService : Service() {
 
         // State Machine - управление состояниями
         val context = StateContext()
+        context.soundEffectManager = soundEffectManager
         val initialState = IdleState(
             speechRecognizer = speechRecognizer,
             overlayManager = overlayManager,
@@ -352,10 +353,14 @@ class VoboostVoiceService : Service() {
         voiceZoneDetector = null
         Log.d(TAG, "VoiceZoneDetector disconnected")
         
-        // Освобождаем AudioSource
-        audioSource.stop()
-        audioSource.release()
-        Log.d(TAG, "AudioSource released")
+        // Освобождаем AudioSource (если инициализирован)
+        if (::audioSource.isInitialized) {
+            audioSource.stop()
+            audioSource.release()
+            Log.d(TAG, "AudioSource released")
+        } else {
+            Log.w(TAG, "AudioSource not initialized, skipping release")
+        }
 
         // Отключаем CanBus Manager
         try {

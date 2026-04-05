@@ -51,7 +51,9 @@ class KeywordErrorState(
     }
 
     override suspend fun activate(): State {
-        Log.i(TAG, "Cannot activate from KeywordErrorState, ignoring")
-        return this
+        Log.i(TAG, "Activate from KeywordErrorState → ActivatedState")
+        // Кнопка на руле должна активировать помощник даже из состояния ошибки
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
     }
 }
