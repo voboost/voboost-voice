@@ -1,164 +1,226 @@
 @echo off
 REM ============================================================================
-REM  VoboostVoiceAssistant - Установка и тестирование
+REM  VoboostVoiceAssistant - Установка и запуск
+REM ============================================================================
+REM  Этот скрипт:
+REM  1. Отключает стандартные голосовые ассистенты (Qinggan IVoka, STT)
+REM  2. Собирает и устанавливает APK
+REM  3. Копирует модели (Vosk + Sherpa TTS)
+REM  4. Выдаёт разрешения
+REM  5. Запускает сервис
 REM ============================================================================
 
+setlocal enabledelayedexpansion
+
+REM Путь к ADB
+set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
+set "PATH=%ADB_PATH%;%PATH%"
+
+REM Путь к проекту
+set "PROJECT_DIR=%~dp0"
+
 echo.
 echo ============================================================================
-echo  VoboostVoiceAssistant - Установка
+echo  VoboostVoiceAssistant - Развёртывание на устройстве
 echo ============================================================================
+echo.
+echo ВНИМАНИЕ: Этот скрипт НЕ собирает проект!
+echo Убедитесь что APK уже собран (через Android Studio или build-project.bat)
+echo.
+timeout /t 2 /nobreak
+
+REM ============================================================================
+REM  Шаг 1: Отключение стандартных голосовых ассистентов
+REM ============================================================================
+echo [1/7] Отключение стандартных голосовых ассистентов...
+adb shell pm disable com.qinggan.ivoka       >nul 2>&1
+if errorlevel 0 echo   [OK] com.qinggan.ivoka отключён
+adb shell pm disable com.qinggan.ivoka1      >nul 2>&1
+if errorlevel 0 echo   [OK] com.qinggan.ivoka1 отключён
+adb shell pm disable com.qinggan.sttservice  >nul 2>&1
+if errorlevel 0 echo   [OK] com.qinggan.sttservice отключён
 echo.
 
-REM Проверка ADB
-echo [1/7] Проверка ADB...
-adb devices >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] ADB не найден! Установите Android SDK Platform Tools.
+REM ============================================================================
+REM  Шаг 2: Проверка наличия APK
+REM ============================================================================
+echo [2/7] Проверка наличия APK...
+set "APK_PATH=app\build\outputs\apk\debug\app-debug.apk"
+if not exist "%APK_PATH%" (
+    echo [ERROR] APK не найден: %APK_PATH%
+    echo Сначала соберите проект:
+    echo   - Через Android Studio: Build ^> Make Project
+    echo   - Или запустите: build-project.bat
     pause
     exit /b 1
 )
-echo [OK] ADB найден
+echo [OK] APK найден: %APK_PATH%
 echo.
 
-REM Сборка проекта
-echo [2/7] Сборка проекта...
-cd /d "%~dp0VoboostVoiceAssistant"
-call gradlew.bat assembleDebug
-if errorlevel 1 (
-    echo [ERROR] Ошибка сборки!
-    pause
-    exit /b 1
-)
-echo [OK] Сборка завершена
-echo.
-
-REM Установка APK
+REM ============================================================================
+REM  Шаг 3: Установка APK
+REM ============================================================================
 echo [3/7] Установка APK...
-adb install -r app\build\outputs\apk\debug\app-debug.apk
+adb root >nul 2>&1
+timeout /t 1 /nobreak >nul
+adb remount >nul 2>&1
+
+REM Удаляем старую версию и ставим новую
+adb shell rm -rf /system/priv-app/VoboostVoiceAssistant >nul 2>&1
+adb push app\build\outputs\apk\debug\app-debug.apk ^
+  /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk >nul 2>&1
+
 if errorlevel 1 (
-    echo [ERROR] Ошибка установки!
+    echo [ERROR] Ошибка установки APK!
     pause
     exit /b 1
 )
-echo [OK] APK установлен
+adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk >nul 2>&1
+echo [OK] APK установлен как системное приложение
 echo.
 
-REM Разрешения
-echo [4/7] Выдача разрешений...
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
-adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
-echo [OK] Разрешения выданы
+REM ============================================================================
+REM  Шаг 4: Копирование моделей
+REM ============================================================================
+echo [4/7] Копирование моделей (Vosk + Sherpa TTS)...
+
+REM Создаём директории
+adb shell mkdir -p /data/user/0/com.voboost.voiceassistant/files/models/vosk >nul 2>&1
+adb shell mkdir -p /data/user/0/com.voboost.voiceassistant/files/models/sherpa >nul 2>&1
+
+REM Копируем Vosk модель (русский язык, ~50MB)
+if exist "models\vosk\vosk-model-small-ru-0.22" (
+    adb push models\vosk\vosk-model-small-ru-0.22 ^
+      /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22 >nul 2>&1
+    if errorlevel 0 (
+        echo   [OK] Vosk модель скопирована
+    ) else (
+        echo   [WARN] Ошибка копирования Vosk модели
+    )
+) else (
+    echo   [WARN] Vosk модель не найдена: models\vosk\vosk-model-small-ru-0.22
+)
+
+REM Копируем Sherpa TTS модель (русская Piper, ~80MB)
+if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
+    adb push models\sherpa\tts-ru-model-temp\tts-ru-model ^
+      /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model >nul 2>&1
+    if errorlevel 0 (
+        echo   [OK] Sherpa TTS модель скопирована
+    ) else (
+        echo   [WARN] Ошибка копирования Sherpa TTS модели
+    )
+) else (
+    echo   [WARN] Sherpa TTS модель не найдена: models\sherpa\tts-ru-model-temp\tts-ru-model
+)
+
+REM Устанавливаем права
+adb shell chown -R 10068:10068 /data/user/0/com.voboost.voiceassistant/files/models >nul 2>&1
+adb shell chmod -R 755 /data/user/0/com.voboost.voiceassistant/files/models >nul 2>&1
+echo [OK] Модели установлены
 echo.
 
-REM Отключение стандартных сервисов
-echo [5/7] Отключение стандартных голосовых ассистентов...
-adb shell pm disable com.qinggan.ivoka
-adb shell pm disable com.qinggan.ivoka1
-adb shell pm disable com.qinggan.sttservice
+REM ============================================================================
+REM  Шаг 5: Инициализация приложения и разрешения
+REM ============================================================================
+echo [5/7] Инициализация приложения и выдача разрешений...
 
+REM Инициализируем данные приложения (создаёт /data/user_de/0/...)
+adb shell cmd package install-existing com.voboost.voiceassistant >nul 2>&1
+echo   [OK] Данные приложения инициализированы
 
-adb shell pm enable com.voboost.voiceassistant
-
-echo [OK] Стандартные сервисы отключены
+REM Выдаём разрешения
+adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
+adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
+adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
+echo   [OK] Разрешения выданы (RECORD_AUDIO, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)
 echo.
 
-REM Запуск сервиса
-echo [6/7] Запуск VoboostVoiceService...
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
-.\adb shell am start-foreground-service com.voboost.voiceassistant/.VoboostVoiceService
+REM ============================================================================
+REM  Шаг 6: Перезагрузка для регистрации системного приложения
+REM ============================================================================
+echo [6/7] Перезагрузка устройства для регистрации системного приложения...
+echo   ВНИМАНИЕ: Устройство будет перезагружено через 3 секунды!
+echo   (Нажмите Ctrl+C для отмены)
+timeout /t 3 /nobreak
 
-adb shell settings put global hidden_api_policy 1
+adb shell reboot
+echo   Ожидание перезагрузки...
+timeout /t 30 /nobreak
 
-adb.exe shell "setenforce 0"
-adb.exe shell "getenforce"
-adb.exe shell "am force-stop com.voboost.voiceassistant"
+REM Ждём полного запуска системы
+echo   Ожидание загрузки системы (ещё 30 секунд)...
+timeout /t 30 /nobreak
 
-adb.exe shell "pm disable com.voboost.voiceassistant"
-
-adb shell pm list permissions -f | grep -A 1 WRITE_CANBUS
-
-
-
-adb shell am start-foreground-service -a com.voboost.voiceassistant.START com.voboost.voiceassistant/.VoboostVoiceService
-
-
-adb shell am force-stop com.voboost.voiceassistant
-
-adb.exe" shell pm enable com.voboost.voiceassistant 
-
-adb.exe shell am start-foreground-service com.voboost.voiceassistant/.VoboostVoiceService
-
- Starting service: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.v    │
-  │    oboost.voiceassistant/.VoboostVoiceService }  
-  
-   # 2. Выдать разрешения
-      5 adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-      6 adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
-      7 adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
-      8
-      9 # 3. Запустить сервис (ПРАВИЛЬНАЯ КОМАНДА)
-     10 adb shell am start-foreground-service -a com.voboost.voiceassistant.START com.voboost.voiceassistant/.VoboostVoiceService
-     11
-     12 # ИЛИ через компонент:
-     13 adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
-
-
- Вот набор ADB команд для поиска сервиса:
-
-      1 # 1. Найти все пакеты с "qinggan" в имени
-      2 adb shell pm list packages | grep qinggan
-      3
-      4 # 2. Найти конкретно com.qinggan.qinglink
-      5 adb shell pm list packages | grep qinglink
-      6
-      7 # 3. Найти кто обрабатывает intent MICPHONEMODE
-      8 adb shell dumpsys package | grep -A5 "MICPHONEMODE"
-      9
-     10 # 4. Или найти через activity services
-     11 adb shell dumpsys activity services | grep -i MICPHONEMODE
-     12
-     13 # 5. Получить информацию о найденном пакете
-     14 adb shell dumpsys package com.qinggan.qinglink
-     15
-     16 # 6. Найти путь к APK
-     17 adb shell pm path com.qinggan.qinglink
-     18
-     19 # 7. Вытащить APK для декомпиляции
-     20 adb pull /system/priv-app/QingLink/QingLink.apk
-     21
-     22 # 8. Декомпилировать (на ПК)
-     23 jadx -d decompiled_qinglink QingLink.apk
-
-    Самый быстрый способ:
-
-     1 # Одна команда - найти всё что связано с MICPHONEMODE
-     2 adb shell dumpsys package | grep -B20 "MICPHONEMODE" | grep -E "Package|Service|intent"
-
-
-echo [OK] Сервис запущен
+REM Проверяем, что устройство подключено
+adb wait-for-device
+timeout /t 5 /nobreak
+echo [OK] Устройство загружено
 echo.
 
-REM Проверка логов
-echo [7/7] Проверка логов (нажмите Ctrl+C для остановки)...
-timeout /t 2 >nul
+REM ============================================================================
+REM  Шаг 7: Запуск сервиса
+REM ============================================================================
+echo [7/7] Запуск VoboostVoiceService...
+
+REM Убеждаемся что приложение включено
+adb shell pm enable com.voboost.voiceassistant >nul 2>&1
+
+REM Останавливаем если было запущено
+adb shell am force-stop com.voboost.voiceassistant >nul 2>&1
+timeout /t 2 /nobreak
+
+REM Запускаем foreground сервис
+adb shell am start-foreground-service --user 0 ^
+  -n com.voboost.voiceassistant/.VoboostVoiceService
+
+if errorlevel 1 (
+    echo [ERROR] Ошибка запуска сервиса!
+    pause
+    exit /b 1
+)
+
+REM Ждём инициализации
+timeout /t 5 /nobreak
+
+REM Проверяем что процесс запущен
+adb shell ps | findstr voboost >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] Процесс не найден! Проверьте логи:
+    adb logcat -d -t 50 | findstr /i "voboost fatal error"
+    pause
+    exit /b 1
+)
+echo [OK] Сервис запущен и работает
+echo.
+
+REM ============================================================================
+REM  Проверка логов
+REM ============================================================================
+echo ============================================================================
+echo  Проверка логов (нажмите Ctrl+C для остановки)...
+echo ============================================================================
+echo.
 adb logcat -c
+timeout /t 2 /nobreak
+echo Ожидание логов VoboostVoiceService...
 echo.
-echo Ожидание логов Voboost (Ctrl+C для остановки)...
-echo.
-adb logcat | findstr /i "voboost SoundEffect"
+adb logcat | findstr /i "VoboostVoiceService StateMachine SpeechRecognizer"
 
 echo.
 echo ============================================================================
-echo  Готово!
+echo  Готово! VoboostVoiceAssistant развёрнут и работает!
 echo ============================================================================
 echo.
-echo Дальнейшие шаги:
-echo   1. Запустите Frida скрипт:
-echo      frida -U -f com.qinggan.sttservice -l ..\frida-voice-button.js --no-pause
+echo Как использовать:
+echo   1. Нажмите кнопку голосового управления на руле
+echo   2. Дождитесь звукового сигнала и фразы "Слушаю вас"
+echo   3. Скажите команду (например: "открой окно", "закрой окно")
 echo.
-echo   2. Нажмите кнопку на руле
+echo Просмотр логов:
+echo   adb logcat -s VoboostVoiceService:* StateMachine:* SpeechRecognizer:*
 echo.
-echo   3. Проверьте логи
+echo Остановка сервиса:
+echo   adb shell am force-stop com.voboost.voiceassistant
 echo.
 pause

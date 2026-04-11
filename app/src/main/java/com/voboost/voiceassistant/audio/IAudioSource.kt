@@ -62,7 +62,7 @@ interface IAudioSource {
     fun isRecording(): Boolean
     
     companion object {
-        const val SAMPLE_RATE = 16000
+        const val SAMPLE_RATE = 16000  // Vosk модель ожидает 16000
         const val CHANNELS = 1
         const val BITS_PER_SAMPLE = 16
     }

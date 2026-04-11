@@ -1,21 +1,49 @@
 package com.voboost.voiceassistant.executor.handlers.aidl.airconditioner
 
+import android.util.Log
 import com.qinggan.canbus.AirConditionState
 import com.voboost.voiceassistant.canbus.CanBusServiceManager
+import com.voboost.voiceassistant.config.ActionConfig
+import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
  * Выключить кондиционер
  *
- * config.json:
- *   id: "ac_close", classify: 5, command: 1
- *
- * CAN-шина:
- *   AirConditionState.AC_POWER_SWITCH
- *   value: CLOSE (0)
+ * Перед выключением проверяет текущее состояние:
+ * - Если уже выключен — ничего не делает
+ * - Если включён — отправляет команду выключения
  */
 class AirConditionerCloseHandler(
-    canBusManager: CanBusServiceManager
-) : AbstractAirConditionerHandler("ac_close", canBusManager) {
-    override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> =
-        AirConditionState.AC_POWER_SWITCH to AirConditionState.CLOSE
+    private val canBusManager: CanBusServiceManager
+) : ICommandHandler {
+
+    override val commandId: String = "ac_close"
+
+    override fun execute(
+        config: ActionConfig,
+        voiceParams: Map<String, Any>
+    ): Boolean {
+        if (!canBusManager.isConnected()) {
+            Log.w(TAG, "Not connected to CanBusService")
+            return false
+        }
+
+        val airCondition = canBusManager.getAirCondition()
+        val currentStatus = airCondition?.airSWStatus ?: -1
+
+        Log.d(TAG, "AC close: current airSWStatus=$currentStatus")
+
+        if (currentStatus == 0) {
+            Log.i(TAG, "AC already OFF, skipping")
+            return true  // Уже выключен — считаем успешным
+        }
+
+        // Отправляем команду (value=1 — toggle, как с бензобаком)
+        Log.d(TAG, "Turning AC OFF with value=1")
+        return canBusManager.setAirConditionState(AirConditionState.AC_POWER_SWITCH, 1)
+    }
+
+    companion object {
+        const val TAG = "AirConditionerClose"
+    }
 }

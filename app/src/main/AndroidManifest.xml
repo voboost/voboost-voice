@@ -43,15 +43,27 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="34">
 
+        <!-- ✅ Невидимая Activity для foreground context при автозапуске -->
+        <activity
+            android:name=".BootActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:exported="true"
+            android:stateNotNeeded="true" />
+
         <!-- ✅ Главный сервис -->
         <service
             android:name=".VoboostVoiceService"
             android:enabled="true"
             android:exported="true"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
             android:foregroundServiceType="microphone"
             android:stopWithTask="false">
             <intent-filter>
                 <action android:name="com.voboost.voiceassistant.START" />
+                <!-- Добавьте стандартный экшен для голосовых сервисов -->
+                <action android:name="android.service.voice.VoiceInteractionService" />
             </intent-filter>
         </service>
 
@@ -70,8 +82,9 @@
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
+            android:exported="true"
+            android:directBootAware="true">
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="android.intent.action.REBOOT" />

@@ -3,11 +3,14 @@ package com.voboost.voiceassistant
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 
 /**
  * Приемник загрузки системы
  * Автоматически запускает сервис при включении устройства
+ *
+ * Запускаем СРАЗУ — система уже готова (BOOT_COMPLETED приходит после полной загрузки)
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -18,7 +21,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
 
-        Log.d(TAG, "Received broadcast: $action")
+        Log.i(TAG, "Received broadcast: $action")
 
         // Проверяем тип загрузки
         when (action) {
@@ -45,23 +48,23 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Запустить голосовой сервис
+     * Запустить невидимую BootActivity для получения foreground context.
+     * 
+     * Android 10+ запрещает запуск foreground service с микрофоном из фона.
+     * BootActivity запускается с foreground context и стартует сервис,
+     * получая полный доступ к микрофону.
      */
     private fun startVoiceService(context: Context) {
         try {
-            val serviceIntent = Intent(context, VoboostVoiceService::class.java)
+            val activityIntent = Intent(context, BootActivity::class.java)
+            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(activityIntent)
 
-            // Для Android 8.0+ нужен foreground service
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
-            }
+            Log.i(TAG, "✅ BootActivity launched — will start foreground service with mic access")
 
-            Log.i(TAG, "Voice service started successfully")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start voice service", e)
+        }
+        catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to start BootActivity", e)
         }
     }
 }

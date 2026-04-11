@@ -35,14 +35,15 @@ class CanBusServiceManager(context: Context) {
         private const val SERVICE_BIND_TIMEOUT_MS = 5000L
 
         // Константы для значений состояний
-        const val VALUE_CLOSE = 1
-        const val VALUE_OPEN = 2
+        const val VALUE_CLOSE = 2  // На этом авто 2=CLOSE (инвертировано)
+        const val VALUE_OPEN = 1   // На этом авто 1=OPEN (проверено на бензобаке)
         const val VALUE_ACTIVE = 2
 
         // Окна — разные значения для одного и всех окон
-        // (DRIVER_WINDOW: 97=OPEN/down, 51=CLOSE/up — инвертировано относительно MyVoya)
-        const val VALUE_WINDOW_DRIVER_OPEN = 97
-        const val VALUE_WINDOW_DRIVER_CLOSE = 51
+        // ALL: 3=OPEN, 1=CLOSE (правильно)
+        // DRIVER: 97=CLOSE, 51=OPEN (инвертировано — проверено экспериментально)
+        const val VALUE_WINDOW_DRIVER_OPEN = 51
+        const val VALUE_WINDOW_DRIVER_CLOSE = 97
         const val VALUE_WINDOW_ALL_OPEN = 3
         const val VALUE_WINDOW_ALL_CLOSE = 1
     }

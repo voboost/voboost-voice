@@ -1,374 +1,271 @@
-# 🔄 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
+# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Дата последнего обновления:** 2026-04-05
-**Версия:** 18.0 (Voice Zone Detection)
-**Статус:** ✅ ГОТОВО К ТЕСТИРОВАНИЮ
-
----
-
-## 📋 КРАТКАЯ СУММАРИЗАЦИЯ
-
-**Проект:** `VoboostVoiceAssistant`
-**Папка:** `D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant`
-**Задача:** Голосовой помощник для автомобиля на русском языке с офлайн распознаванием
+**Дата восстановления:** 2026-04-11
+**Версия:** 19.1 (AudioRecord retry + Builder API)
+**Статус:** ✅ Работает при ручном запуске | ❌ Не работает при автозапуске после BOOT
 
 ---
 
-## 🎯 ОСНОВНАЯ ФУНКЦИОНАЛЬНОСТЬ
+## 🎯 ОПИСАНИЕ ПРОЕКТА
 
-### Что умеет:
-- ✅ **Распознавание речи (офлайн)** — Vosk, русская модель
-- ✅ **Синтез речи (TTS)** — Sherpa-ONNX, русский язык
-- ✅ **Активация по ключевому слову** — "Привет машина" или "Привет, Вобуст"
-- ✅ **Активация кнопкой на руле** — через CAN-шину
-- ✅ **Выполнение команд автомобиля** — лючки, окна, кондиционер, режимы
-- ✅ **TSR Speed Limit Warnings** — предупреждения о превышении скорости
-- ✅ **Определение зоны говорящего** — через IMicphoneMode AIDL
-- ✅ **State Machine архитектура** — 9 состояний
+**Оффлайн голосовой ассистент для автомобильных ГУ**
+- **Платформа:** Android 11, API 30 (minSdk=26, targetSdk=33)
+- **Package:** `com.voboost.voiceassistant` (uid: u0_a68, НЕ system)
+- **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
+- **Язык:** Kotlin 100%
+- **Распознавание:** Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium)
+- **CAN-шина:** через AIDL `com.qinggan.canbus.ICanBusService`
 
 ---
 
-## 🏗️ АРХИТЕКТУРА
+## 🏗 АРХИТЕКТУРА
 
-### Главный сервис: `VoboostVoiceService.kt` (495 строк)
-
-**Компоненты:**
-```kotlin
-- StateMachine                    // State machine с 9 состояниями
-- SpeechRecognizer                // Распознавание речи (SharedFlow-based)
-- CommandHandler                  // NLU → CommandExecutor
-- ConfigManager                   // Загрузка config.json
-- NLUEngine                       // Парсинг команд
-- CommandExecutor                 // Выполнение команд
-- OverlayManager                  // UI оверлеи
-- SpeechSynthesis (Sherpa TTS)    // Синтез речи
-- SoundEffectManager              // Звуковые эффекты
-- AudioSource (TransProxy)        // Аудио поток
-- CanBusServiceManager            // CAN-шина
-- VoiceButtonHandler              // Кнопка на руле
-- TSRSpeedLimitHandler            // TSR предупреждения
-- VolumeManager                   // Громкость
-- VoiceZoneDetector               // Зона говорящего
-- MicphoneModeManager             // AIDL IMicphoneMode
-```
+### Главный сервис: `VoboostVoiceService.kt`
+- **Foreground service** с типом `microphone`
+- Запускается через `BootActivity` (foreground context) для получения доступа к микрофону
+- Управляет State Machine (9 состояний)
+- Координирует все компоненты системы
 
 ### State Machine (9 состояний):
-
 ```
-IdleState
-    ↓ (ключевое слово / кнопка)
-ActivatedState
-    ↓
-ListeningCommandState
-    ↓ (распознана команда)
-RecognizedCommandState
-    ↓ (нужно подтверждение?)
-ConfirmationState / ExecutingCommandState
-    ↓
-ExecutingCommandState
-    ↓ (команда выполнена)
-IdleState (цикл повторяется)
+IdleState → ActivatedState → ListeningCommandState → RecognizedCommandState → ExecutingCommandState
+                                       ↓                        ↓
+                                 KeywordErrorState        ConfirmationState
+                                        ↓                         ↓
+                                   CommandErrorState          TimeoutState
 ```
 
-**Дополнительные состояния:**
-- `TimeoutState` — таймаут ожидания
-- `CommandErrorState` — ошибка выполнения команды
-- `KeywordErrorState` — ошибка распознавания ключевого слова
+### Ключевые компоненты:
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| **BootReceiver** | `BootReceiver.kt` | Автозапуск при BOOT_COMPLETED → запускает BootActivity |
+| **BootActivity** | `BootActivity.kt` | Невидимая Activity для foreground context при автозапуске |
+| **State Machine** | `speech/state/*.kt` | Управление состояниями распознавания |
+| **SpeechRecognizer** | `speech/SpeechRecognizer.kt` | Непрерывное распознавание речи |
+| **NLUEngine** | `nlu/NLUEngine.kt` | Паттерн-матчинг команд из config.json |
+| **CommandExecutor** | `executor/CommandExecutor.kt` | Выполнение команд через VehicleCommandExecutor |
+| **TTS Engine** | `tts/TTSEngine.kt` | Синтез речи (Sherpa-ONNX) |
+| **AudioSource** | `audio/*.kt` | Источники аудио (TransProxy, AndroidAudioSource) |
+| **CanBusManager** | `canbus/CanBusServiceManager.kt` | AIDL обёртка к CAN-шине |
+| **VoiceButtonHandler** | `canbus/VoiceButtonHandler.kt` | Кнопка на руле (keycode=16) |
+| **TSRSpeedLimitHandler** | `canbus/TSRSpeedLimitHandler.kt` | Предупреждения о превышении скорости |
+| **OverlayManager** | `ui/OverlayManager.kt` | UI overlay поверх всех окон |
+
+---
+
+## 🔊 АУДИО СИСТЕМА
+
+### AudioSource типы:
+- **TRANSPROXY** — системный источник с шумоподавлением (используется по умолчанию)
+- **AndroidAudioSource** — стандартный AudioRecord
+- **MicrophoneStreamAudioSource** — потоковый микрофон
+- **RecorderManagerAudioSource** — через AudioManager
+
+### Конфигурация:
+```kotlin
+ASR_ENGINE_TYPE = RecognitionEngine.VOSK
+TTS_ENGINE_TYPE = SpeechEngineFactory.SynthesisEngine.SHERPA
+AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY
+```
+
+---
+
+## 🚗 CAN-ШИНА (AIDL)
+
+### Поддерживаемые команды (15):
+
+| ID команды | Действие | Классификатор | Command |
+|------------|----------|---------------|---------|
+| `charge_port_open` | Открыть зарядку | 35 | 1 |
+| `fuel_tank_open` | Открыть бензобак | 19 | 0 |
+| `smart_mode_leisure` | Режим отдыха | 22 | 0 (mode=18) |
+| `smart_mode_child` | Детский режим | 22 | 0 (mode=22) |
+| `smart_mode_romantic` | Романтический режим | 22 | 0 (mode=6) |
+| `ac_open` | Включить кондиционер | 5 | 0 |
+| `ac_close` | Выключить кондиционер | 5 | 1 |
+| `ac_set_temp` | Установить температуру | 5 | 3 |
+| `phone_call_contact` | Позвонить контакту | 1 | 1 |
+| `phone_call_number` | Позвонить по номеру | 1 | 1 |
+| `window_open` | Открыть окно | 2 | 0 |
+| `window_close` | Закрыть окно | 2 | 1 |
+| `window_all_open` | Открыть все окна | 3 | 0 |
+| `window_all_close` | Закрыть все окна | 3 | 1 |
+
+### Особенности CAN-шины:
+- **Бензобак (IVI_FUEL_PORT_CAP):** toggle только с value=1
+- **Окна:** ALL_WINDOW (3=OPEN, 1=CLOSE), DRIVER_WINDOW (97=CLOSE, 51=OPEN — инвертировано)
+- **Кондиционер (AC_POWER_SWITCH):** toggle только с value=1, проверка статуса через `canBusManager.getAirCondition()?.airSWStatus` (1=ON, 0=OFF)
+
+---
+
+## ❌ ТЕКУЩАЯ ПРОБЛЕМА: AudioRecord при автозапуске
+
+### Описание:
+После **перезагрузки ММ** сервис запускается через `BootReceiver`, но **AudioRecord не создаётся**:
+```
+AudioFlinger E createRecord_l(1929445393): AudioFlinger could not create record track, status: -1
+AudioRecord  E createRecord_l(0): AudioFlinger could not create record track, status: -1
+```
+
+### Диагностика:
+- **dvr_service** (PID ~6124, uid root/1000) держит микрофон
+- Session ID `1929445393` — заглушка ошибки AudioFlinger
+- **dvr_service использует AUDIO_SOURCE_ECHO_REFERENCE (1997)** — это НЕ мешает нам при ручном запуске
+- При ручном запуске (`am start-foreground-service`) — **всё работает идеально**
+
+### Решение:
+Нужно убить **ОБА процесса**:
+1. `dvr_service` (root, держит микрофон)
+2. `audioserver` (AudioFlinger, замороженные сессии)
+
+После этого audioserver автоматически перезапустится через HIDL init.
+
+### Рабочий тест:
+Когда вручную убивали audioserver (`kill 429`), AudioRecord создавался с session ID `54` и работал.
 
 ---
 
 ## 📁 СТРУКТУРА ПРОЕКТА
 
 ```
-app/src/main/java/com/voboost/voiceassistant/
-├── VoboostVoiceService.kt           # Главный сервис (495 строк)
-├── VoiceCommandReceiver.kt          # Broadcast receiver
-├── BootReceiver.kt                  # Автозапуск
-├── SoundEffectManager.kt            # Звуковые эффекты
-│
-├── speech/
-│   ├── SpeechRecognizer.kt          # Распознавание (SharedFlow)
-│   ├── CommandHandler.kt            # NLU → CommandExecutor
-│   ├── KeywordChecker.kt            # Проверка ключевых слов
-│   ├── RecognitionEngine.kt         # Интерфейс движка
-│   ├── RecognitionResult.kt         # Результат
-│   ├── SpeechResult.kt              # sealed class (+zone)
-│   ├── ModelLoader.kt               # Интерфейс загрузчика
-│   ├── StreamFactory.kt             # Фабрика потоков
-│   │
-│   └── state/
-│       ├── State.kt                 # Интерфейс состояния
-│       ├── StateMachine.kt          # Главный цикл
-│       ├── StateContext.kt          # Передача данных (+zone)
-│       ├── BaseState.kt             # Базовый класс
-│       ├── StateResult.kt           # Результат состояния
-│       ├── IdleState.kt             # Ожидание ключевого слова
-│       ├── ActivatedState.kt        # Активация
-│       ├── ListeningCommandState.kt # Слушаем команду
-│       ├── RecognizedCommandState.kt
-│       ├── ConfirmationState.kt
-│       ├── ExecutingCommandState.kt
-│       ├── TimeoutState.kt
-│       ├── CommandErrorState.kt
-│       └── KeywordErrorState.kt
-│
-├── audio/
-│   ├── AudioSource.kt               # Интерфейс
-│   ├── AudioSourceFactory.kt        # Фабрика
-│   ├── MicrophoneStreamAudioSource.kt  # TransProxy
-│   ├── AndroidAudioSource.kt        # Fallback
-│   ├── RecorderManagerAudioSource.kt
-│   ├── VolumeManager.kt             # Громкость
-│   ├── MicphoneModeManager.kt       # AIDL IMicphoneMode
-│   └── VoiceZoneDetector.kt         # Зона говорящего
-│
-├── engine/
-│   ├── vosk/
-│   │   ├── VoskModelLoader.kt
-│   │   ├── VoskStream.kt
-│   │   └── VoskStreamFactory.kt
-│   ├── sherpa/
-│   │   ├── SherpaModelLoader.kt
-│   │   ├── SherpaStream.kt
-│   │   ├── SherpaStreamFactory.kt
-│   │   └── SherpaSynthesis.kt
-│   └── system/
-│       └── SystemTtsSynthesis.kt
-│
-├── config/
-│   ├── AppConfig.kt                 # Data классы
-│   ├── CommandConfig.kt             # Конфиг команд
-│   ├── ApiKeys.kt                   # API ключи
-│   └── ConfigManager.kt             # Загрузка конфига
-│
-├── nlu/
-│   ├── NLUEngine.kt                 # Парсинг команд
-│   └── Command.kt                   # Data классы
-│
-├── executor/
-│   ├── CommandExecutor.kt           # Главный executor
-│   ├── VehicleCommandExecutor.kt    # Интерфейс
-│   ├── VehicleCommandExecutorFactory.kt
-│   ├── IntentVehicleCommandExecutor.kt
-│   ├── AIDLVehicleCommandExecutor.kt
-│   ├── ShellVehicleCommandExecutor.kt
-│   └── AutoVehicleCommandExecutor.kt
-│
-├── canbus/
-│   ├── CanBusServiceManager.kt      # CAN-шина
-│   ├── VoiceButtonHandler.kt        # Кнопка на руле
-│   └── TSRSpeedLimitHandler.kt      # TSR warnings
-│
-├── ui/
-│   ├── OverlayManager.kt            # UI оверлеи
-│   └── VoiceClickView.kt            # Анимация
-│
-└── tts/
-    └── TTSEngine.kt                 # TTS движок
+VoboostVoiceAssistant/
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/voboost/voiceassistant/
+│   │   │   ├── audio/                  # AudioSource, VolumeManager, VoiceZoneDetector
+│   │   │   ├── canbus/                 # CanBusManager, VoiceButtonHandler, TSRHandler
+│   │   │   ├── config/                 # ConfigManager, AppConfig, CommandConfig
+│   │   │   ├── core/                   # SpeechEngineFactory, ISpeechRecognition, ISpeechSynthesis
+│   │   │   ├── engine/
+│   │   │   │   ├── sherpa/             # Sherpa STT + TTS интеграция
+│   │   │   │   └── vosk/               # Vosk STT интеграция
+│   │   │   ├── executor/               # CommandExecutor, VehicleCommandExecutor
+│   │   │   │   └── handlers/           # AIDL, Shell, Intent handlers
+│   │   │   ├── nlu/                    # NLUEngine, Command
+│   │   │   ├── speech/                 # SpeechRecognizer, CommandHandler
+│   │   │   │   └── state/              # State Machine (9 состояний)
+│   │   │   ├── tts/                    # TTSEngine
+│   │   │   ├── ui/                     # OverlayManager, VoiceClickView
+│   │   │   ├── BootActivity.kt
+│   │   │   ├── BootReceiver.kt
+│   │   │   ├── SoundEffectManager.kt
+│   │   │   ├── VoboostVoiceService.kt  # ГЛАВНЫЙ СЕРВИС
+│   │   │   └── VoiceCommandReceiver.kt
+│   │   ├── assets/
+│   │   │   └── config.json             # Конфиг команд и фраз
+│   │   └── AndroidManifest.xml
+│   └── build.gradle
+├── build.gradle
+├── settings.gradle
+└── libs/                               # sherpa-onnx JAR
 ```
 
 ---
 
-## 🔧 ТЕХНОЛОГИИ
+## 🚀 УСТАНОВКА
 
-### Build конфигурация:
-- **Gradle:** 8.13.2
-- **Kotlin:** 2.1.0
-- **Compile SDK:** 36
-- **Min SDK:** 26
-- **Target SDK:** 33
-- **JVM Target:** 1.8
+### Путь установки:
+```
+/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
+```
 
-### Зависимости:
-- **Vosk:** `com.alphacephei:vosk-android:0.3.45` (офлайн STT)
-- **Sherpa-ONNX:** `libs/sherpa-onnx-v1.12.34-java8.jar` (STT + TTS)
-- **JNA:** `net.java.dev.jna:jna:5.13.0@aar`
-- **Coroutines:** `kotlinx-coroutines-android:1.7.1`
-- **Gson:** `com.google.code.gson:gson:2.10.1`
-- **AndroidX:** Core, AppCompat, Lifecycle
+### Конфиг:
+- **Приоритет:** `/sdcard/Android/data/com.voboost.voiceassistant/files/config.json`
+- **Fallback:** `assets/config.json` (в APK)
 
 ### Модели:
-- **Vosk STT:** `vosk-model-small-ru-0.22` (50MB, русский язык)
-- **Sherpa TTS:** Piper Russian model
+- **Vosk:** `/data/user/0/com.voboost.voiceassistant/files/models/vosk/`
+- **Sherpa:** `/data/user/0/com.voboost.voiceassistant/files/models/sherpa/`
 
 ---
 
-## 🚀 ЗАПУСК
+## 🔧 ADB КОМАНДЫ
 
-### Сборка:
-```batch
-cd D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant
-gradlew.bat assembleRelease
-```
-
-### Установка:
+### Установка APK:
 ```batch
 adb root
-adb remount
-adb push app\build\outputs\apk\release\app-release-unsigned.apk ^
-  /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
-adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
+adb shell "mount -o remount,rw /"
+adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 ```
 
-### Разрешения:
+### Перезапуск:
 ```batch
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell "am force-stop com.voboost.voiceassistant && am broadcast -a android.intent.action.BOOT_COMPLETED -n com.voboost.voiceassistant/.BootReceiver"
 ```
 
-### Запуск:
+### Ручной запуск (РАБОТАЕТ):
 ```batch
 adb shell am force-stop com.voboost.voiceassistant
-adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am start-foreground-service --user 0 -n com.voboost.voiceassistant/.VoboostVoiceService
 ```
 
-### Логи:
+### Убийство dvr_service и audioserver:
 ```batch
-adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
+adb shell "ps -A | grep dvr_service"
+adb shell "ps -A | grep audioserver"
+adb shell "kill -9 <PID_dvr_service>"
+adb shell "kill -9 <PID_audioserver>"
 ```
 
 ---
 
-## 📊 КОМАНДЫ (из config.json)
+## 📝 РЕШЁННЫЕ ПРОБЛЕМЫ
 
-| ID | Команды | Действие |
-|----|---------|----------|
-| charge_port_open | "Открой лючок зарядки" | Открыть порт зарядки |
-| charge_port_close | "Закрой лючок зарядки" | Закрыть порт зарядки |
-| fuel_tank_open | "Открой бензобак" | Открыть бензобак |
-| smart_mode_leisure | "Включи режим отдыха" | Режим LEISURE |
-| smart_mode_child | "Включи детский режим" | Режим CHILD |
-| smart_mode_romantic | "Включи романтику" | Режим ROMANTIC |
-| ac_open | "Включи кондиционер" | Включить AC |
-| ac_close | "Выключи кондиционер" | Выключить AC |
-| ac_set_temp | "Установи 22 градуса" | Установка температуры |
-| phone_call_contact | "Позвони маме" | Звонок контакту |
-| phone_call_number | "Набери 123-45-67" | Звонок номеру |
-| window_open | "Открой окно" | Открыть окно |
-| window_close | "Закрой окно" | Закрыть окно |
+### 1. Микрофон в фоне (Android 10+)
+- **Проблема:** ActivityManager блокирует FGS с микрофоном из background
+- **Решение:** BootReceiver → BootActivity (foreground context) → startForegroundService → сервис получает микрофон
 
----
+### 2. sharedUserId="android.uid.system" вызывает bootloop
+- **Причина:** APK подписан debug key, а не platform key
+- **Без platform подписи** система не может загрузить пакет как system UID
 
-## ✅ СТАТУС КОМПОНЕНТОВ
+### 3. Privapp-permissions НЕ нужны
+- `privapp-permissions-voboost.xml` удалён — работает без него
+- RECORD_AUDIO выдаётся как runtime permission
 
-| Компонент | Статус | Примечание |
-|-----------|--------|------------|
-| **Keyword Spotting** | ✅ Работает | "Привет машина" |
-| **Command Recognition** | ✅ Работает | После ключевой фразы И кнопки |
-| **Кнопка на руле** | ✅ Работает | Через CAN-шину |
-| **TTS (Sherpa)** | ✅ Работает | Говорит "Слушаю вас" |
-| **CAN-шина** | ✅ Работает | CanBusServiceManager |
-| **TSR Speed Limit** | ✅ Работает | Предупреждения |
-| **Audio Channel** | ✅ Работает | TransProxy (USAGE_ASSISTANT) |
-| **State Machine** | ✅ Работает | 9 состояний |
-| **SpeechRecognizer** | ✅ Работает | SharedFlow-based |
-| **VoiceZoneDetector** | ✅ Работает | IMicphoneMode AIDL |
-| **ConfirmationState** | ⚠️ Заглушка | Не ждёт ответ пользователя |
+### 4. AudioRecord Builder API
+- Замена конструктора на Builder для большей надёжности
+- Бесконечный retry каждые 3 секунды при неудаче
 
 ---
 
-## 📝 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
+## 🔍 ЗАВИСИМОСТИ
 
-1. **ConfirmationState** — не ждёт ответ пользователя (заглушка)
-2. **Модели не в APK** — загружаются вручную на SD-карту
-3. **Библиотеки вынесены** — загружаются через `copy-libs-to-device.bat`
-4. **Frida CAN-bypass** — опционально, если нет системных разрешений
+### Speech Engines:
+- **Vosk:** `com.alphacephei:vosk-android:0.3.45` (исключены native libs)
+- **Sherpa-ONNX:** `libs/sherpa-onnx-v1.12.34-java8.jar`
+- **JNA:** `net.java.dev.jna:jna:5.13.0@aar`
 
----
-
-## 🔄 ЦЕПОЧКА ВЫПОЛНЕНИЯ
-
-```
-Пользователь говорит "Привет машина"
-    ↓
-SpeechRecognizer распознаёт ключевое слово
-    ↓
-State Machine: Idle → Activated → ListeningCommand
-    ↓
-Пользователь говорит команду "Открой окно"
-    ↓
-SpeechRecognizer распознаёт команду
-    ↓
-State Machine: RecognizedCommand → ExecutingCommand
-    ↓
-NLUEngine парсит команду → CommandExecutor
-    ↓
-CommandExecutor отправляет Intent / AIDL / Shell
-    ↓
-Автомобиль выполняет команду
-    ↓
-TTS говорит "Открываю окно" + Overlay
-    ↓
-State Machine: Idle (цикл повторяется)
-```
+### Основные:
+- Kotlin Coroutines: 1.7.1
+- AndroidX Core: 1.10.1
+- Material Design: 1.9.0
+- Gson: 2.10.1
+- ZXing: 3.5.3
 
 ---
 
-## 📞 ВОССТАНОВЛЕНИЕ КОНТЕКСТА
+## 📊 СОСТОЯНИЕ НА ДАННЫЙ МОМЕНТ
 
-**Если нужно продолжить работу:**
+### ✅ РАБОТАЕТ:
+- TTS (Sherpa) — "Слушаю вас", "Открываю окно"
+- Vosk STT — распознаёт команды
+- Кнопка на руле — keycode=16 через CAN-шину
+- State Machine — 9 состояний
+- CAN-bus — AIDL команды
+- AudioRecord — при ручном запуске
 
-1. **Открыть этот файл** (`CONTEXT_RESTORE.md`)
-2. **Проверить текущий статус компонентов** (таблица выше)
-3. **Проверить логи:**
-   ```bash
-   adb logcat -s StateMachine:* SpeechRecognizer:* VoboostVoiceService:*
-   ```
-4. **Протестировать:**
-   - Сказать "привет машина"
-   - Проверить переходы состояний
-   - Проверить выполнение команд
+### ❌ НЕ РАБОТАЕТ:
+- AudioRecord — при автозапуске после BOOT (зависшая сессия AudioFlinger)
 
----
-
-## 📚 ДОКУМЕНТАЦИЯ
-
-| Файл | Описание |
-|------|----------|
-| `CONTEXT_RESTORE.md` | 📋 **ЭТОТ ФАЙЛ** — текущий контекст |
-| `ARCHITECTURE_V2.md` | 🏗️ State Machine архитектура v16.0 |
-| `README.md` | 📖 Основная документация |
-| `QUICKSTART.md` | 🚀 Быстрый старт |
-| `PROJECT_SUMMARY.md` | 📦 Обзор проекта |
-| `READY_TO_USE.md` | ✅ Готовые классы из decompile |
-| `BUILD_INSTRUCTIONS.md` | 🔨 Сборка и установка |
-| `AUDIO_SOURCE_REFACTORING.md` | 🎤 AudioSource рефакторинг |
-| `TRANSPROXY_INTEGRATION.md` | 🔌 TransProxy интеграция |
-| `CANBUS_LISTENER_DOCS.md` | 🚗 CAN-шина документация |
-| `TSR_SPEED_LIMIT.md` | ⚡ TSR warnings |
-| `SPEAKER_ZONE_DETECTION.md` | 🎤 Зона говорящего |
-| `FRIDA_VOICE_ASSISTANT.md` | 🔧 Frida CAN-bypass |
+### СЛЕДУЮЩИЕ ШАГИ:
+1. Попробовать перезапуск audioserver перед созданием AudioRecord
+2. Использовать MIC (source=1) вместо VOICE_RECOGNITION (source=6)
+3. Найти и освободить зависшую сессию через dumpsys media.audio_flinger
 
 ---
 
-## 📊 ВЕРСИИ ПРОЕКТА
-
-| Версия | Дата | Изменения |
-|--------|------|-----------|
-| 13.0 | 2026-03-31 | Frida CAN-bypass работает |
-| 13.1 | 2026-04-01 | Библиотеки вынесены из APK |
-| 13.2 | 2026-04-01 | TSR Speed Limit warnings |
-| 13.3 | 2026-04-01 | Audio Channel Fix (USAGE_ASSISTANT) |
-| 13.4 | 2026-04-01 | NaviInfo → Bundle |
-| 13.5 | 2026-04-01 | Удалён Zone Detection |
-| 13.6 | 2026-04-02 | Кнопка активации (keycode 16) |
-| 13.7 | 2026-04-02 | Кнопка отмены (двойное нажатие) |
-| 13.8 | 2026-04-02 | AudioRecord: MIC вместо VOICE_RECOGNITION |
-| 14.0 | 2026-04-04 | AudioSource Refactoring |
-| 15.0 | 2026-04-04 | State Machine Pattern |
-| 16.0 | 2026-04-04 | Упрощение SpeechStateMachine |
-| 17.0 | 2026-04-04 | SpeechRecognizer (Channel-based) |
-| **18.0** | **2026-04-04** | **Voice Zone Detection (IMicphoneMode AIDL)** |
-
----
-
-## 🎯 СЛЕДУЮЩИЕ ЗАДАЧИ
-
-1. ⚠️ **Реализовать ConfirmationState** — ждать ответ пользователя ("Да"/"Нет")
-2. ⚠️ **Тестирование на устройстве** — полная проверка всех команд
-3. ⚠️ **Оптимизация моделей** — возможно заменить на более точные
-4. ⚠️ **Онлайн режим** — Yandex SpeechKit (опционально)
-
----
-
-**Последнее обновление:** 2026-04-05
-**Следующая задача:** Реализовать ConfirmationState для ожидания ответа пользователя
+**Последнее обновление:** 2026-04-11
+**Build:** assembleDebug SUCCESS
+**Git:** требует коммита изменений

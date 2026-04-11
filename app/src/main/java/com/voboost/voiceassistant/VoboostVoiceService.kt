@@ -40,6 +40,7 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.Manifest
+import android.content.pm.ServiceInfo
 import com.voboost.voiceassistant.audio.IAudioSource
 import com.voboost.voiceassistant.audio.AudioSourceFactory
 import com.voboost.voiceassistant.audio.VolumeManager
@@ -110,6 +111,7 @@ class VoboostVoiceService : Service() {
         }
     }
 
+    @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
@@ -117,7 +119,8 @@ class VoboostVoiceService : Service() {
         instance = this
 
         // ✅ СРАЗУ становимся foreground сервисом (до 5 секунд на инициализацию)
-        startForeground(NOTIFICATION_ID, createNotification())
+        startForeground(NOTIFICATION_ID, createNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         Log.d(TAG, "Foreground service started")
 
         configManager = ConfigManager.getInstance(this)

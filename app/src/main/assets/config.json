@@ -99,32 +99,6 @@
       }
     },
     {
-      "id": "charge_port_close",
-      "enabled": true,
-      "patterns": [
-        "закрой лючок зарядки",
-        "закрой порт зарядки",
-        "закрыть зарядку",
-        "закрой зарядку"
-      ],
-      "action": {
-        "target": "Chargport",
-        "classify": 35,
-        "command": 2,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
-        "params": {
-          "location": "all"
-        }
-      },
-      "confirmation": {
-        "required": false
-      },
-      "phrases": {
-        "success": "Закрываю лючок зарядки",
-        "failure": "Не получилось закрыть лючок зарядки"
-      }
-    },
-    {
       "id": "fuel_tank_open",
       "enabled": true,
       "patterns": [
