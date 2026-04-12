@@ -31,7 +31,6 @@ class AirConditionerSetTempHandler(
 
         Log.d(TAG, "Set temperature: $temperature°C")
         // Отправляем абсолютное значение температуры
-        // Если нужны инкременты — использовать AC_DRIVER_TEMP_INCRE_TC / DECRE_TC
-        return AirConditionState.AC_POWER_SWITCH to temperature
+        return AirConditionState.AC_LEFT_TEMP to temperature
     }
 }
