@@ -7,6 +7,7 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerCloseHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerOpenHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerSetTempHandler
+import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerTempOffsetHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportCloseHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportOpenHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.scuttle.FuelTankOpenHandler
@@ -85,6 +86,8 @@ object VehicleCommandExecutorFactory {
             "ac_open" to AirConditionerOpenHandler(canBusManager),
             "ac_close" to AirConditionerCloseHandler(canBusManager),
             "ac_set_temp" to AirConditionerSetTempHandler(canBusManager),
+            "ac_temp_up" to AirConditionerTempOffsetHandler("ac_temp_up", canBusManager, +2),
+            "ac_temp_down" to AirConditionerTempOffsetHandler("ac_temp_down", canBusManager, -2),
             "phone_call_contact" to PhoneCallContactIntentHandler(context),
             "phone_call_number" to PhoneCallNumberIntentHandler(context)
         )
@@ -115,7 +118,9 @@ object VehicleCommandExecutorFactory {
             "smart_mode_romantic" to SmartModeRomanticHandler(canBusManager),
             "ac_open" to AirConditionerOpenHandler(canBusManager),
             "ac_close" to AirConditionerCloseHandler(canBusManager),
-            "ac_set_temp" to AirConditionerSetTempHandler(canBusManager)
+            "ac_set_temp" to AirConditionerSetTempHandler(canBusManager),
+            "ac_temp_up" to AirConditionerTempOffsetHandler("ac_temp_up", canBusManager, +2),
+            "ac_temp_down" to AirConditionerTempOffsetHandler("ac_temp_down", canBusManager, -2)
         )
 
         return VehicleCommandExecutor(handlers) { canBusManager.isConnected() }

@@ -204,6 +204,34 @@
       }
     },
     {
+      "id": "ac_temp_up",
+      "enabled": true,
+      "patterns": [
+        "мне холодно"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Повышаю температуру",
+        "failure": "Не получилось повысить температуру"
+      }
+    },
+    {
+      "id": "ac_temp_down",
+      "enabled": true,
+      "patterns": [
+        "мне жарко"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Понижаю температуру",
+        "failure": "Не получилось понизить температуру"
+      }
+    },
+    {
       "id": "phone_call_contact",
       "enabled": true,
       "patterns": [
