@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class FuelTankOpenShellHandler : AbstractShellHandler(
     "fuel_tank_open",
-    { _, _ -> "$CAN_SERVICE_BASE i32 IVI_FUEL_PORT_CAP i32 2" }
+    { _ -> "$CAN_SERVICE_BASE i32 IVI_FUEL_PORT_CAP i32 2" }
 )

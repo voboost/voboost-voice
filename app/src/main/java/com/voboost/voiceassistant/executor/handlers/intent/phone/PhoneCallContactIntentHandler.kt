@@ -3,7 +3,6 @@ package com.voboost.voiceassistant.executor.handlers.intent.phone
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.intent.AbstractIntentHandler
 import androidx.core.net.toUri
 
@@ -26,7 +25,7 @@ class PhoneCallContactIntentHandler(context: Context) : AbstractIntentHandler("p
     }
 
 
-    override fun buildIntent(config: ActionConfig, voiceParams: Map<String, Any>): android.content.Intent {
+    override fun buildIntent(voiceParams: Map<String, Any>): android.content.Intent {
         val contactName = voiceParams["contact"] as? String ?: ""
 
         // Ищем номер телефона по имени контакта

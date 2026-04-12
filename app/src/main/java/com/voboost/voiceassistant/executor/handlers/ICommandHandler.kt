@@ -1,7 +1,5 @@
 package com.voboost.voiceassistant.executor.handlers
 
-import com.voboost.voiceassistant.config.ActionConfig
-
 /**
  * Универсальный обработчик одной команды
  * Все команды (окна, кондиционер, телефон и т.д.) используют этот интерфейс
@@ -21,12 +19,8 @@ interface ICommandHandler {
     /**
      * Выполнить команду
      *
-     * @param config Конфигурация команды из config.json (target, classify, command, static params)
      * @param voiceParams Параметры, распознанные из голоса ({temp}, {contact}, {number} и т.д.)
      * @return true если команда успешно выполнена
      */
-    fun execute(
-        config: ActionConfig,
-        voiceParams: Map<String, Any>
-    ): Boolean
+    fun execute(voiceParams: Map<String, Any>): Boolean
 }

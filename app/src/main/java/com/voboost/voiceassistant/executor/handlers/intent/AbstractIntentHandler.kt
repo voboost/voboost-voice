@@ -3,7 +3,6 @@ package com.voboost.voiceassistant.executor.handlers.intent
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
@@ -23,9 +22,9 @@ abstract class AbstractIntentHandler(override val commandId: String,
         const val EXTRA_MAC = "mac"
     }
 
-    override fun execute(config: ActionConfig, voiceParams: Map<String, Any>): Boolean {
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
         return try {
-            val intent = buildIntent(config, voiceParams)
+            val intent = buildIntent(voiceParams)
             context.sendBroadcast(intent)
             Log.d(TAG, "Broadcast sent: commandId='$commandId', action='${intent.action}'")
             Log.d(TAG, "  Extras: ${intent.extras?.keySet()?.joinToString(", ")}")
@@ -37,5 +36,5 @@ abstract class AbstractIntentHandler(override val commandId: String,
         }
     }
 
-    protected abstract fun buildIntent(config: ActionConfig, voiceParams: Map<String, Any>): Intent
+    protected abstract fun buildIntent(voiceParams: Map<String, Any>): Intent
 }

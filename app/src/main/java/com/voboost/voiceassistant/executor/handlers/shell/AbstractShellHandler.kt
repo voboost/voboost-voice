@@ -1,7 +1,6 @@
 package com.voboost.voiceassistant.executor.handlers.shell
 
 import android.util.Log
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
@@ -9,15 +8,14 @@ import com.voboost.voiceassistant.executor.handlers.ICommandHandler
  */
 abstract class AbstractShellHandler(
     override val commandId: String,
-    private val commandBuilder: (config: ActionConfig, voiceParams: Map<String, Any>) -> String
+    private val commandBuilder: (voiceParams: Map<String, Any>) -> String
 ) : ICommandHandler {
 
     override fun execute(
-        config: ActionConfig,
         voiceParams: Map<String, Any>
     ): Boolean {
         return try {
-            val shellCommand = commandBuilder(config, voiceParams)
+            val shellCommand = commandBuilder(voiceParams)
             Log.d(TAG, "Executing shell: commandId='$commandId', cmd=$shellCommand")
 
             val process = Runtime.getRuntime().exec(shellCommand)

@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class SmartModeRomanticShellHandler : AbstractShellHandler(
     "smart_mode_romantic",
-    { _, _ -> "echo 6 > /sdcard/Download/myvoyah/files/energy_mode.txt" }
+    { _ -> "echo 6 > /sdcard/Download/myvoyah/files/energy_mode.txt" }
 )

@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class AirConditionerOpenShellHandler : AbstractShellHandler(
     "ac_open",
-    { _, _ -> "$CAN_SERVICE_BASE i32 AC_POWER_SWITCH i32 2" }
+    { _ -> "$CAN_SERVICE_BASE i32 AC_POWER_SWITCH i32 2" }
 )

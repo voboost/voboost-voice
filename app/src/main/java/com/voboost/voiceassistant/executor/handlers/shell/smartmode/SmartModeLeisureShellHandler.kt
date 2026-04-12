@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class SmartModeLeisureShellHandler : AbstractShellHandler(
     "smart_mode_leisure",
-    { _, _ -> "echo 18 > /sdcard/Download/myvoyah/files/drive_mode.txt" }
+    { _ -> "echo 18 > /sdcard/Download/myvoyah/files/drive_mode.txt" }
 )

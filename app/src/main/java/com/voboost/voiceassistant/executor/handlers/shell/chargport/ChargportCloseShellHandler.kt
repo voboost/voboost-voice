@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class ChargportCloseShellHandler : AbstractShellHandler(
     "charge_port_close",
-    { _, _ -> "$CAN_SERVICE_BASE i32 IVI_CHRG_PORT_CAP i32 1" }
+    { _ -> "$CAN_SERVICE_BASE i32 IVI_CHRG_PORT_CAP i32 1" }
 )

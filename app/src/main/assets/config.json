@@ -69,11 +69,6 @@
         "открой зарядку",
         "зарядка"
       ],
-      "action": {
-        "target": "Chargport",
-        "classify": 35,
-        "command": 1
-      },
       "confirmation": {
         "required": false,
         "timeout_sec": 5,
@@ -99,11 +94,6 @@
         "заправка",
         "бензобак"
       ],
-      "action": {
-        "target": "Scuttle",
-        "classify": 19,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -121,11 +111,6 @@
         "режим отдых",
         "включи отдых"
       ],
-      "action": {
-        "target": "SmartMode",
-        "classify": 22,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -143,11 +128,6 @@
         "детский режим",
         "включи режим ребенок"
       ],
-      "action": {
-        "target": "SmartMode",
-        "classify": 22,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -164,11 +144,6 @@
         "режим романтика",
         "романтический режим"
       ],
-      "action": {
-        "target": "SmartMode",
-        "classify": 22,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -186,11 +161,6 @@
         "включи климат",
         "включи обогрев"
       ],
-      "action": {
-        "target": "AirConditioner",
-        "classify": 5,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -208,11 +178,6 @@
         "выключи климат",
         "отключи обогрев"
       ],
-      "action": {
-        "target": "AirConditioner",
-        "classify": 5,
-        "command": 1
-      },
       "confirmation": {
         "required": false
       },
@@ -230,14 +195,6 @@
         "температура {temp}",
         "включи {temp} градусов"
       ],
-      "action": {
-        "target": "AirConditioner",
-        "classify": 5,
-        "command": 3,
-        "params": {
-          "temperature": "{temp}"
-        }
-      },
       "confirmation": {
         "required": false
       },
@@ -255,14 +212,6 @@
         "набери {contact}",
         "звонок {contact}"
       ],
-      "action": {
-        "target": "telephone",
-        "classify": 1,
-        "command": 1,
-        "params": {
-          "contact": "{contact}"
-        }
-      },
       "confirmation": {
         "required": false
       },
@@ -279,14 +228,6 @@
         "набери {number}",
         "номер {number}"
       ],
-      "action": {
-        "target": "telephone",
-        "classify": 1,
-        "command": 1,
-        "params": {
-          "number": "{number}"
-        }
-      },
       "confirmation": {
         "required": false
       },
@@ -302,11 +243,6 @@
         "открой окно",
         "открыть окно"
       ],
-      "action": {
-        "target": "Window",
-        "classify": 2,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -322,11 +258,6 @@
         "закрой окно",
         "закрыть окно"
       ],
-      "action": {
-        "target": "Window",
-        "classify": 2,
-        "command": 1
-      },
       "confirmation": {
         "required": false
       },
@@ -342,11 +273,6 @@
         "открой все окна",
         "открыть все окна"
       ],
-      "action": {
-        "target": "Window",
-        "classify": 3,
-        "command": 0
-      },
       "confirmation": {
         "required": false
       },
@@ -362,11 +288,6 @@
         "закрой все окна",
         "закрыть все окна"
       ],
-      "action": {
-        "target": "Window",
-        "classify": 3,
-        "command": 1
-      },
       "confirmation": {
         "required": false
       },

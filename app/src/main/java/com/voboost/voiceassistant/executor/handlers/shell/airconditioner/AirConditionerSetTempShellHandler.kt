@@ -7,7 +7,7 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class AirConditionerSetTempShellHandler : AbstractShellHandler(
     "ac_set_temp",
-    { _, voiceParams ->
+    { voiceParams ->
         val temp = voiceParams["temperature"] as? Int ?: 22
         "$CAN_SERVICE_BASE i32 AC_POWER_SWITCH i32 $temp"
     }

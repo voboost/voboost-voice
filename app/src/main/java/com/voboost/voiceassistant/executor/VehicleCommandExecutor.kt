@@ -1,7 +1,6 @@
 package com.voboost.voiceassistant.executor
 
 import android.util.Log
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
@@ -26,7 +25,6 @@ class VehicleCommandExecutor(
 
     override fun executeByCommandId(
         commandId: String,
-        config: ActionConfig,
         voiceParams: Map<String, Any>
     ): Boolean {
         if (!isConnectedChecker()) {
@@ -39,7 +37,7 @@ class VehicleCommandExecutor(
 
         Log.d(TAG, "Executing: commandId='$commandId', handler=${handler.javaClass.simpleName}")
         return try {
-            handler.execute(config, voiceParams)
+            handler.execute(voiceParams)
         } catch (e: Exception) {
             Log.e(TAG, "Exception during command execution: $commandId", e)
             false

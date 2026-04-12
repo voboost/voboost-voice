@@ -2,7 +2,6 @@ package com.voboost.voiceassistant.executor.handlers.intent.phone
 
 import android.content.Context
 import android.util.Log
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.intent.AbstractIntentHandler
 
 /**
@@ -16,7 +15,7 @@ import com.voboost.voiceassistant.executor.handlers.intent.AbstractIntentHandler
  */
 class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler("phone_call_number", context) {
 
-    override fun buildIntent(config: ActionConfig, voiceParams: Map<String, Any>) = android.content.Intent(ACTION_IVOKA_PHONE_CALL).apply {
+    override fun buildIntent(voiceParams: Map<String, Any>) = android.content.Intent(ACTION_IVOKA_PHONE_CALL).apply {
         val phoneNumber = voiceParams["number"] as? String ?: ""
         putExtra(EXTRA_IVOKA_CALL_INFO, phoneNumber)
         putExtra(EXTRA_SCREEN_INT, 0)

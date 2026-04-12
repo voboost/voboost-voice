@@ -3,7 +3,6 @@ package com.voboost.voiceassistant.executor.handlers.aidl.chargport
 import android.util.Log
 import com.qinggan.canbus.VehicleState
 import com.voboost.voiceassistant.canbus.CanBusServiceManager
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
@@ -18,7 +17,6 @@ abstract class AbstractChargportHandler(
 ) : ICommandHandler {
 
     override fun execute(
-        config: ActionConfig,
         voiceParams: Map<String, Any>
     ): Boolean {
         if (!canBusManager.isConnected()) {

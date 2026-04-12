@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioManager
 import android.util.Log
 import com.voboost.voiceassistant.VoboostVoiceService
-import com.voboost.voiceassistant.config.ActionConfig
 import com.voboost.voiceassistant.config.CommandConfig
 import com.voboost.voiceassistant.nlu.RecognizedCommand
 import com.voboost.voiceassistant.config.ConfigManager
@@ -134,23 +133,15 @@ class CommandExecutor(
      */
     private fun executeAction(
         commandConfig: CommandConfig,
-        params: Map<String, String>
+        voiceParams: Map<String, Any>
     ): Boolean {
-        val action = commandConfig.action
-
         Log.d(TAG, "Executing via ${vehicleCommandExecutor.executionMethod}")
-        Log.d(
-            TAG,
-            "Command: ${commandConfig.id}, Target: ${action.target}, Classify: ${action.classify}, Command: ${action.command}"
-        )
+        Log.d(TAG, "Command: ${commandConfig.id}")
 
         return try {
-            val vehicleParams = buildVehicleParams(action, params)
-
             val success = vehicleCommandExecutor.executeByCommandId(
                 commandId = commandConfig.id,
-                config = action,
-                voiceParams = vehicleParams
+                voiceParams = voiceParams
             )
 
             if (success) {
@@ -165,33 +156,6 @@ class CommandExecutor(
             Log.e(TAG, "Failed to execute command", e)
             false
         }
-    }
-
-    /**
-     * Построить параметры для команды автомобиля
-     */
-    private fun buildVehicleParams(
-        action: ActionConfig,
-        params: Map<String, String>
-    ): Map<String, Any> {
-        val result = mutableMapOf<String, Any>()
-
-        // Добавляем параметры из действия
-        action.params.forEach { entry ->
-            result[entry.key] = entry.value
-        }
-
-        // Добавляем параметры из распознавания
-        params.forEach { entry ->
-            // Пытаемся преобразовать в число если возможно
-            entry.value.toIntOrNull()?.let {
-                result[entry.key] = it
-            } ?: run {
-                result[entry.key] = entry.value
-            }
-        }
-
-        return result
     }
 
     /**

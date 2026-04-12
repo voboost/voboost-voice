@@ -9,19 +9,8 @@ data class CommandConfig(
     @SerializedName("id") val id: String,
     @SerializedName("enabled") val enabled: Boolean,
     @SerializedName("patterns") val patterns: List<String>,
-    @SerializedName("action") val action: ActionConfig,
     @SerializedName("confirmation") val confirmation: ConfirmationCommandConfig,
     @SerializedName("phrases") val phrases: CommandPhrases?
-)
-
-/**
- * Действие команды
- */
-data class ActionConfig(
-    @SerializedName("target") val target: String,
-    @SerializedName("classify") val classify: Int,
-    @SerializedName("command") val command: Int,
-    @SerializedName("params") val params: Map<String, Any> = emptyMap()
 )
 
 /**

@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class SmartModeChildShellHandler : AbstractShellHandler(
     "smart_mode_child",
-    { _, _ -> "echo 22 > /sdcard/Download/myvoyah/files/power_mode.txt" }
+    { _ -> "echo 22 > /sdcard/Download/myvoyah/files/power_mode.txt" }
 )

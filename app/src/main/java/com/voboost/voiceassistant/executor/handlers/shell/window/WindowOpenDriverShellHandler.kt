@@ -7,5 +7,5 @@ import com.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  */
 class WindowOpenDriverShellHandler : AbstractShellHandler(
     "window_open",
-    { _, _ -> "$CAN_SERVICE_BASE i32 DRIVER_WINDOW_CONTROL i32 2" }
+    { _ -> "$CAN_SERVICE_BASE i32 DRIVER_WINDOW_CONTROL i32 2" }
 )
