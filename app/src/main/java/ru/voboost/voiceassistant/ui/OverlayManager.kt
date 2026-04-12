@@ -39,25 +39,27 @@ class OverlayManager(
     
     /**
      * Показать анимацию голосового помощника
+     * Анимация крутится бесконечно пока ассистент активен.
+     * Вызвать hideAnimation() для остановки.
      */
     fun showAnimation() {
         if (isAnimationShowing) {
             Log.w(TAG, "Animation already showing")
             return
         }
-        
+
         handler.post {
             try {
                 val config = configManager.getConfig()
-                
+
                 if (!SHOW_ANIMATION) {
                     Log.d(TAG, "Animation disabled in config")
                     return@post
                 }
-                
-                // Создаем VoiceClickView
+
+                // Создаем VoiceClickView с frame-by-frame анимацией
                 voiceClickView = VoiceClickView(context)
-                
+
                 // Параметры окна
                 val params = WindowManager.LayoutParams(
                     WindowManager.LayoutParams.WRAP_CONTENT,
@@ -67,41 +69,38 @@ class OverlayManager(
                             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     PixelFormat.TRANSLUCENT
                 )
-                
+
                 // Позиция (верхний левый угол)
                 params.gravity = Gravity.TOP or Gravity.START
-                
+
                 // Смещение в DP
                 val displayMetrics = context.resources.displayMetrics
                 val offsetX = (OVERLAY_OFFSET_X_DP * displayMetrics.density).toInt()
                 val offsetY = (OVERLAY_OFFSET_Y_DP * displayMetrics.density).toInt()
-                
+
                 params.x = offsetX
                 params.y = offsetY
-                
-                // Добавляем view
+
+                // Добавляем view и запускаем анимацию
                 windowManager.addView(voiceClickView, params)
+                (voiceClickView as? VoiceClickView)?.startAnimation()
                 isAnimationShowing = true
-                
-                Log.d(TAG, "Animation shown at ($offsetX, $offsetY)")
-                
-                // Автоматическое скрытие через duration
-                handler.postDelayed({
-                    hideAnimation()
-                }, ANIMATION_DURATION_MS + 500)
-                
+
+                Log.d(TAG, "Animation shown at ($offsetX, $offsetY) — looping until hideAnimation()")
+
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to show animation", e)
             }
         }
     }
-    
+
     /**
-     * Скрыть анимацию
+     * Скрыть анимацию (останавливает цикл и удаляет View)
      */
     fun hideAnimation() {
         handler.post {
             try {
+                (voiceClickView as? VoiceClickView)?.stopAnimation()
                 voiceClickView?.let { view ->
                     windowManager.removeView(view)
                     voiceClickView = null
