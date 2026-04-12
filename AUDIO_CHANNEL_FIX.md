@@ -1,4 +1,4 @@
-# 🔊 AUDIO CHANNEL FIX — ИСПРАВЛЕНИЕ КАНАЛА ВОСПРОИЗВЕДЕНИЯ
+﻿# 🔊 AUDIO CHANNEL FIX — ИСПРАВЛЕНИЕ КАНАЛА ВОСПРОИЗВЕДЕНИЯ
 
 **Дата:** 2026-04-01  
 **Версия:** 13.3 (Audio Channel Fix)
@@ -166,7 +166,7 @@ adb shell am start -a android.intent.action.VIEW \
 
 ### 2. Активировать голосовой помощник
 ```bash
-adb shell am broadcast -a com.voboost.voiceassistant.ACTIVATE
+adb shell am broadcast -a ru.voboost.voiceassistant.ACTIVATE
 ```
 
 ### 3. Сказать команду

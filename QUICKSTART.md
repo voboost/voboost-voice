@@ -1,4 +1,4 @@
-# Быстрый старт VoboostVoiceAssistant
+﻿# Быстрый старт VoboostVoiceAssistant
 
 ## Шаг 1: Открыть проект в Android Studio
 
@@ -122,7 +122,7 @@ adb logcat | grep -i "keycode\|keyevent"
 ### Если не распознается речь:
 ```bash
 # Проверить модель Vosk:
-adb shell "ls -la /data/data/com.voboost.voiceassistant/files/"
+adb shell "ls -la /data/data/ru.voboost.voiceassistant/files/"
 
 # Проверить микрофон:
 adb shell "dumpsys audio"

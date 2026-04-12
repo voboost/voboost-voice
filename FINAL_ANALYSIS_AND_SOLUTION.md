@@ -1,4 +1,4 @@
-# 🎯 ФИНАЛЬНЫЙ АНАЛИЗ: ЗАПУСК IVOKA ЧЕРЕЗ STARTSERVICE
+﻿# 🎯 ФИНАЛЬНЫЙ АНАЛИЗ: ЗАПУСК IVOKA ЧЕРЕЗ STARTSERVICE
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ПОЛНОЕ ПОНИМАНИЕ МЕХАНИЗМА
@@ -178,7 +178,7 @@ class VoiceActivationService : Service() {
     
     private fun activateVoiceAssistant() {
         val intent = Intent(this, VoboostVoiceService::class.java)
-        intent.action = "com.voboost.voiceassistant.ACTIVATE"
+        intent.action = "ru.voboost.voiceassistant.ACTIVATE"
         startService(intent)
     }
     
@@ -203,7 +203,7 @@ context.startService(intent);
 
 // Стало:
 Intent intent = new Intent(VoiceBroadcastAction.ACTION_START_IVOKA);
-intent.setPackage("com.voboost.voiceassistant");  // ← Ваш пакет
+intent.setPackage("ru.voboost.voiceassistant");  // ← Ваш пакет
 context.startService(intent);
 ```
 
@@ -217,7 +217,7 @@ context.startService(intent);
 # Создать скрипт /system/etc/permissions/privapp-permissions-voboost.xml
 <?xml version="1.0" encoding="utf-8"?>
 <permissions>
-    <privapp-permissions package="com.voboost.voiceassistant">
+    <privapp-permissions package="ru.voboost.voiceassistant">
         <permission name="android.permission.INTERACT_ACROSS_USERS"/>
         <permission name="android.permission.PACKAGE_USAGE_STATS"/>
     </privapp-permissions>
@@ -299,11 +299,11 @@ gradlew.bat assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 
 # Дать разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
 
 # Запустить сервис
-adb shell am startservice com.voboost.voiceassistant/.VoiceActivationService
+adb shell am startservice ru.voboost.voiceassistant/.VoiceActivationService
 
 # Нажать кнопку на руле
 # Проверить логи

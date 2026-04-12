@@ -1,4 +1,4 @@
-# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
+﻿# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
 **Дата последнего обновления:** 2026-04-12 13:53
 **Статус:** ✅ ВСЕ РАБОТАЕТ — звонки, кнопка, CAN-bus, распознавание
@@ -9,7 +9,7 @@
 
 **Оффлайн голосовой ассистент для автомобильных ГУ**
 - **Платформа:** Android 11, API 30 (minSdk=26, targetSdk=33)
-- **Package:** `com.voboost.voiceassistant` (uid: u0_a68, НЕ system)
+- **Package:** `ru.voboost.voiceassistant` (uid: u0_a68, НЕ system)
 - **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
 - **Язык:** Kotlin 100%
 - **Распознавание:** Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium)
@@ -168,12 +168,12 @@ EXTRA_MAC = "mac"
 ```
 
 ### Конфиг:
-- **Приоритет:** `/storage/emulated/0/Android/data/com.voboost.voiceassistant/files/config.json`
+- **Приоритет:** `/storage/emulated/0/Android/data/ru.voboost.voiceassistant/files/config.json`
 - **Fallback:** `assets/config.json` (в APK)
 
 ### Модели:
-- **Vosk:** `/data/user/0/com.voboost.voiceassistant/files/models/vosk/`
-- **Sherpa:** `/data/user/0/com.voboost.voiceassistant/files/models/sherpa/`
+- **Vosk:** `/data/user/0/ru.voboost.voiceassistant/files/models/vosk/`
+- **Sherpa:** `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/`
 
 ---
 
@@ -188,7 +188,7 @@ adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 
 ### Перезапуск:
 ```batch
-adb shell "am force-stop com.voboost.voiceassistant && am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService"
+adb shell "am force-stop ru.voboost.voiceassistant && am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService"
 ```
 
 ### Мониторинг логов:

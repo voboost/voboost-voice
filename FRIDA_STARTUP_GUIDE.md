@@ -1,4 +1,4 @@
-# 🚀 ЗАПУСК FRIDA - ПРАВИЛЬНЫЙ СПОСОБ
+﻿# 🚀 ЗАПУСК FRIDA - ПРАВИЛЬНЫЙ СПОСОБ
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ПРОВЕРЕНО
@@ -60,7 +60,7 @@ frida -U com.qinggan.keymanager.service -l frida-voice-button.js
 
 ```bash
 # Если нет root, перехватывать через Voboost процесс
-frida -U com.voboost.voiceassistant -l frida-voice-button.js
+frida -U ru.voboost.voiceassistant -l frida-voice-button.js
 ```
 
 ---
@@ -88,8 +88,8 @@ frida -U com.voboost.voiceassistant -l frida-voice-button.js
 🎯 IVA button pressed (KEYCODE_IVOKA=130)!
    isListening = false
 🟢 ACTIVATE: Start Voboost recognition
-📤 Sending broadcast: com.voboost.voiceassistant.ACTIVATE
-✅ Broadcast sent: com.voboost.voiceassistant.ACTIVATE
+📤 Sending broadcast: ru.voboost.voiceassistant.ACTIVATE
+✅ Broadcast sent: ru.voboost.voiceassistant.ACTIVATE
 ```
 
 ---

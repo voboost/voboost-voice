@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ============================================================================
 REM  VoboostVoiceAssistant - Копирование моделей и конфига на SD-карту
 REM ============================================================================
@@ -31,15 +31,15 @@ echo.
 
 REM Создаём директорию на SD-карте
 echo [2/6] Создание директорий на SD-карте...
-adb shell "mkdir -p /sdcard/Android/data/com.voboost.voiceassistant/files/models/vosk"
-adb shell "mkdir -p /sdcard/Android/data/com.voboost.voiceassistant/files/models/sherpa"
+adb shell "mkdir -p /sdcard/Android/data/ru.voboost.voiceassistant/files/models/vosk"
+adb shell "mkdir -p /sdcard/Android/data/ru.voboost.voiceassistant/files/models/sherpa"
 echo [OK] Директории созданы
 echo.
 
 REM Копирование config.json
 echo [3/6] Копирование config.json...
 if exist "app\src\main\assets\config.json" (
-    adb push "app\src\main\assets\config.json" "/sdcard/Android/data/com.voboost.voiceassistant/files/config.json"
+    adb push "app\src\main\assets\config.json" "/sdcard/Android/data/ru.voboost.voiceassistant/files/config.json"
     if errorlevel 1 (
         echo [WARNING] Ошибка копирования config.json
     ) else (
@@ -54,7 +54,7 @@ REM Копирование Vosk модели
 echo [4/6] Копирование Vosk модели...
 if exist "models\vosk\vosk-model-small-ru-0.22" (
     echo       Копирование файлов модели (это может занять несколько минут)...
-    adb push "models\vosk\vosk-model-small-ru-0.22" "/sdcard/Android/data/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22"
+    adb push "models\vosk\vosk-model-small-ru-0.22" "/sdcard/Android/data/ru.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22"
     if errorlevel 1 (
         echo [ERROR] Ошибка копирования Vosk модели!
         pause
@@ -63,9 +63,9 @@ if exist "models\vosk\vosk-model-small-ru-0.22" (
     echo [OK] Vosk модель скопирована
 ) else if exist "vosk-model-small-ru-0.22.tar.gz" (
     echo       Копирование архива Vosk...
-    adb push "vosk-model-small-ru-0.22.tar.gz" "/sdcard/Android/data/com.voboost.voiceassistant/files/models/vosk/"
+    adb push "vosk-model-small-ru-0.22.tar.gz" "/sdcard/Android/data/ru.voboost.voiceassistant/files/models/vosk/"
     echo       Распаковка...
-    adb shell "cd /sdcard/Android/data/com.voboost.voiceassistant/files/models/vosk && tar -xzf vosk-model-small-ru-0.22.tar.gz && rm vosk-model-small-ru-0.22.tar.gz"
+    adb shell "cd /sdcard/Android/data/ru.voboost.voiceassistant/files/models/vosk && tar -xzf vosk-model-small-ru-0.22.tar.gz && rm vosk-model-small-ru-0.22.tar.gz"
     echo [OK] Vosk модель распакована
 ) else (
     echo [WARNING] Vosk модель не найдена!
@@ -77,7 +77,7 @@ REM Копирование Sherpa TTS модели
 echo [5/6] Копирование Sherpa TTS модели...
 if exist "models\sherpa\tts-ru-model" (
     echo       Копирование файлов модели (это может занять несколько минут)...
-    adb push "models\sherpa\tts-ru-model" "/sdcard/Android/data/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model"
+    adb push "models\sherpa\tts-ru-model" "/sdcard/Android/data/ru.voboost.voiceassistant/files/models/sherpa/tts-ru-model"
     if errorlevel 1 (
         echo [ERROR] Ошибка копирования Sherpa модели!
         pause
@@ -86,9 +86,9 @@ if exist "models\sherpa\tts-ru-model" (
     echo [OK] Sherpa TTS модель скопирована
 ) else if exist "models\sherpa\tts-ru-model.tar.gz.bin" (
     echo       Копирование архива Sherpa...
-    adb push "models\sherpa\tts-ru-model.tar.gz.bin" "/sdcard/Android/data/com.voboost.voiceassistant/files/models/sherpa/"
+    adb push "models\sherpa\tts-ru-model.tar.gz.bin" "/sdcard/Android/data/ru.voboost.voiceassistant/files/models/sherpa/"
     echo       Переименование и распаковка...
-    adb shell "cd /sdcard/Android/data/com.voboost.voiceassistant/files/models/sherpa && mv tts-ru-model.tar.gz.bin tts-ru-model.tar.gz && tar -xzf tts-ru-model.tar.gz && rm tts-ru-model.tar.gz"
+    adb shell "cd /sdcard/Android/data/ru.voboost.voiceassistant/files/models/sherpa && mv tts-ru-model.tar.gz.bin tts-ru-model.tar.gz && tar -xzf tts-ru-model.tar.gz && rm tts-ru-model.tar.gz"
     echo [OK] Sherpa TTS модель распакована
 ) else (
     echo [WARNING] Sherpa TTS модель не найдена!
@@ -100,13 +100,13 @@ REM Проверка
 echo [6/6] Проверка установленных файлов...
 echo.
 echo Config:
-adb shell "ls -la /sdcard/Android/data/com.voboost.voiceassistant/files/config.json" 2>nul || echo "  config.json не найден"
+adb shell "ls -la /sdcard/Android/data/ru.voboost.voiceassistant/files/config.json" 2>nul || echo "  config.json не найден"
 echo.
 echo Vosk модель:
-adb shell "ls -la /sdcard/Android/data/com.voboost.voiceassistant/files/models/vosk/" 2>nul || echo "  Vosk модель не найдена"
+adb shell "ls -la /sdcard/Android/data/ru.voboost.voiceassistant/files/models/vosk/" 2>nul || echo "  Vosk модель не найдена"
 echo.
 echo Sherpa TTS модель:
-adb shell "ls -la /sdcard/Android/data/com.voboost.voiceassistant/files/models/sherpa/" 2>nul || echo "  Sherpa модель не найдена"
+adb shell "ls -la /sdcard/Android/data/ru.voboost.voiceassistant/files/models/sherpa/" 2>nul || echo "  Sherpa модель не найдена"
 echo.
 
 echo ============================================================================
@@ -114,7 +114,7 @@ echo  Готово!
 echo ============================================================================
 echo.
 echo Файлы скопированы на SD-карту в директорию:
-echo   /sdcard/Android/data/com.voboost.voiceassistant/files/
+echo   /sdcard/Android/data/ru.voboost.voiceassistant/files/
 echo.
 echo Для применения изменений перезапустите приложение или устройство:
 echo   adb reboot
@@ -123,6 +123,6 @@ echo Чтобы обновить конфиг в будущем:
 echo   1. Отредактируйте app/src/main/assets/config.json
 echo   2. Запустите этот скрипт снова
 echo   ИЛИ скопируйте конфиг вручную:
-echo   adb push config.json /sdcard/Android/data/com.voboost.voiceassistant/files/
+echo   adb push config.json /sdcard/Android/data/ru.voboost.voiceassistant/files/
 echo.
 pause

@@ -1,4 +1,4 @@
-# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
+﻿# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
 **Дата восстановления:** 2026-04-11
 **Версия:** 19.1 (AudioRecord retry + Builder API)
@@ -10,7 +10,7 @@
 
 **Оффлайн голосовой ассистент для автомобильных ГУ**
 - **Платформа:** Android 11, API 30 (minSdk=26, targetSdk=33)
-- **Package:** `com.voboost.voiceassistant` (uid: u0_a68, НЕ system)
+- **Package:** `ru.voboost.voiceassistant` (uid: u0_a68, НЕ system)
 - **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
 - **Язык:** Kotlin 100%
 - **Распознавание:** Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium)
@@ -171,12 +171,12 @@ VoboostVoiceAssistant/
 ```
 
 ### Конфиг:
-- **Приоритет:** `/sdcard/Android/data/com.voboost.voiceassistant/files/config.json`
+- **Приоритет:** `/sdcard/Android/data/ru.voboost.voiceassistant/files/config.json`
 - **Fallback:** `assets/config.json` (в APK)
 
 ### Модели:
-- **Vosk:** `/data/user/0/com.voboost.voiceassistant/files/models/vosk/`
-- **Sherpa:** `/data/user/0/com.voboost.voiceassistant/files/models/sherpa/`
+- **Vosk:** `/data/user/0/ru.voboost.voiceassistant/files/models/vosk/`
+- **Sherpa:** `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/`
 
 ---
 
@@ -191,13 +191,13 @@ adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 
 ### Перезапуск:
 ```batch
-adb shell "am force-stop com.voboost.voiceassistant && am broadcast -a android.intent.action.BOOT_COMPLETED -n com.voboost.voiceassistant/.BootReceiver"
+adb shell "am force-stop ru.voboost.voiceassistant && am broadcast -a android.intent.action.BOOT_COMPLETED -n ru.voboost.voiceassistant/.BootReceiver"
 ```
 
 ### Ручной запуск (РАБОТАЕТ):
 ```batch
-adb shell am force-stop com.voboost.voiceassistant
-adb shell am start-foreground-service --user 0 -n com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am force-stop ru.voboost.voiceassistant
+adb shell am start-foreground-service --user 0 -n ru.voboost.voiceassistant/.VoboostVoiceService
 ```
 
 ### Убийство dvr_service и audioserver:

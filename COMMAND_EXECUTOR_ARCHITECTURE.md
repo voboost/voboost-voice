@@ -1,4 +1,4 @@
-# 🏗️ Архитектура выполнения команд автомобилю
+﻿# 🏗️ Архитектура выполнения команд автомобилю
 
 **Дата:** 2026-03-28  
 **Версия:** 2.0  
@@ -219,7 +219,7 @@ modeString = BuildConfig.VEHICLE_COMMAND_MODE
 ### 1. Проверка текущего режима
 
 ```bash
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 adb logcat | grep "VehicleCommandFactory"
 ```
 

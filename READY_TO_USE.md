@@ -1,4 +1,4 @@
-# ✅ ВСЕ НАЙДЕНО! ГОТОВЫЕ КЛАССЫ
+﻿# ✅ ВСЕ НАЙДЕНО! ГОТОВЫЕ КЛАССЫ
 
 ## 🎯 **НАЙДЕННЫЕ ФАЙЛЫ**
 
@@ -114,11 +114,11 @@ D:\Projects\Android\MM\6.11.1\export\BluetoothPhone-release-signed\app\src\main\
 
 ```kotlin
 // CommandExecutor.kt
-import com.voboost.voiceassistant.speech.VuiServiceMgr
-import com.voboost.voiceassistant.speech.AppServiceType
-import com.voboost.voiceassistant.dcs.bean.car.CarOrderBean
-import com.voboost.voiceassistant.car.CarEventBus
-import com.voboost.voiceassistant.car.ICarEventsObserver
+import ru.voboost.voiceassistant.speech.VuiServiceMgr
+import ru.voboost.voiceassistant.speech.AppServiceType
+import ru.voboost.voiceassistant.dcs.bean.car.CarOrderBean
+import ru.voboost.voiceassistant.car.CarEventBus
+import ru.voboost.voiceassistant.car.ICarEventsObserver
 
 class CommandExecutor(private val context: Context) {
     private var vuiMgr: VuiServiceMgr? = null

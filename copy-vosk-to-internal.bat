@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ============================================================================
 REM  Копирование модели Vosk во внутреннюю память приложения
 REM ============================================================================
@@ -33,14 +33,14 @@ echo.
 
 REM Создание директории
 echo [2/4] Создание директории для модели...
-adb shell "mkdir -p /data/user/0/com.voboost.voiceassistant/files/vosk"
+adb shell "mkdir -p /data/user/0/ru.voboost.voiceassistant/files/vosk"
 echo [OK] Директория создана
 echo.
 
 REM Копирование модели
 echo [3/4] Копирование модели Vosk (это может занять несколько минут)...
 if exist "models\vosk\vosk-model-small-ru-0.22" (
-    adb push "models\vosk\vosk-model-small-ru-0.22" "/data/user/0/com.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22"
+    adb push "models\vosk\vosk-model-small-ru-0.22" "/data/user/0/ru.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22"
     if errorlevel 1 (
         echo [ERROR] Ошибка копирования!
         pause
@@ -56,14 +56,14 @@ echo.
 
 REM Установка прав
 echo [4/4] Установка прав доступа...
-adb shell "chmod -R 755 /data/user/0/com.voboost.voiceassistant/files/vosk"
-adb shell "chown -R system:system /data/user/0/com.voboost.voiceassistant/files/vosk"
+adb shell "chmod -R 755 /data/user/0/ru.voboost.voiceassistant/files/vosk"
+adb shell "chown -R system:system /data/user/0/ru.voboost.voiceassistant/files/vosk"
 echo [OK] Права установлены
 echo.
 
 REM Проверка
 echo Проверка установленной модели:
-adb shell "ls -la /data/user/0/com.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22/"
+adb shell "ls -la /data/user/0/ru.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22/"
 echo.
 
 echo ============================================================================
@@ -71,7 +71,7 @@ echo  Готово!
 echo ============================================================================
 echo.
 echo Теперь нужно перезапустить приложение:
-echo   adb shell am force-stop com.voboost.voiceassistant
-echo   adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+echo   adb shell am force-stop ru.voboost.voiceassistant
+echo   adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
 echo.
 pause

@@ -1,4 +1,4 @@
-# 🏗️ АРХИТЕКТУРА SPEECH ENGINE
+﻿# 🏗️ АРХИТЕКТУРА SPEECH ENGINE
 
 **Версия:** 1.0  
 **Дата:** 2026-03-27  
@@ -25,7 +25,7 @@
 ## 📁 СТРУКТУРА ПАКЕТОВ
 
 ```
-com.voboost.voiceassistant/
+ru.voboost.voiceassistant/
 │
 ├── core/                          # Ядро - интерфейсы и фабрики
 │   ├── SpeechRecognition.kt       # Интерфейс для распознавания
@@ -224,9 +224,9 @@ ttsEngine = SpeechEngineFactory.createSynthesisEngine(
 ### Шаг 1: Создать реализацию
 
 ```kotlin
-package com.voboost.voiceassistant.engine.your_engine
+package ru.voboost.voiceassistant.engine.your_engine
 
-import com.voboost.voiceassistant.core.SpeechRecognition
+import ru.voboost.voiceassistant.core.SpeechRecognition
 
 class YourEngineRecognition(
     private val context: Context,

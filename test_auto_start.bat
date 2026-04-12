@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 echo ============================================
 echo   VoboostVoiceAssistant - Тест автозапуска
@@ -6,7 +6,7 @@ echo ============================================
 echo.
 
 echo [1/2] Эмуляция загрузки системы...
-adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p com.voboost.voiceassistant
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voiceassistant
 
 echo.
 echo [2/2] Ожидание запуска сервиса (5 сек)...

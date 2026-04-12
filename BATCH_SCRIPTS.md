@@ -1,4 +1,4 @@
-# 📦 BATCH ФАЙЛЫ - ПОЛНАЯ ИНСТРУКЦИЯ
+﻿# 📦 BATCH ФАЙЛЫ - ПОЛНАЯ ИНСТРУКЦИЯ
 
 ## 📁 Доступные скрипты
 
@@ -149,7 +149,7 @@ VoboostVoiceAssistant-install.bat
 
 ### **Проверить разрешения:**
 ```bash
-adb shell dumpsys package com.voboost.voiceassistant
+adb shell dumpsys package ru.voboost.voiceassistant
 ```
 
 ### **Проверить сервис:**

@@ -1,4 +1,4 @@
-# 🔑 НАЙДЕН: МЕХАНИЗМ ОБРАБОТКИ КНОПКИ НА РУЛЕ!
+﻿# 🔑 НАЙДЕН: МЕХАНИЗМ ОБРАБОТКИ КНОПКИ НА РУЛЕ!
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ КЛЮЧЕВАЯ НАХОДКА
@@ -317,7 +317,7 @@ class VoiceActivationService : Service() {
     private fun activateVoiceAssistant() {
         // Запускаем голосовой помощник
         val intent = Intent(this, VoboostVoiceService::class.java)
-        intent.action = "com.voboost.voiceassistant.ACTIVATE"
+        intent.action = "ru.voboost.voiceassistant.ACTIVATE"
         startService(intent)
     }
     
@@ -336,7 +336,7 @@ class VoiceActivationService : Service() {
     android:name=".VoiceActivationService"
     android:exported="true">
     <intent-filter>
-        <action android:name="com.voboost.voiceassistant.VOICE_ACTIVATION"/>
+        <action android:name="ru.voboost.voiceassistant.VOICE_ACTIVATION"/>
     </intent-filter>
 </service>
 ```
@@ -364,7 +364,7 @@ class VoiceActivationReceiver : BroadcastReceiver() {
             
             // Запускаем голосовой помощник
             val serviceIntent = Intent(context, VoboostVoiceService::class.java)
-            serviceIntent.action = "com.voboost.voiceassistant.ACTIVATE"
+            serviceIntent.action = "ru.voboost.voiceassistant.ACTIVATE"
             context.startService(serviceIntent)
         }
     }
@@ -390,7 +390,7 @@ class VoiceActivationReceiver : BroadcastReceiver() {
             
             // Запускаем НАШ голосовой помощник
             val serviceIntent = Intent(context, VoboostVoiceService::class.java)
-            serviceIntent.action = "com.voboost.voiceassistant.ACTIVATE"
+            serviceIntent.action = "ru.voboost.voiceassistant.ACTIVATE"
             context.startService(serviceIntent)
             
             // Можно отменить запуск Ivoka (если нужно)

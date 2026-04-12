@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 echo ============================================
 echo   VoboostVoiceAssistant - Полная проверка
@@ -27,7 +27,7 @@ echo   ✓ Приложение установлено
 echo.
 
 echo [3/5] Проверка разрешений...
-adb shell dumpsys package com.voboost.voiceassistant | findstr "granted=true"
+adb shell dumpsys package ru.voboost.voiceassistant | findstr "granted=true"
 echo   ✓ Разрешения проверены
 echo.
 
@@ -42,7 +42,7 @@ if %ERRORLEVEL% EQU 0 (
 echo.
 
 echo [5/5] Проверка автозапуска...
-adb shell dumpsys package com.voboost.voiceassistant | findstr "enabled=true"
+adb shell dumpsys package ru.voboost.voiceassistant | findstr "enabled=true"
 echo   ✓ Автозапуск настроен
 echo.
 

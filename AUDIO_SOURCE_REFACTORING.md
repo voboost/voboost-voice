@@ -1,4 +1,4 @@
-# 🎤 НОВАЯ АРХИТЕКТУРА AUDIO SOURCE
+﻿# 🎤 НОВАЯ АРХИТЕКТУРА AUDIO SOURCE
 
 **Дата:** 2026-04-04
 **Версия:** 14.0 (AudioSource Refactoring)
@@ -202,8 +202,8 @@ adb push app\build\outputs\apk\release\app-release-unsigned.apk ^
 adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 
 # Перезапуск
-adb shell am force-stop com.voboost.voiceassistant
-adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am force-stop ru.voboost.voiceassistant
+adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
 
 # Логи
 adb logcat -s AudioSourceFactory:* SpeechRecognition:* VoboostVoiceService:*
@@ -245,7 +245,7 @@ AndroidAudioSource: RECORD_AUDIO permission not granted
 
 **Решение:**
 ```bash
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
 ```
 
 ### Нет распознавания после активации

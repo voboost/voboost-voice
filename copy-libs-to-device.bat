@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ========================================
 REM Загрузка нативных библиотек на устройство
 REM ========================================
@@ -75,7 +75,7 @@ echo  Готово! Библиотеки загружены.
 echo ========================================
 echo.
 echo Не забудьте перезапустить приложение:
-echo   adb shell am force-stop com.voboost.voiceassistant
+echo   adb shell am force-stop ru.voboost.voiceassistant
 echo.
 
 pause

@@ -1,4 +1,4 @@
-# ✅ АВТОЗАПУСК ДОБАВЛЕН!
+﻿# ✅ АВТОЗАПУСК ДОБАВЛЕН!
 
 ## 📋 Что добавлено
 
@@ -32,17 +32,17 @@
 
 ### **Дать разрешение на автозапуск:**
 ```bash
-adb shell appops set com.voboost.voiceassistant RECEIVE_BOOT_COMPLETED allow
+adb shell appops set ru.voboost.voiceassistant RECEIVE_BOOT_COMPLETED allow
 ```
 
 ### **Проверить разрешение:**
 ```bash
-adb shell dumpsys package com.voboost.voiceassistant | grep BOOT
+adb shell dumpsys package ru.voboost.voiceassistant | grep BOOT
 ```
 
 ### **Протестировать автозапуск (без перезагрузки):**
 ```bash
-adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p com.voboost.voiceassistant
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voiceassistant
 ```
 
 ### **Проверить логи:**
@@ -68,14 +68,14 @@ I/SpeechRecognition: Vosk initialized successfully!
 adb install app/build/outputs/apk/debug/app-debug.apk
 
 # 2. Дать все разрешения
-adb shell appops set com.voboost.voiceassistant RECORD_AUDIO allow
-adb shell appops set com.voboost.voiceassistant SYSTEM_ALERT_WINDOW allow
-adb shell appops set com.voboost.voiceassistant RECEIVE_BOOT_COMPLETED allow
-adb shell settings put secure enabled_accessibility_services com.voboost.voiceassistant/com.voboost.voiceassistant.VoiceActivationService
+adb shell appops set ru.voboost.voiceassistant RECORD_AUDIO allow
+adb shell appops set ru.voboost.voiceassistant SYSTEM_ALERT_WINDOW allow
+adb shell appops set ru.voboost.voiceassistant RECEIVE_BOOT_COMPLETED allow
+adb shell settings put secure enabled_accessibility_services ru.voboost.voiceassistant/ru.voboost.voiceassistant.VoiceActivationService
 adb shell settings put secure accessibility_enabled 1
 
 # 3. Протестировать автозапуск
-adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p com.voboost.voiceassistant
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voiceassistant
 
 # 4. Проверить логи
 adb logcat | grep -i "BootReceiver"
@@ -113,7 +113,7 @@ adb shell ps | grep voboost
 
 **Должно показать:**
 ```
-com.voboost.voiceassistant
+ru.voboost.voiceassistant
 ```
 
 ### **3. Проверить сервис:**
@@ -144,7 +144,7 @@ adb shell dumpsys activity services | grep -i voboost
 ```bash
 gradlew.bat assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p com.voboost.voiceassistant
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voiceassistant
 adb logcat | grep -i "BootReceiver"
 ```
 

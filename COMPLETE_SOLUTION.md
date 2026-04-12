@@ -1,4 +1,4 @@
-# 🚀 ПОЛНОЕ РЕШЕНИЕ: VOBOOST VOICE ASSISTANT
+﻿# 🚀 ПОЛНОЕ РЕШЕНИЕ: VOBOOST VOICE ASSISTANT
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ГОТОВО К ИСПОЛЬЗОВАНИЮ
@@ -56,9 +56,9 @@ gradlew.bat assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 
 # Дать разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
-adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
 ```
 
 ### Шаг 3: Запустить Frida скрипт
@@ -79,7 +79,7 @@ frida -U -f system_server -l frida-voice-button.js --no-pause
 
 ```bash
 # Если Voboost уже запущен
-frida -U com.voboost.voiceassistant -l frida-voice-button.js
+frida -U ru.voboost.voiceassistant -l frida-voice-button.js
 ```
 
 **Вариант C: Автостарт скрипта (batch файл)**
@@ -96,7 +96,7 @@ frida -U -f system_server -l frida-voice-button.js --no-pause
 
 ```bash
 # Запустить сервис
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 
 # Проверить логи
 adb logcat | grep -i "voboost\|SoundEffect"
@@ -320,7 +320,7 @@ adb logcat | grep "SoundEffectManager"
 I/SoundEffectManager: Tone played: type=1
 
 # Если нет - проверить разрешения
-adb shell dumpsys package com.voboost.voiceassistant | grep -A 10 "granted=true"
+adb shell dumpsys package ru.voboost.voiceassistant | grep -A 10 "granted=true"
 ```
 
 ### 4. Анимация не показывается
@@ -330,11 +330,11 @@ adb shell dumpsys package com.voboost.voiceassistant | grep -A 10 "granted=true"
 **Решение:**
 ```bash
 # Проверить что overlay разрешение дано
-adb shell appops get com.voboost.voiceassistant SYSTEM_ALERT_WINDOW
+adb shell appops get ru.voboost.voiceassistant SYSTEM_ALERT_WINDOW
 
 # Должно быть: allow
 # Если deny:
-adb shell appops set com.voboost.voiceassistant SYSTEM_ALERT_WINDOW allow
+adb shell appops set ru.voboost.voiceassistant SYSTEM_ALERT_WINDOW allow
 ```
 
 ---
@@ -408,7 +408,7 @@ frida-voice-button.js
 
 5. **Запустить сервис:**
    ```bash
-   adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+   adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
    ```
 
 6. **Тестировать:**

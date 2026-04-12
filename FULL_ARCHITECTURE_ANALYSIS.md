@@ -1,4 +1,4 @@
-# 🏗️ ПОЛНАЯ АРХИТЕКТУРА ГОЛОСОВОЙ СИСТЕМЫ
+﻿# 🏗️ ПОЛНАЯ АРХИТЕКТУРА ГОЛОСОВОЙ СИСТЕМЫ
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ПОЛНОЕ ПОНИМАНИЕ СИСТЕМЫ
@@ -363,7 +363,7 @@ adb shell pm disable com.qinggan.ivoka1
 // Frida скрипт
 ContextWrapper.startService.implementation = function(intent) {
     if (intent.getAction() === "com.qinggan.iovka.START_IVOKA") {
-        intent.setPackage("com.voboost.voiceassistant");
+        intent.setPackage("ru.voboost.voiceassistant");
     }
     return this.startService(intent);
 };

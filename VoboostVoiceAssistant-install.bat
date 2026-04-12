@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ============================================================================
 REM  VoboostVoiceAssistant - Установка и запуск
 REM ============================================================================
@@ -85,13 +85,13 @@ REM ============================================================================
 echo [4/7] Копирование моделей (Vosk + Sherpa TTS)...
 
 REM Создаём директории
-adb shell mkdir -p /data/user/0/com.voboost.voiceassistant/files/models/vosk >nul 2>&1
-adb shell mkdir -p /data/user/0/com.voboost.voiceassistant/files/models/sherpa >nul 2>&1
+adb shell mkdir -p /data/user/0/ru.voboost.voiceassistant/files/models/vosk >nul 2>&1
+adb shell mkdir -p /data/user/0/ru.voboost.voiceassistant/files/models/sherpa >nul 2>&1
 
 REM Копируем Vosk модель (русский язык, ~50MB)
 if exist "models\vosk\vosk-model-small-ru-0.22" (
     adb push models\vosk\vosk-model-small-ru-0.22 ^
-      /data/user/0/com.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22 >nul 2>&1
+      /data/user/0/ru.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22 >nul 2>&1
     if errorlevel 0 (
         echo   [OK] Vosk модель скопирована
     ) else (
@@ -104,7 +104,7 @@ if exist "models\vosk\vosk-model-small-ru-0.22" (
 REM Копируем Sherpa TTS модель (русская Piper, ~80MB)
 if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
     adb push models\sherpa\tts-ru-model-temp\tts-ru-model ^
-      /data/user/0/com.voboost.voiceassistant/files/models/sherpa/tts-ru-model >nul 2>&1
+      /data/user/0/ru.voboost.voiceassistant/files/models/sherpa/tts-ru-model >nul 2>&1
     if errorlevel 0 (
         echo   [OK] Sherpa TTS модель скопирована
     ) else (
@@ -115,8 +115,8 @@ if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
 )
 
 REM Устанавливаем права
-adb shell chown -R 10068:10068 /data/user/0/com.voboost.voiceassistant/files/models >nul 2>&1
-adb shell chmod -R 755 /data/user/0/com.voboost.voiceassistant/files/models >nul 2>&1
+adb shell chown -R 10068:10068 /data/user/0/ru.voboost.voiceassistant/files/models >nul 2>&1
+adb shell chmod -R 755 /data/user/0/ru.voboost.voiceassistant/files/models >nul 2>&1
 echo [OK] Модели установлены
 echo.
 
@@ -126,14 +126,14 @@ REM ============================================================================
 echo [5/7] Инициализация приложения и выдача разрешений...
 
 REM Инициализируем данные приложения (создаёт /data/user_de/0/...)
-adb shell cmd package install-existing com.voboost.voiceassistant >nul 2>&1
+adb shell cmd package install-existing ru.voboost.voiceassistant >nul 2>&1
 echo   [OK] Данные приложения инициализированы
 
 REM Выдаём разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
-adb shell pm grant com.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
-adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
+adb shell pm grant ru.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
+adb shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
 echo   [OK] Разрешения выданы (RECORD_AUDIO, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)
 echo.
 
@@ -165,15 +165,15 @@ REM ============================================================================
 echo [7/7] Запуск VoboostVoiceService...
 
 REM Убеждаемся что приложение включено
-adb shell pm enable com.voboost.voiceassistant >nul 2>&1
+adb shell pm enable ru.voboost.voiceassistant >nul 2>&1
 
 REM Останавливаем если было запущено
-adb shell am force-stop com.voboost.voiceassistant >nul 2>&1
+adb shell am force-stop ru.voboost.voiceassistant >nul 2>&1
 timeout /t 2 /nobreak
 
 REM Запускаем foreground сервис
 adb shell am start-foreground-service --user 0 ^
-  -n com.voboost.voiceassistant/.VoboostVoiceService
+  -n ru.voboost.voiceassistant/.VoboostVoiceService
 
 if errorlevel 1 (
     echo [ERROR] Ошибка запуска сервиса!
@@ -222,6 +222,6 @@ echo Просмотр логов:
 echo   adb logcat -s VoboostVoiceService:* StateMachine:* SpeechRecognizer:*
 echo.
 echo Остановка сервиса:
-echo   adb shell am force-stop com.voboost.voiceassistant
+echo   adb shell am force-stop ru.voboost.voiceassistant
 echo.
 pause

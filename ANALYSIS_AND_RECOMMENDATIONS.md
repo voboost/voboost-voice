@@ -1,4 +1,4 @@
-# 📊 АНАЛИЗ DECOMPILED APK И РЕКОМЕНДАЦИИ
+﻿# 📊 АНАЛИЗ DECOMPILED APK И РЕКОМЕНДАЦИИ
 
 **Дата:** 2026-03-24  
 **Объекты анализа:**
@@ -291,7 +291,7 @@ class VoiceActivationReceiver : BroadcastReceiver() {
             
             // Запускаем ваш сервис
             val serviceIntent = Intent(context, VoboostVoiceService::class.java)
-            serviceIntent.action = "com.voboost.voiceassistant.ACTIVATE"
+            serviceIntent.action = "ru.voboost.voiceassistant.ACTIVATE"
             context.startService(serviceIntent)
         }
     }
@@ -465,7 +465,7 @@ class VoiceActivationReceiver : BroadcastReceiver() {
         
         // Запуск сервиса
         val serviceIntent = Intent(context, VoboostVoiceService::class.java)
-        serviceIntent.action = "com.voboost.voiceassistant.ACTIVATE"
+        serviceIntent.action = "ru.voboost.voiceassistant.ACTIVATE"
         context.startService(serviceIntent)
     }
 }
@@ -495,8 +495,8 @@ gradlew.bat assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 
 # Дать разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
 
 # Запустить логи
 adb logcat | grep -i "voboost\|CommandExecutor"

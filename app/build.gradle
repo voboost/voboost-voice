@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.voboost.voiceassistant'
+    namespace 'ru.voboost.voiceassistant'
     compileSdk = 36
 
     defaultConfig {
-        applicationId "com.voboost.voiceassistant"
+        applicationId "ru.voboost.voiceassistant"
         minSdk = 26
         targetSdk = 33
         versionCode = 1

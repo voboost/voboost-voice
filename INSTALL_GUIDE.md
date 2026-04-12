@@ -1,4 +1,4 @@
-# 📦 VoboostVoiceAssistant - Руководство по установке
+﻿# 📦 VoboostVoiceAssistant - Руководство по установке
 
 ## 🗂️ Доступные скрипты
 
@@ -101,7 +101,7 @@ copy-vosk-to-internal.bat             # Копировать Vosk модель
 
 ### Модели:
 ```
-/data/user/0/com.voboost.voiceassistant/files/models/
+/data/user/0/ru.voboost.voiceassistant/files/models/
 ├── vosk/
 │   └── vosk-model-small-ru-0.22/    # Распознавание речи (STT)
 └── sherpa/
@@ -113,7 +113,7 @@ copy-vosk-to-internal.bat             # Копировать Vosk модель
 
 ### Конфигурация:
 ```
-/storage/emulated/0/Android/data/com.voboost.voiceassistant/files/config.json
+/storage/emulated/0/Android/data/ru.voboost.voiceassistant/files/config.json
 ```
 
 ---
@@ -135,8 +135,8 @@ adb shell ps | findstr voboost
 adb logcat -d -t 100 | findstr /i "voboost fatal error"
 
 # Перезапустить
-adb shell am force-stop com.voboost.voiceassistant
-adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am force-stop ru.voboost.voiceassistant
+adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
 ```
 
 ### Модели не найдены:

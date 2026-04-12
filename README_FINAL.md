@@ -1,4 +1,4 @@
-# 🎯 VOBOOST VOICE ASSISTANT - ПОЛНОЕ РЕШЕНИЕ
+﻿# 🎯 VOBOOST VOICE ASSISTANT - ПОЛНОЕ РЕШЕНИЕ
 
 **Версия:** 1.0.0  
 **Дата:** 2026-03-24  
@@ -93,8 +93,8 @@ gradlew.bat assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 
 # 3. Дать разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
 
 # 4. Отключить штатные
 adb shell pm disable com.qinggan.ivoka
@@ -105,7 +105,7 @@ adb shell pm disable com.qinggan.sttservice
 frida -U -f com.qinggan.sttservice -l frida-voice-button.js --no-pause
 
 # 6. Запустить сервис
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 ```
 
 ---
@@ -232,7 +232,7 @@ adb logcat | grep -i "SoundEffect"
 adb shell ps | grep voboost
 
 # Разрешения даны?
-adb shell dumpsys package com.voboost.voiceassistant | grep granted
+adb shell dumpsys package ru.voboost.voiceassistant | grep granted
 
 # Ivoka отключена?
 adb shell pm list packages -d | grep ivoka

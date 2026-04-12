@@ -1,4 +1,4 @@
-# 🚀 FRIDA СКРИПТ ДЛЯ ПЕРЕХВАТА КНОПКИ НА РУЛЕ
+﻿# 🚀 FRIDA СКРИПТ ДЛЯ ПЕРЕХВАТА КНОПКИ НА РУЛЕ
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ГОТОВОЕ РЕШЕНИЕ С ROOT
@@ -62,7 +62,7 @@ Java.perform(function() {
                 
                 // Создаем новый Intent для нашего сервиса
                 var newIntent = Java.use("android.content.Intent").$new(intent);
-                newIntent.setPackage("com.voboost.voiceassistant");
+                newIntent.setPackage("ru.voboost.voiceassistant");
                 
                 // Запускаем наш сервис вместо Ivoka
                 return this.startService(newIntent);
@@ -144,10 +144,10 @@ Java.perform(function() {
                         var Intent = Java.use("android.content.Intent");
                         var intent = Intent.$new();
                         intent.setClassName(
-                            "com.voboost.voiceassistant",
-                            "com.voboost.voiceassistant.VoboostVoiceService"
+                            "ru.voboost.voiceassistant",
+                            "ru.voboost.voiceassistant.VoboostVoiceService"
                         );
-                        intent.setAction("com.voboost.voiceassistant.ACTIVATE");
+                        intent.setAction("ru.voboost.voiceassistant.ACTIVATE");
                         
                         instance.startService(intent);
                         console.log("✅ VoboostVoiceService launched!");
@@ -293,11 +293,11 @@ Java.perform(function() {
                 console.log("   Original package: " + packageName);
                 
                 if (packageName === "com.qinggan.ivoka" || packageName === "com.qinggan.ivoka1") {
-                    console.log("🔄 Redirecting to com.voboost.voiceassistant");
+                    console.log("🔄 Redirecting to ru.voboost.voiceassistant");
                     
                     // Создаем новый Intent для нашего сервиса
                     var newIntent = Intent.$new(intent);
-                    newIntent.setPackage("com.voboost.voiceassistant");
+                    newIntent.setPackage("ru.voboost.voiceassistant");
                     
                     // Запускаем наш сервис
                     var result = this.startService(newIntent);
@@ -369,7 +369,7 @@ frida -U -f system_server -l frida-voice-assistant.js --no-pause
 🚀 VoboostVoiceAssistant - Frida Hook Loaded
 📢 startService: com.qinggan.iovka.START_IVOKA → com.qinggan.ivoka
 🎯 Intercepted: com.qinggan.iovka.START_IVOKA
-🔄 Redirecting to com.voboost.voiceassistant
+🔄 Redirecting to ru.voboost.voiceassistant
 ✅ VoboostVoiceService started
 ```
 
@@ -397,7 +397,7 @@ const-string v0, "com.qinggan.ivoka"
 invoke-virtual {v1, v0}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
 
 # Стало:
-const-string v0, "com.voboost.voiceassistant"
+const-string v0, "ru.voboost.voiceassistant"
 invoke-virtual {v1, v0}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
 ```
 

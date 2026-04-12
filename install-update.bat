@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ========================================
 REM Быстрая установка VoboostVoiceAssistant
 REM ========================================
@@ -58,15 +58,15 @@ echo [5/5] Установка прав доступа и запуск...
 %ADB% shell chmod 644 %DEVICE_APK_PATH%
 
 REM Разрешения
-%ADB% shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
-%ADB% shell pm grant com.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
-%ADB% shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
-%ADB% shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
+%ADB% shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
+%ADB% shell pm grant ru.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
+%ADB% shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
+%ADB% shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
 
 REM Перезапуск приложения
-%ADB% shell am force-stop com.voboost.voiceassistant
+%ADB% shell am force-stop ru.voboost.voiceassistant
 timeout /t 2 /nobreak >nul
-%ADB% shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+%ADB% shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
 
 echo.
 echo ========================================

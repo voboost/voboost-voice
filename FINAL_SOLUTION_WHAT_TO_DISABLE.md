@@ -1,4 +1,4 @@
-# 🎯 ПОЛНЫЙ АНАЛИЗ: ЧТО ОТКЛЮЧАТЬ А ЧТО ОСТАВИТЬ
+﻿# 🎯 ПОЛНЫЙ АНАЛИЗ: ЧТО ОТКЛЮЧАТЬ А ЧТО ОСТАВИТЬ
 
 **Дата:** 2026-03-24  
 **Статус:** ✅ ПОЛНОЕ ПОНИМАНИЕ СИСТЕМЫ
@@ -232,7 +232,7 @@ class VoiceActivationService : Service() {
     
     private fun activateVoiceAssistant() {
         val intent = Intent(this, VoboostVoiceService::class.java)
-        intent.action = "com.voboost.voiceassistant.ACTIVATE"
+        intent.action = "ru.voboost.voiceassistant.ACTIVATE"
         startService(intent)
     }
     
@@ -278,7 +278,7 @@ QGSpeechService будет:
 ContextWrapper.startService.implementation = function(intent) {
     if (intent.getAction() === "com.qinggan.iovka.START_IVOKA") {
         // Запускаем Voboost вместо Ivoka
-        intent.setPackage("com.voboost.voiceassistant");
+        intent.setPackage("ru.voboost.voiceassistant");
     }
     return this.startService(intent);
 };
@@ -320,7 +320,7 @@ class VoiceActivationReceiver : BroadcastReceiver() {
         
         // Запускаем Voboost
         val serviceIntent = Intent(context, VoboostVoiceService::class.java)
-        serviceIntent.action = "com.voboost.voiceassistant.ACTIVATE"
+        serviceIntent.action = "ru.voboost.voiceassistant.ACTIVATE"
         context.startService(serviceIntent)
     }
 }

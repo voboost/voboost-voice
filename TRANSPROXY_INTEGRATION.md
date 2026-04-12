@@ -1,4 +1,4 @@
-# 🎤 ИНТЕГРАЦИЯ С QGSPEECHSERVICE ЧЕРЕЗ TRANSPROXY
+﻿# 🎤 ИНТЕГРАЦИЯ С QGSPEECHSERVICE ЧЕРЕЗ TRANSPROXY
 
 **Дата:** 2026-04-04
 **Версия:** 15.0 (TransProxy Integration)
@@ -220,8 +220,8 @@ adb push app\build\outputs\apk\release\app-release-unsigned.apk ^
   /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 
-adb shell am force-stop com.voboost.voiceassistant
-adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am force-stop ru.voboost.voiceassistant
+adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
 ```
 
 ### 3. Проверить логи

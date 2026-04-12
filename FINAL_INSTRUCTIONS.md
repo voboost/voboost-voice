@@ -1,4 +1,4 @@
-# 🚀 ИТОГОВАЯ ИНСТРУКЦИЯ: VOBOOST VOICE ASSISTANT
+﻿# 🚀 ИТОГОВАЯ ИНСТРУКЦИЯ: VOBOOST VOICE ASSISTANT
 
 **Версия:** 2.0 (ПРЯМОЙ ПЕРЕХВАТ KEYMANAGER)  
 **Дата:** 2026-03-24  
@@ -49,9 +49,9 @@ gradlew.bat assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 # Дать разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
-adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
 ```
 
 ### Шаг 3: Запустить Frida (ТРЕБУЕТ ROOT!)
@@ -76,7 +76,7 @@ frida -U -f system_server -l frida-voice-button.js --no-pause
 
 ```bash
 # Запустить сервис (будет работать ВСЕГДА)
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 
 # Проверить логи
 adb logcat | grep -i "voboost\|SoundEffect"
@@ -224,8 +224,8 @@ I/SoundEffectManager: Tone played: type=3
 🎯 IVA button pressed (KEYCODE_IVOKA=130)!
    isListening = false
 🟢 ACTIVATE: Start Voboost recognition
-📤 Sending broadcast: com.voboost.voiceassistant.ACTIVATE
-✅ Broadcast sent: com.voboost.voiceassistant.ACTIVATE
+📤 Sending broadcast: ru.voboost.voiceassistant.ACTIVATE
+✅ Broadcast sent: ru.voboost.voiceassistant.ACTIVATE
 ```
 
 ---
@@ -242,7 +242,7 @@ I/SoundEffectManager: Tone played: type=3
 frida -U system_server -l frida-voice-button.js
 
 # ИЛИ использовать Voboost процесс
-frida -U com.voboost.voiceassistant -l frida-voice-button.js
+frida -U ru.voboost.voiceassistant -l frida-voice-button.js
 ```
 
 ### 2. Кнопка не работает
@@ -280,8 +280,8 @@ adb logcat | grep "CancelReceiver"
 I/VoboostVoiceService: CancelReceiver registered
 
 # Перезапустить сервис
-adb shell am stopservice com.voboost.voiceassistant
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am stopservice ru.voboost.voiceassistant
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 ```
 
 ---
@@ -345,8 +345,8 @@ gradlew.bat assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 # 3. Разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
 
 # 4. Отключить штатные
 adb shell pm disable com.qinggan.ivoka
@@ -358,7 +358,7 @@ adb shell su -c "/data/local/tmp/frida-server &"
 frida -U -f system_server -l frida-voice-button.js --no-pause
 
 # 6. Запустить Voboost
-adb shell am startservice com.voboost.voiceassistant/.VoboostVoiceService
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 
 # 7. Тестировать
 # Нажать кнопку на руле

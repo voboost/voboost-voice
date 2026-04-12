@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM ============================================================================
 REM  Копирование privapp-permissions.xml в систему
 REM ============================================================================
@@ -62,6 +62,6 @@ echo Теперь нужно ПЕРЕЗАГРУЗИТЬ устройство д�
 echo   adb reboot
 echo.
 echo После перезагрузки проверьте:
-echo   adb shell dumpsys package com.voboost.voiceassistant ^| grep WRITE_CANBUS
+echo   adb shell dumpsys package ru.voboost.voiceassistant ^| grep WRITE_CANBUS
 echo.
 pause

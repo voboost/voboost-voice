@@ -1,4 +1,4 @@
-# ✅ МОДЕЛЬ VOSK УСТАНОВЛЕНА ПРАВИЛЬНО!
+﻿# ✅ МОДЕЛЬ VOSK УСТАНОВЛЕНА ПРАВИЛЬНО!
 
 ## 📁 Проверка структуры файлов
 
@@ -127,7 +127,7 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 I/SpeechRecognition: Initializing Vosk with model: vosk-model-small-ru-0.22
 I/SpeechRecognition: Model not found in internal storage, copying from assets...
-I/SpeechRecognition: Copying model to: /data/data/com.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22
+I/SpeechRecognition: Copying model to: /data/data/ru.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22
 I/SpeechRecognition: Model copied successfully
 I/SpeechRecognition: Vosk initialized successfully!
 ```
