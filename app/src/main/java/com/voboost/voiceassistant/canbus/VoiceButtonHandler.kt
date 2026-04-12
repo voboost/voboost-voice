@@ -1,7 +1,11 @@
 package com.voboost.voiceassistant.canbus
 
+import android.content.Context
 import android.util.Log
 import com.qinggan.canbus.CanBusListener
+import com.voboost.voiceassistant.config.ActivationConfig
+import com.voboost.voiceassistant.config.ConfigManager
+
 /**
  * Обработчик кнопки голосового помощника на руле
  *
@@ -11,8 +15,12 @@ import com.qinggan.canbus.CanBusListener
  * @param canBusManager Менеджер CanBusService для регистрации callback
  * @param voiceAssistantCallback Callback для уведомления о нажатии кнопки
  */
-class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
+class VoiceButtonHandler(context: Context,
+                         private val canBusManager: CanBusServiceManager,
                          private val voiceAssistantCallback: VoiceAssistantCallback) { // ❌ Убрали наследование : CanBusListener()
+
+
+    private val configManager = ConfigManager.getInstance(context)
 
     // ✅ Создаем слушатель как анонимный объект внутри класса
     private val mCanBusListener = object : CanBusListener() {
@@ -25,16 +33,14 @@ class VoiceButtonHandler(private val canBusManager: CanBusServiceManager,
         const val TAG = "VoiceButtonHandler"
         private const val DEBOUNCE_DELAY_MS = 500L
         private var lastPressTime = 0L
-        
-        // Кнопка активации голосового помощника (keycode 16)
-        const val VOICE_BUTTON_KEYCODE = 16
     }
 
     private var isCallbackRegistered = false
 
     private fun handleCarKeyChanged(keycode: Int, keyStatus: Int) {
+        val config = configManager.getConfig();
         // keycode 16, status 1 = нажатие кнопки голосового помощника
-        if (keycode == VOICE_BUTTON_KEYCODE && keyStatus == 1) {
+        if (keycode == config.activation.buttonKeycode && keyStatus == 1) {
             Log.i(TAG, "🎤 VOICE BUTTON PRESSED (keycode=$keycode, status=$keyStatus)")
             
             val currentTime = System.currentTimeMillis()

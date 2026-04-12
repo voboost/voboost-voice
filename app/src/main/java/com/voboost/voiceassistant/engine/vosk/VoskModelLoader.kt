@@ -17,10 +17,9 @@ class VoskModelLoader(
     
     companion object {
         const val TAG = "VoskModelLoader"
+        const val MODEL_NAME = "vosk-model-small-ru-0.22"
     }
-    
-    private val configManager = ConfigManager.getInstance(context)
-    
+
     /**
      * Загрузить модель Vosk из указанного пути
      * @param modelPath Путь к директории модели
@@ -42,9 +41,7 @@ class VoskModelLoader(
      * @return Путь к директории модели
      */
     override fun getModelPath(): String {
-        val config = configManager.getConfig()
-        val modelName = config.speech.offline.model
-        val internalModelDir = File(context.filesDir, "models/vosk/$modelName")
+        val internalModelDir = File(context.filesDir, "models/vosk/$MODEL_NAME")
 
         if (internalModelDir.exists() && internalModelDir.isDirectory) {
             Log.i(TAG, "Using Vosk model from internal storage: ${internalModelDir.absolutePath}")

@@ -43,6 +43,7 @@ import android.Manifest
 import android.content.pm.ServiceInfo
 import com.voboost.voiceassistant.audio.IAudioSource
 import com.voboost.voiceassistant.audio.AudioSourceFactory
+import com.voboost.voiceassistant.audio.MicphoneModeManager
 import com.voboost.voiceassistant.audio.VolumeManager
 import com.voboost.voiceassistant.audio.VoiceZoneDetector
 
@@ -95,8 +96,8 @@ class VoboostVoiceService : Service() {
     private var volumeManager: VolumeManager? = null
 
     // Voice Zone Detector - определение зоны говорящего
-    private var micphoneModeManager: com.voboost.voiceassistant.audio.MicphoneModeManager? = null
-    private var voiceZoneDetector: com.voboost.voiceassistant.audio.VoiceZoneDetector? = null
+    private var micphoneModeManager: MicphoneModeManager? = null
+    private var voiceZoneDetector: VoiceZoneDetector? = null
 
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -146,7 +147,6 @@ class VoboostVoiceService : Service() {
         // Используем фабрику для создания движков (легко переключаться между Vosk/Sherpa)
         val recommendedConfig = SpeechEngineFactory.getRecommendedConfig(this)
         Log.i(TAG, "Recommended config: ASR=${recommendedConfig.first}, TTS=${recommendedConfig.second}")
-
         // TTS Engine (используем системный как стабильный, можно заменить на Sherpa)
         try {
             ttsEngine = SpeechEngineFactory.createSynthesisEngine(
@@ -180,38 +180,42 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "CanBusServiceManager initialized")
 
         // Voice Button Handler - регистрация обработчика кнопки на руле
-        voiceButtonHandler = VoiceButtonHandler(canBusManager, object : VoiceAssistantCallback {
+        // Voice Button Handler — регистрируем через callback подключения
+        voiceButtonHandler = VoiceButtonHandler(this,canBusManager, object : VoiceAssistantCallback {
             override fun onVoiceButtonPressed() {
                 Log.i(TAG, "Voice button pressed on steering wheel - activating assistant")
-                // Активация по кнопке на руле
                 serviceScope.launch {
                     activateVoiceAssistant()
                 }
             }
         })
 
-        // Регистрируем callback для кнопки на руле
-        if (voiceButtonHandler?.register() == true) {
-            Log.i(TAG, "Voice button handler registered")
-        } else {
-            Log.w(TAG, "Failed to register voice button handler")
-        }
-        
-        // TSR Speed Limit Handler - предупреждения о превышении скорости
+        // TSR Speed Limit Handler — регистрируем через callback подключения
         tsrSpeedLimitHandler = TSRSpeedLimitHandler(canBusManager, object : TTSCallback {
             override fun playWarning(text: String) {
-                // Воспроизводим предупреждение через TTS
                 serviceScope.launch {
                     Log.i(TAG, "🔊 TSR Warning: $text")
                     ttsEngine.speak(text)
                 }
             }
         })
-        
-        if (tsrSpeedLimitHandler?.register() == true) {
-            Log.i(TAG, "TSR speed limit handler registered")
-        } else {
-            Log.w(TAG, "Failed to register TSR speed limit handler")
+
+        // Регистрируем callback подключения — обработчики регистрируются когда CanBusService готов
+        canBusManager.addConnectionCallback(object : com.voboost.voiceassistant.canbus.ConnectionCallback {
+            override fun onConnected() {
+                Log.i(TAG, "CanBusService connected — registering handlers")
+                registerCanBusHandlers()
+            }
+
+            override fun onDisconnected() {
+                Log.w(TAG, "CanBusService disconnected")
+            }
+        })
+
+        // Если уже подключён — регистрируем сразу
+        if (canBusManager.isConnected()) {
+            Log.i(TAG, "CanBusService already connected — registering handlers immediately")
+            registerCanBusHandlers()
         }
 
         // Создаём VehicleCommandExecutor через фабрику
@@ -391,6 +395,24 @@ class VoboostVoiceService : Service() {
     }
 
     /**
+     * Зарегистрировать CAN-bus обработчики (кнопка, TSR)
+     * Вызывается когда CanBusService подключён
+     */
+    private fun registerCanBusHandlers() {
+        if (voiceButtonHandler?.register() == true) {
+            Log.i(TAG, "✅ Voice button handler registered")
+        } else {
+            Log.w(TAG, "❌ Failed to register voice button handler")
+        }
+
+        if (tsrSpeedLimitHandler?.register() == true) {
+            Log.i(TAG, "✅ TSR speed limit handler registered")
+        } else {
+            Log.w(TAG, "❌ Failed to register TSR speed limit handler")
+        }
+    }
+
+    /**
      * Запустить детекцию кодовой фразы (постоянное прослушивание)
      */
     private fun startKeywordSpotting() {
@@ -447,7 +469,6 @@ class VoboostVoiceService : Service() {
             try {
                 // IState Machine сам обработает отмену в текущем IState
                 stateMachine.onButtonPressed()
-
                 Log.i(TAG, "✅ Recognition cancelled")
 
             }

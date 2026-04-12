@@ -12,7 +12,6 @@ data class AppConfig(
     @SerializedName("activation") val activation: ActivationConfig = ActivationConfig(),
     @SerializedName("speech") val speech: SpeechConfig = SpeechConfig(),
     @SerializedName("tts") val tts: TtsConfig = TtsConfig(),
-    @SerializedName("ui") val ui: UiConfig = UiConfig(),
     @SerializedName("confirmation") val confirmation: ConfirmationConfig = ConfirmationConfig(),
     @SerializedName("phrases") val phrases: DefaultPhrases = DefaultPhrases(),
     @SerializedName("commands") val commands: List<CommandConfig> = emptyList()
@@ -24,8 +23,7 @@ data class AppConfig(
 data class ActivationConfig(
     @SerializedName("keyword") val keyword: String = "привет машина",
     @SerializedName("alternative_keywords") val alternativeKeywords: List<String> = listOf("окей вобуст", "привет вобуст"),
-    @SerializedName("button_keycode") val buttonKeycode: String = "KEYCODE_HEADSETHOOK",
-    @SerializedName("button_package") val buttonPackage: String = ""
+    @SerializedName("button_keycode") val buttonKeycode: Int = 16,
 )
 
 /**
@@ -39,8 +37,6 @@ data class SpeechConfig(
 data class OfflineSpeechConfig(
     @SerializedName("enabled") val enabled: Boolean = true,
     @SerializedName("engine") val engine: String = "vosk",
-    @SerializedName("model") val model: String = "vosk-model-small-ru-0.22",
-    @SerializedName("sample_rate") val sampleRate: Int = 16000
 )
 
 data class OnlineSpeechConfig(
@@ -73,18 +69,6 @@ data class OnlineTtsConfig(
 )
 
 /**
- * Конфигурация UI
- */
-data class UiConfig(
-    @SerializedName("overlay_position") val overlayPosition: String = "center",
-    @SerializedName("overlay_offset_x_dp") val overlayOffsetXDp: Int = 50,
-    @SerializedName("overlay_offset_y_dp") val overlayOffsetYDp: Int = 50,
-    @SerializedName("show_animation") val showAnimation: Boolean = true,
-    @SerializedName("animation_duration_ms") val animationDurationMs: Long = 3000L,
-    @SerializedName("toast_duration_ms") val toastDurationMs: Long = 2000L
-)
-
-/**
  * Конфигурация подтверждения
  */
 data class ConfirmationConfig(
@@ -99,9 +83,9 @@ data class ConfirmationConfig(
 data class DefaultPhrases(
     @SerializedName("success") val success: String = "Выполнено",
     @SerializedName("failure") val failure: String = "Произошла ошибка",
-    @SerializedName("not_understood") val notUnderstood: String = "Не поняла команду",
+    @SerializedName("not_understood") val notUnderstood: String = "Не понял",
     @SerializedName("confirm_question") val confirmQuestion: String = "Вы уверены?",
     @SerializedName("confirm_yes") val confirmYes: String = "Да",
     @SerializedName("confirm_no") val confirmNo: String = "Нет",
-    @SerializedName("listening") val listening: String = "Слушаю вас"
+    @SerializedName("listening") val listening: String = "Слушаю"
 )

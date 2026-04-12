@@ -5,6 +5,18 @@
 
     <!-- ✅ Микрофон (обязательно) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- ✅ Чтение контактов (для звонков по имени) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- ✅ Доступ к контактам BluetoothPhone -->
+    <!-- Объявляем permission явно как normal, чтобы система приняла наше объявление -->
+    <permission
+        android:name="com.qinggan.bluetoothphone.PROVIDER"
+        android:protectionLevel="normal" />
+    <uses-permission android:name="com.qinggan.bluetoothphone.PROVIDER" />
+    <permission
+        android:name="com.qinggan.permission.WRITE_CANBUS"
+        android:protectionLevel="normal" />
+    <uses-permission android:name="com.qinggan.permission.WRITE_CANBUS" />
     <!-- ✅ Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- ✅ Доступ к внешнему хранилищу (для системных приложений) -->

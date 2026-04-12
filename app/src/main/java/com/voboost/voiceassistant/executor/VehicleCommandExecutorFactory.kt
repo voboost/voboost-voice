@@ -9,8 +9,6 @@ import com.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirCondi
 import com.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerSetTempHandler
 import com.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportCloseHandler
 import com.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportOpenHandler
-import com.voboost.voiceassistant.executor.handlers.aidl.phone.PhoneCallContactHandler
-import com.voboost.voiceassistant.executor.handlers.aidl.phone.PhoneCallNumberHandler
 import com.voboost.voiceassistant.executor.handlers.aidl.scuttle.FuelTankOpenHandler
 import com.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeChildHandler
 import com.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeLeisureHandler
@@ -60,7 +58,7 @@ object VehicleCommandExecutorFactory {
     ): IVehicleCommandExecutor {
         return when (mode) {
             ExecutionMode.AIDL -> createAidl(context)
-            ExecutionMode.INTENT -> createHybridIntent(context)
+            ExecutionMode.INTENT -> createIntent(context)
             ExecutionMode.SHELL -> createShell()
         }
     }
@@ -87,8 +85,8 @@ object VehicleCommandExecutorFactory {
             "ac_open" to AirConditionerOpenHandler(canBusManager),
             "ac_close" to AirConditionerCloseHandler(canBusManager),
             "ac_set_temp" to AirConditionerSetTempHandler(canBusManager),
-            "phone_call_contact" to PhoneCallContactHandler(canBusManager),
-            "phone_call_number" to PhoneCallNumberHandler(canBusManager)
+            "phone_call_contact" to PhoneCallContactIntentHandler(context),
+            "phone_call_number" to PhoneCallNumberIntentHandler(context)
         )
 
         return VehicleCommandExecutor(handlers) { canBusManager.isConnected() }
@@ -97,8 +95,8 @@ object VehicleCommandExecutorFactory {
     /**
      * Гибрид — телефон через Intent, остальное через AIDL
      */
-    fun createHybridIntent(context: Context): IVehicleCommandExecutor {
-        Log.i(TAG, "Creating Hybrid: Intent for phone, AIDL for vehicle")
+    fun createIntent(context: Context): IVehicleCommandExecutor {
+        Log.i(TAG, "Creating IntentVehicleCommandExecutor")
 
         val canBusManager = CanBusServiceManager(context)
 
@@ -157,7 +155,7 @@ object VehicleCommandExecutorFactory {
     ): IVehicleCommandExecutor {
         val mode = when (modeString?.lowercase()?.trim()) {
             "shell" -> ExecutionMode.SHELL
-            "intent", "hybrid" -> ExecutionMode.INTENT
+            "intent", -> ExecutionMode.INTENT
             "aidl", null -> ExecutionMode.AIDL
             else -> {
                 Log.w(TAG, "Unknown mode: '$modeString', using AIDL")

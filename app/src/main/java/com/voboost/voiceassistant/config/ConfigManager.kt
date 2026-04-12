@@ -92,63 +92,6 @@ class ConfigManager private constructor(private val context: Context) {
     }
 
     /**
-     * Сохранить конфигурацию во внешнее хранилище
-     * Используется для обновления конфига без переустановки APK
-     */
-    fun saveExternalConfig(appConfig: AppConfig): Boolean {
-        return try {
-            val externalConfigDir = context.getExternalFilesDir(null) ?: return false
-            val configFile = File(externalConfigDir, EXTERNAL_CONFIG_PATH)
-
-            // Создать директорию если не существует
-            if (!externalConfigDir.exists()) {
-                externalConfigDir.mkdirs()
-            }
-
-            val json = gson.toJson(appConfig)
-            configFile.writeText(json)
-
-            Log.i(TAG, "Configuration saved to external storage: ${configFile.absolutePath}")
-            config = appConfig // Обновить кэш
-            true
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save external config", e)
-            false
-        }
-    }
-
-    /**
-     * Проверить наличие внешнего конфига
-     */
-    fun hasExternalConfig(): Boolean {
-        val externalConfigDir = context.getExternalFilesDir(null) ?: return false
-        val configFile = File(externalConfigDir, EXTERNAL_CONFIG_PATH)
-        return configFile.exists()
-    }
-
-    /**
-     * Удалить внешний конфиг (вернётся к встроенному из assets)
-     */
-    fun clearExternalConfig(): Boolean {
-        try {
-            val externalConfigDir = context.getExternalFilesDir(null) ?: return false
-            val configFile = File(externalConfigDir, EXTERNAL_CONFIG_PATH)
-
-            if (configFile.exists()) {
-                configFile.delete()
-                config = null // Сбросить кэш, следующая загрузка будет из assets
-                Log.i(TAG, "External config cleared, will use assets config")
-                return true
-            }
-            return false
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear external config", e)
-            return false
-        }
-    }
-
-    /**
      * Создать конфигурацию по умолчанию (если config.json не найден)
      */
     private fun createDefaultConfig(): AppConfig {
@@ -159,15 +102,12 @@ class ConfigManager private constructor(private val context: Context) {
             activation = ActivationConfig(
                 keyword = "привет машина",
                 alternativeKeywords = listOf("окей вобуст", "привет вобуст"),
-                buttonKeycode = "KEYCODE_HEADSETHOOK",
-                buttonPackage = ""
+                buttonKeycode = 16,
             ),
             speech = SpeechConfig(
                 offline = OfflineSpeechConfig(
                     enabled = true,
-                    engine = "vosk",
-                    model = "vosk-model-small-ru-0.22",
-                    sampleRate = 16000
+                    engine = "vosk"
                 ),
                 online = OnlineSpeechConfig(
                     enabled = false,
@@ -190,13 +130,12 @@ class ConfigManager private constructor(private val context: Context) {
                     apiKey = ""
                 )
             ),
-            ui = UiConfig(),
             confirmation = ConfirmationConfig(),
             phrases = DefaultPhrases(
                 listening = "Слушаю вас",
                 success = "Выполнено",
                 failure = "Произошла ошибка",
-                notUnderstood = "Не поняла команду",
+                notUnderstood = "Не понял команду",
                 confirmQuestion = "Вы уверены?",
                 confirmYes = "Да",
                 confirmNo = "Нет"
@@ -257,11 +196,11 @@ class ConfigManager private constructor(private val context: Context) {
                 PhraseType.FAILURE ->
                     phrases.failure.takeUnless { it.isNullOrEmpty() } ?: "Произошла ошибка"
                 PhraseType.NOT_UNDERSTOOD ->
-                    phrases.notUnderstood.takeUnless { it.isNullOrEmpty() } ?: "Не поняла команду"
+                    phrases.notUnderstood.takeUnless { it.isNullOrEmpty() } ?: "Не понял"
                 PhraseType.CONFIRM_QUESTION ->
                     phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() } ?: "Вы уверены?"
                 PhraseType.LISTENING ->
-                    phrases.listening.takeUnless { it.isNullOrEmpty() } ?: "Слушаю вас"
+                    phrases.listening.takeUnless { it.isNullOrEmpty() } ?: "Слушаю"
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error getting default phrase for $type", e)
@@ -269,9 +208,9 @@ class ConfigManager private constructor(private val context: Context) {
             when (type) {
                 PhraseType.SUCCESS -> "Выполнено"
                 PhraseType.FAILURE -> "Произошла ошибка"
-                PhraseType.NOT_UNDERSTOOD -> "Не поняла команду"
+                PhraseType.NOT_UNDERSTOOD -> "Не понял"
                 PhraseType.CONFIRM_QUESTION -> "Вы уверены?"
-                PhraseType.LISTENING -> "Слушаю вас"
+                PhraseType.LISTENING -> "Слушаю"
             }
         }
     }

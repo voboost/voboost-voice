@@ -60,8 +60,7 @@ class VoiceClickView @JvmOverloads constructor(
      * Запустить анимацию
      */
     private fun startAnimation() {
-        val config = ConfigManager.getInstance(context)
-        val duration = config.getConfig().ui.animationDurationMs
+        val duration = OverlayManager.ANIMATION_DURATION_MS
         
         val animator = ValueAnimator.ofFloat(START_RADIUS, END_RADIUS)
         animator.duration = duration

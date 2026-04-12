@@ -50,7 +50,8 @@ class IdleState(
 
             // Ключевое слово получено → ActivatedState
             finish(StateResult.Next(
-                ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                               configManager, nluEngine, commandExecutor, context)
             ))
 
         } catch (e: CancellationException) {
@@ -60,7 +61,9 @@ class IdleState(
         } catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)
             finish(StateResult.Next(
-                KeywordErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+                KeywordErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, e.message ?: "Unknown error")
             ))
         }
     }
@@ -73,6 +76,7 @@ class IdleState(
 
     override suspend fun activate(): IState? {
         Log.i(TAG, "Activate from IdleState → ActivatedState")
-        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                              configManager, nluEngine, commandExecutor, context)
     }
 }

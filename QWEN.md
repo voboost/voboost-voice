@@ -1,83 +1,227 @@
-## Qwen Added Memories
-- ## ADB на Windows - важные правила
+# 📋 КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Путь к adb:** `d:\Projects\Android\MM\6.11.1\export\adb\adb.exe`
+**Дата последнего обновления:** 2026-04-12 13:53
+**Статус:** ✅ ВСЕ РАБОТАЕТ — звонки, кнопка, CAN-bus, распознавание
 
-**ВАЖНО:** Все команды после `adb shell` нужно заключать в **двойные кавычки** на Windows:
+---
+
+## 🎯 ОПИСАНИЕ ПРОЕКТА
+
+**Оффлайн голосовой ассистент для автомобильных ГУ**
+- **Платформа:** Android 11, API 30 (minSdk=26, targetSdk=33)
+- **Package:** `com.voboost.voiceassistant` (uid: u0_a68, НЕ system)
+- **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
+- **Язык:** Kotlin 100%
+- **Распознавание:** Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium)
+- **CAN-шина:** через AIDL `com.qinggan.canbus.ICanBusService`
+
+---
+
+## 🏗 АРХИТЕКТУРА
+
+### Главный сервис: `VoboostVoiceService.kt`
+- **Foreground service** с типом `microphone`
+- Запускается через `BootActivity` (foreground context) для получения доступа к микрофону
+- Управляет State Machine (9 состояний)
+- Координирует все компоненты системы
+
+### State Machine (9 состояний):
 ```
-adb shell "ps -A | grep dvr"
-adb shell "kill -9 PID"
-adb shell "am broadcast -a android.intent.action.BOOT_COMPLETED -n com.voboost.voiceassistant/.BootReceiver"
+IdleState → ActivatedState → ListeningCommandState → RecognizedCommandState → ExecutingCommandState
+                                       ↓                        ↓
+                                 KeywordErrorState        ConfirmationState
+                                        ↓                         ↓
+                                   CommandErrorState          TimeoutState
 ```
-- ## VoboostVoiceAssistant (d:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant)
 
-### Архитектура
-- Оффлайн голосовой ассистент для автомобильных ГУ (Android 11, API 30)
-- Package: com.voboost.voiceassistant, uid: u0_a68 (НЕ system)
-- Build: Gradle, Kotlin 2.1.0, AGP 8.13.2, minSdk=26, targetSdk=33
-- Распознавание: Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium)
-- CAN-шина: через AIDL com.qinggan.canbus.ICanBusService
+---
 
-### Ключевые компоненты
-- VoboostVoiceService.kt — главный foreground сервис (microphone type)
-- BootActivity.kt — невидимая Activity для foreground context при автозапуске
-- BootReceiver.kt — запускает BootActivity при BOOT_COMPLETED
-- CanBusServiceManager.kt — обёртка AIDL к CAN-шине
-- NLUEngine.kt — паттерн-матчинг команд из config.json
-- State Machine: IdleState → ActivatedState → ListeningCommandState → RecognizedCommandState → ExecutingCommandState
+## 🔑 КЛЮЧЕВЫЕ КОМПОНЕНТЫ
 
-### Установка
-- APK: /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
-- Конфиг: /sdcard/Android/data/com.voboost.voiceassistant/files/config.json (приоритет) + assets/config.json (fallback)
-- Модели: /data/user/0/com.voboost.voiceassistant/files/models/vosk/ и sherpa/
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| **BootReceiver** | `BootReceiver.kt` | Автозапуск при BOOT_COMPLETED → запускает BootActivity |
+| **BootActivity** | `BootActivity.kt` | Невидимая Activity для foreground context при автозапуске |
+| **State Machine** | `speech/state/*.kt` | Управление состояниями распознавания |
+| **SpeechRecognizer** | `speech/SpeechRecognizer.kt` | Непрерывное распознавание речи |
+| **NLUEngine** | `nlu/NLUEngine.kt` | Паттерн-матчинг команд из config.json |
+| **CommandExecutor** | `executor/CommandExecutor.kt` | Выполнение команд через VehicleCommandExecutor |
+| **TTS Engine** | `tts/TTSEngine.kt` | Синтез речи (Sherpa-ONNX) |
+| **AudioSource** | `audio/*.kt` | Источники аудио (TransProxy, AndroidAudioSource) |
+| **CanBusManager** | `canbus/CanBusServiceManager.kt` | AIDL обёртка к CAN-шине |
+| **VoiceButtonHandler** | `canbus/VoiceButtonHandler.kt` | Кнопка на руле (keycode=16) |
+| **TSRSpeedLimitHandler** | `canbus/TSRSpeedLimitHandler.kt` | Предупреждения о превышении скорости |
+| **OverlayManager** | `ui/OverlayManager.kt` | UI overlay поверх всех окон |
 
-### ADB команды
-- adb root — root режим
-- adb shell "mount -o remount,rw /" — перемонтировать /system в RW
-- adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk — залить APK
-- adb shell "am force-stop com.voboost.voiceassistant && am broadcast -a android.intent.action.BOOT_COMPLETED -n com.voboost.voiceassistant/.BootReceiver" — перезапуск
+---
 
-### Решённые проблемы
+## 📞 ТЕЛЕФОННЫЕ ЗВОНКИ
 
-#### 1. Микрофон в фоне (Android 10+)
-- Проблема: ActivityManager блокирует FGS с микрофоном из background
-- Решение: BootReceiver → BootActivity (foreground context) → startForegroundService → сервис получает микрофон
+### Архитектура звонков:
 
-#### 2. sharedUserId="android.uid.system" вызывает bootloop
-- Причина: APK подписан debug key, а не platform key
+```
+[Голос: "позвони Сынок"] → NLUEngine → phone_call_contact
+                                        ↓
+                    PhoneCallContactHandler (Intent-based)
+                                        ↓
+                    ContentResolver.query() → BluetoothPhone ContentProvider
+                    URI: content://com.qinggan.bluetoothphone/contactsinfo/{MAC}
+                    columns: name, number
+                                        ↓
+                    Найти номер: +375445413460
+                                        ↓
+                    Broadcast Intent:
+                    action="com.qinggan.broadcast.action.ivokaphonecall"
+                    extra "Ivoka_CallInfo"="+375445413460"
+                    extra "screen_int"=0
+                    extra "mac"=""
+                                        ↓
+                    BluetoothPhone → набирает номер через HFP
+```
+
+### Ключевые файлы:
+
+| Файл | Роль |
+|------|------|
+| `PhoneCallContactHandler.kt` | Ищет номер по имени через ContentResolver, отправляет Intent |
+| `PhoneCallNumberIntentHandler.kt` | Отправляет Intent с номером напрямую |
+| `AbstractIntentHandler.kt` | Базовый класс с константами Intent |
+
+### Константы Intent:
+```kotlin
+ACTION_IVOKA_PHONE_CALL = "com.qinggan.broadcast.action.ivokaphonecall"
+EXTRA_IVOKA_CALL_INFO = "Ivoka_CallInfo"
+EXTRA_SCREEN_INT = "screen_int"
+EXTRA_MAC = "mac"
+```
+
+---
+
+## 🔑 PERMISSIONS И БЕЗОПАСНОСТЬ
+
+### Объявленные permissions:
+```xml
+<!-- Объявляем permission явно как normal, чтобы система приняла наше объявление -->
+<permission
+    android:name="com.qinggan.bluetoothphone.PROVIDER"
+    android:protectionLevel="normal" />
+<uses-permission android:name="com.qinggan.bluetoothphone.PROVIDER" />
+```
+
+### Почему это работает:
+- BluetoothPhone использует `<uses-permission android:name="com.qinggan.bluetoothphone.PROVIDER"/>` но НЕ объявляет её через `<permission>`
+- Система создаёт implicit permission как **signature** (по умолчанию)
+- Если наше приложение объявит её как **normal** ДО того как система создаст signature — она станет normal и будет доступна нам
+- После reboot система принимает наше объявление
+
+### Выданные разрешения:
+- `com.qinggan.bluetoothphone.PROVIDER: granted=true` ✅
+- `com.qinggan.permission.WRITE_CANBUS: granted=true` ✅
+- `android.permission.READ_CONTACTS: granted=true` ✅
+- `android.permission.RECORD_AUDIO: granted=true` ✅
+
+---
+
+## 🔧 РЕШЁННЫЕ ПРОБЛЕМЫ
+
+### 1. Микрофон в фоне (Android 10+)
+- **Проблема:** ActivityManager блокирует FGS с микрофоном из background
+- **Решение:** BootReceiver → BootActivity (foreground context) → startForegroundService → сервис получает микрофон
+
+### 2. sharedUserId="android.uid.system" вызывает bootloop
+- **Причина:** APK подписан debug key, а не platform key
 - Без platform подписи система не может загрузить пакет как system UID
 
-#### 3. Значения CAN-шины инвертированы
+### 3. Значения CAN-шины инвертированы
 - Бензобак (IVI_FUEL_PORT_CAP): toggle только с value=1 (не 0 или 2)
 - Окна: ALL_WINDOW (3=OPEN, 1=CLOSE) правильно; DRIVER_WINDOW (97=CLOSE, 51=OPEN) — инвертировано
 - Кондиционер (AC_POWER_SWITCH): toggle только с value=1 (не 0)
-- Проверка статуса: canBusManager.getAirCondition()?.airSWStatus (1=ON, 0=OFF)
+- Проверка статуса: `canBusManager.getAirCondition()?.airSWStatus` (1=ON, 0=OFF)
 
-#### 4. Кондиционер — toggle с проверкой статуса
-- AirConditionerOpenHandler: если airSWStatus=1 → пропускает, иначе value=1
-- AirConditionerCloseHandler: если airSWStatus=0 → пропускает, иначе value=1
-- Оба отправляют value=1, проверка статуса предотвращает двойное переключение
+### 4. Кнопка на руле не регистрировалась
+- **Проблема:** `VoiceButtonHandler.register()` вызывался до подключения CanBusService
+- **Решение:** Асинхронная регистрация через `ConnectionCallback`:
+  ```kotlin
+  canBusManager.addConnectionCallback(object : ConnectionCallback {
+      override fun onConnected() {
+          registerCanBusHandlers()  // ← регистрируем когда сервис готов
+      }
+  })
+  if (canBusManager.isConnected()) registerCanBusHandlers()  // ← если уже подключён
+  ```
 
-#### 5. Privapp-permissions НЕ нужны
-- privapp-permissions-voboost.xml удалён — работает без него
+### 5. Privapp-permissions НЕ нужны
+- `privapp-permissions-voboost.xml` удалён — работает без него
 - RECORD_AUDIO выдаётся как runtime permission
 
-## Проблема с AudioRecord при автозапуске — РЕШЕНА ✅
+### 6. Звонки через Intent — неправильный handler
+- **Проблема:** `PhoneCallContactHandler` использовал AIDL CanBusService вместо Intent
+- **Решение:** Переписан на отправку broadcast Intent с номером телефона
 
-**Причина:** Android 10+ блокирует доступ к микрофону при запуске foreground service из background контекста после BOOT_COMPLETED.
+---
 
-**Решение:** BootReceiver → **BootActivity** (невидимая Activity с foreground context) → `startForegroundService` → сервис получает полный доступ к микрофону.
+## 🚀 УСТАНОВКА
 
+### Путь установки:
 ```
-BootReceiver.onReceive() 
-  → BootActivity.launch() (Theme.Translucent.NoTitleBar, foreground context)
-    → BootActivity.onStart() → startForegroundService(VoboostVoiceService)
-      → AudioRecord создаётся успешно ✅
+/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
 ```
 
-**Ключевые детали BootActivity:**
-- Theme: `Theme.Translucent.NoTitleBar` (полностью невидимая)
-- Flags: `excludeFromRecents=true`, `noHistory=true`
-- Не появляется в UI, но даёт foreground context для запуска сервиса
+### Конфиг:
+- **Приоритет:** `/storage/emulated/0/Android/data/com.voboost.voiceassistant/files/config.json`
+- **Fallback:** `assets/config.json` (в APK)
 
-**Рабочий тест:** AudioRecord создаётся с первого раза при автозапуске через BootActivity.
+### Модели:
+- **Vosk:** `/data/user/0/com.voboost.voiceassistant/files/models/vosk/`
+- **Sherpa:** `/data/user/0/com.voboost.voiceassistant/files/models/sherpa/`
+
+---
+
+## 🔧 ADB КОМАНДЫ
+
+### Установка APK:
+```batch
+adb root
+adb remount
+adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
+```
+
+### Перезапуск:
+```batch
+adb shell "am force-stop com.voboost.voiceassistant && am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService"
+```
+
+### Мониторинг логов:
+```batch
+adb logcat -s VoboostVoiceService:I IntentHandler:D PhoneCommand:I CanBusServiceManager:I
+```
+
+### Тест звонка:
+```batch
+adb shell "am broadcast -a com.qinggan.broadcast.action.ivokaphonecall --es Ivoka_CallInfo '4008888488' --ei screen_int 0 --es mac ''"
+```
+
+---
+
+## 📊 СОСТОЯНИЕ НА ДАННЫЙ МОМЕНТ
+
+### ✅ РАБОТАЕТ:
+- TTS (Sherpa) — "Слушаю вас", "Открываю окно"
+- Vosk STT — распознаёт команды
+- Кнопка на руле — keycode=16 через CAN-шину (асинхронная регистрация)
+- State Machine — 9 состояний
+- CAN-bus — AIDL команды (окна, кондиционер, бензобак и т.д.)
+- AudioRecord — при автозапуске через BootActivity
+- **Звонки по номеру** — через Intent broadcast
+- **Звонки по имени контакта** — через ContentResolver + BluetoothPhone ContentProvider
+- Permission `com.qinggan.bluetoothphone.PROVIDER` — получена
+- Permission `com.qinggan.permission.WRITE_CANBUS` — получена
+
+### ❌ НЕ РАБОТАЕТ:
+- Всё работает! 🎉
+
+---
+
+**Последнее обновление:** 2026-04-12
+**Build:** assembleDebug SUCCESS
+**Git:** требуется коммит всех изменений

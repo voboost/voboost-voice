@@ -22,6 +22,12 @@ class OverlayManager(
 ) {
     companion object {
         const val TAG = "OverlayManager"
+        const val OVERLAY_POSITION = "top_left"
+        const val OVERLAY_OFFSET_X_DP = 50
+        const val OVERLAY_OFFSET_Y_DP = 50
+        const val SHOW_ANIMATION =  true
+        const val ANIMATION_DURATION_MS = 1000L
+        const val TOAST_DURATION_MS = 3000
     }
     
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -44,7 +50,7 @@ class OverlayManager(
             try {
                 val config = configManager.getConfig()
                 
-                if (!config.ui.showAnimation) {
+                if (!SHOW_ANIMATION) {
                     Log.d(TAG, "Animation disabled in config")
                     return@post
                 }
@@ -67,8 +73,8 @@ class OverlayManager(
                 
                 // Смещение в DP
                 val displayMetrics = context.resources.displayMetrics
-                val offsetX = (config.ui.overlayOffsetXDp * displayMetrics.density).toInt()
-                val offsetY = (config.ui.overlayOffsetYDp * displayMetrics.density).toInt()
+                val offsetX = (OVERLAY_OFFSET_X_DP * displayMetrics.density).toInt()
+                val offsetY = (OVERLAY_OFFSET_Y_DP * displayMetrics.density).toInt()
                 
                 params.x = offsetX
                 params.y = offsetY
@@ -82,7 +88,7 @@ class OverlayManager(
                 // Автоматическое скрытие через duration
                 handler.postDelayed({
                     hideAnimation()
-                }, config.ui.animationDurationMs + 500)
+                }, ANIMATION_DURATION_MS + 500)
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to show animation", e)
@@ -127,8 +133,8 @@ class OverlayManager(
                 val toast = Toast(context).apply {
                     duration = Toast.LENGTH_SHORT
                     setGravity(Gravity.TOP or Gravity.START,
-                        (config.ui.overlayOffsetXDp * context.resources.displayMetrics.density).toInt(),
-                        (config.ui.overlayOffsetYDp * context.resources.displayMetrics.density).toInt() + 200)
+                        (OVERLAY_OFFSET_X_DP * context.resources.displayMetrics.density).toInt(),
+                        (OVERLAY_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt() + 200)
                     this.view = view
                 }
                 toast.show()

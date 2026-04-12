@@ -72,21 +72,25 @@ class ActivatedState(
 
             // Переходим к слушанию команды
             finish(StateResult.Next(
-                ListeningCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                ListeningCommandState(speechRecognizer, overlayManager, volumeManager,
+                                      ttsEngine, configManager, nluEngine, commandExecutor, context)
             ))
 
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "ActivatedState cancelled (rapid button press)")
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                          configManager, nluEngine, commandExecutor, context)
             ))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ActivatedState", e)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, e.message ?: "Unknown error")
             ))
         }
     }

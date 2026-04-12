@@ -9,34 +9,33 @@ import com.voboost.voiceassistant.executor.handlers.ICommandHandler
 /**
  * Базовый обработчик для Broadcast Intent команд
  */
-abstract class AbstractIntentHandler(
-    override val commandId: String,
-    protected val context: Context
-) : ICommandHandler {
+abstract class AbstractIntentHandler(override val commandId: String,
+                                     protected val context: Context) : ICommandHandler {
+    companion object {
+        const val TAG = "IntentHandler"
 
-    override fun execute(
-        config: ActionConfig,
-        voiceParams: Map<String, Any>
-    ): Boolean {
+        // Action для звонков через BluetoothPhone (тот же что использует Ivoka)
+        const val ACTION_IVOKA_PHONE_CALL = "com.qinggan.broadcast.action.ivokaphonecall"
+
+        // Параметры которые ожидает BluetoothPhone
+        const val EXTRA_IVOKA_CALL_INFO = "Ivoka_CallInfo"
+        const val EXTRA_SCREEN_INT = "screen_int"
+        const val EXTRA_MAC = "mac"
+    }
+
+    override fun execute(config: ActionConfig, voiceParams: Map<String, Any>): Boolean {
         return try {
             val intent = buildIntent(config, voiceParams)
             context.sendBroadcast(intent)
-            Log.d(TAG, "Broadcast sent: commandId='$commandId'")
+            Log.d(TAG, "Broadcast sent: commandId='$commandId', action='${intent.action}'")
+            Log.d(TAG, "  Extras: ${intent.extras?.keySet()?.joinToString(", ")}")
             true
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Failed to send broadcast: $commandId", e)
             false
         }
     }
 
     protected abstract fun buildIntent(config: ActionConfig, voiceParams: Map<String, Any>): Intent
-
-    companion object {
-        const val TAG = "IntentHandler"
-        const val ACTION_TELEPHONE_CALL = "pateo.dls.ivoka.telephone.CALL"
-        const val VOICE_PARAM_TELEPHONE_NAME = "voice.param.telephone.name"
-        const val VOICE_PARAM_TELEPHONE_NUMBER = "voice.param.telephone.number"
-        const val VOICE_PARAM_TELEPHONE_CMD = "voice.param.telephone.cmd"
-        const val VOICE_PARAM_TELEPHONE_LOCATION = "voice.param.telephone.location"
-    }
 }

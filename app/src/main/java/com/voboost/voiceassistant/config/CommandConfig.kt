@@ -21,7 +21,6 @@ data class ActionConfig(
     @SerializedName("target") val target: String,
     @SerializedName("classify") val classify: Int,
     @SerializedName("command") val command: Int,
-    @SerializedName("intent_action") val intentAction: String,
     @SerializedName("params") val params: Map<String, Any>
 )
 

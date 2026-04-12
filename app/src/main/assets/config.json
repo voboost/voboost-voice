@@ -4,17 +4,19 @@
   
   "activation": {
     "keyword": "привет воях",
-    "alternative_keywords": ["привет машина", "привет воях", "вобуст", "голосовой помощник"],
-    "button_keycode": "TODO",
-    "button_package": "com.qinggan.sttservice"
+    "alternative_keywords": [
+      "привет машина",
+      "привет воях",
+      "вобуст",
+      "голосовой помощник"
+    ],
+    "button_keycode": 16
   },
   
   "speech": {
     "offline": {
       "enabled": true,
-      "engine": "vosk",
-      "model": "vosk-model-small-ru-0.22",
-      "sample_rate": 16000
+      "engine": "vosk"
     },
     "online": {
       "enabled": false,
@@ -27,7 +29,7 @@
   "tts": {
     "offline": {
       "enabled": true,
-      "engine": "system",
+      "engine": "sherpa",
       "voice": "ru_RU",
       "rate": 1.0,
       "pitch": 1.0
@@ -38,16 +40,7 @@
       "api_key": ""
     }
   },
-  
-  "ui": {
-    "overlay_position": "top_left",
-    "overlay_offset_x_dp": 50,
-    "overlay_offset_y_dp": 50,
-    "show_animation": true,
-    "animation_duration_ms": 1000,
-    "toast_duration_ms": 3000
-  },
-  
+
   "confirmation": {
     "default_timeout_sec": 5,
     "require_confirmation": false
@@ -57,11 +50,11 @@
     "default": {
       "success": "Выполнено",
       "failure": "Не получилось выполнить",
-      "not_understood": "Я вас не поняла",
+      "not_understood": "Я вас не понял",
       "confirm_question": "Подтверждаете?",
       "confirm_yes": "Да",
       "confirm_no": "Нет",
-      "listening": "Слушаю вас"
+      "listening": "Слушаю"
     }
   },
   
@@ -73,13 +66,13 @@
         "открой лючок зарядки",
         "открой порт зарядки",
         "открыть зарядку",
-        "открой зарядку"
+        "открой зарядку",
+        "зарядка"
       ],
       "action": {
         "target": "Chargport",
         "classify": 35,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {
           "location": "all"
         }
@@ -105,13 +98,14 @@
         "открой бензобак",
         "открой крышку бензобака",
         "открой лючок бензобака",
-        "открыть бензобак"
+        "открыть бензобак",
+        "заправка",
+        "бензобак"
       ],
       "action": {
         "target": "Scuttle",
         "classify": 19,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {}
       },
       "confirmation": {
@@ -135,7 +129,6 @@
         "target": "SmartMode",
         "classify": 22,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
         "params": {
           "mode": 18
         }
@@ -161,7 +154,6 @@
         "target": "SmartMode",
         "classify": 22,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
         "params": {
           "mode": 22
         }
@@ -186,7 +178,6 @@
         "target": "SmartMode",
         "classify": 22,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.SET_SMART_MODE",
         "params": {
           "mode": 6
         }
@@ -212,7 +203,6 @@
         "target": "AirConditioner",
         "classify": 5,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.air_control.OPEN",
         "params": {}
       },
       "confirmation": {
@@ -236,7 +226,6 @@
         "target": "AirConditioner",
         "classify": 5,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.air_control.CLOSE",
         "params": {}
       },
       "confirmation": {
@@ -260,7 +249,6 @@
         "target": "AirConditioner",
         "classify": 5,
         "command": 3,
-        "intent_action": "pateo.dls.ivoka.air_control.ADJUST",
         "params": {
           "temperature": "{temp}"
         }
@@ -286,7 +274,6 @@
         "target": "telephone",
         "classify": 1,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.telephone.CALL",
         "params": {
           "contact": "{contact}",
           "call_type": "contact"
@@ -297,7 +284,7 @@
       },
       "phrases": {
         "success": "Звоню {contact}",
-        "failure": "Не получилось позвонить {contact}"
+        "failure": "Не получилось позвонить"
       }
     },
     {
@@ -312,7 +299,6 @@
         "target": "telephone",
         "classify": 1,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.telephone.CALL",
         "params": {
           "number": "{number}",
           "call_type": "number"
@@ -323,7 +309,7 @@
       },
       "phrases": {
         "success": "Набираю {number}",
-        "failure": "Не получилось набрать номер"
+        "failure": "Не получилось набрать"
       }
     },
     {
@@ -337,15 +323,14 @@
         "target": "Window",
         "classify": 2,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {}
       },
       "confirmation": {
         "required": false
       },
       "phrases": {
-        "success": "Открываю окно",
-        "failure": "Не получилось открыть окно"
+        "success": "Открываю",
+        "failure": "Не получилось открыть"
       }
     },
     {
@@ -359,15 +344,14 @@
         "target": "Window",
         "classify": 2,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {}
       },
       "confirmation": {
         "required": false
       },
       "phrases": {
-        "success": "Закрываю окно",
-        "failure": "Не получилось закрыть окно"
+        "success": "Закрываю",
+        "failure": "Не получилось закрыть"
       }
     },
     {
@@ -381,15 +365,14 @@
         "target": "Window",
         "classify": 3,
         "command": 0,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {}
       },
       "confirmation": {
         "required": false
       },
       "phrases": {
-        "success": "Открываю все окна",
-        "failure": "Не получилось открыть окна"
+        "success": "Открываю",
+        "failure": "Не получилось открыть"
       }
     },
     {
@@ -403,15 +386,14 @@
         "target": "Window",
         "classify": 3,
         "command": 1,
-        "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
         "params": {}
       },
       "confirmation": {
         "required": false
       },
       "phrases": {
-        "success": "Закрываю все окна",
-        "failure": "Не получилось закрыть окна"
+        "success": "Закрываю",
+        "failure": "Не получилось закрыть"
       }
     }
   ]

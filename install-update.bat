@@ -2,6 +2,8 @@
 REM ========================================
 REM Быстрая установка VoboostVoiceAssistant
 REM ========================================
+
+set "ADB=d:\Projects\Android\MM\6.11.1\export\adb\adb.exe"
 REM Обновление APK БЕЗ удаления библиотек
 REM ========================================
 REM ВНИМАНИЕ: Этот скрипт НЕ собирает проект!
@@ -30,22 +32,22 @@ if not exist "%APK_PATH%" (
 )
 
 echo [1/5] Отключение стандартных голосовых ассистентов...
-adb shell pm disable com.qinggan.ivoka       >nul 2>&1
-adb shell pm disable com.qinggan.ivoka1      >nul 2>&1
-adb shell pm disable com.qinggan.sttservice  >nul 2>&1
+%ADB% shell pm disable com.qinggan.ivoka       >nul 2>&1
+%ADB% shell pm disable com.qinggan.ivoka1      >nul 2>&1
+%ADB% shell pm disable com.qinggan.sttservice  >nul 2>&1
 echo   [OK] Стандартные ассистенты отключены
 echo.
 
 echo [2/5] Получение root-прав...
-adb root
+%ADB% root
 timeout /t 2 /nobreak >nul
 
 echo [3/5] Перемонтирование /system в режим записи...
-adb remount
+%ADB% shell "mount -o rw,remount /"
 timeout /t 2 /nobreak >nul
 
 echo [4/5] Копирование APK в систему...
-adb push %APK_PATH% %DEVICE_APK_PATH%
+%ADB% push %APK_PATH% %DEVICE_APK_PATH%
 if errorlevel 1 (
     echo [ERROR] Не удалось скопировать APK!
     pause
@@ -53,21 +55,18 @@ if errorlevel 1 (
 )
 
 echo [5/5] Установка прав доступа и запуск...
-adb shell chmod 644 %DEVICE_APK_PATH%
-
-REM Инициализация данных приложения
-adb shell cmd package install-existing com.voboost.voiceassistant >nul 2>&1
+%ADB% shell chmod 644 %DEVICE_APK_PATH%
 
 REM Разрешения
-adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
-adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
-adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
+%ADB% shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
+%ADB% shell pm grant com.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
+%ADB% shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
+%ADB% shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
 
 REM Перезапуск приложения
-adb shell am force-stop com.voboost.voiceassistant
+%ADB% shell am force-stop com.voboost.voiceassistant
 timeout /t 2 /nobreak >nul
-adb shell pm enable com.voboost.voiceassistant >nul 2>&1
-adb shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
+%ADB% shell am start-foreground-service -n com.voboost.voiceassistant/.VoboostVoiceService
 
 echo.
 echo ========================================

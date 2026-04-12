@@ -63,7 +63,7 @@ REM ============================================================================
 echo [3/7] Установка APK...
 adb root >nul 2>&1
 timeout /t 1 /nobreak >nul
-adb remount >nul 2>&1
+adb shell "mount -o rw,remount /" >nul 2>&1
 
 REM Удаляем старую версию и ставим новую
 adb shell rm -rf /system/priv-app/VoboostVoiceAssistant >nul 2>&1
@@ -131,6 +131,7 @@ echo   [OK] Данные приложения инициализированы
 
 REM Выдаём разрешения
 adb shell pm grant com.voboost.voiceassistant android.permission.RECORD_AUDIO >nul 2>&1
+adb shell pm grant com.voboost.voiceassistant android.permission.READ_CONTACTS >nul 2>&1
 adb shell pm grant com.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW >nul 2>&1
 adb shell pm grant com.voboost.voiceassistant android.permission.FOREGROUND_SERVICE >nul 2>&1
 echo   [OK] Разрешения выданы (RECORD_AUDIO, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)
