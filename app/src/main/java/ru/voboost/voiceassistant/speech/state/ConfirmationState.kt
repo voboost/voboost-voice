@@ -43,7 +43,8 @@ class ConfirmationState(
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
             finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                          configManager, nluEngine, commandExecutor, context)
             ))
             return
         }
@@ -66,13 +67,16 @@ class ConfirmationState(
             Log.w(TAG, "Confirmation not fully implemented yet, executing command")
 
             finish(StateResult.Next(
-                ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                ExecutingCommandState(speechRecognizer, overlayManager, volumeManager,
+                                      ttsEngine, configManager, nluEngine, commandExecutor, context)
             ))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ConfirmationState", e)
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, e.message ?: "Unknown error")
             ))
         }
     }

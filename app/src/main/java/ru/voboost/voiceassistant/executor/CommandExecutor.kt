@@ -45,10 +45,10 @@ class CommandExecutor(
 
     /**
      * Выполнить команду
-     * @param zone Зона говорящего (front_left, front_right, center, all_location, и т.д.)
      */
-    suspend fun executeCommand(recognizedCommand: RecognizedCommand, zone: String? = null) {
+    suspend fun executeCommand(recognizedCommand: RecognizedCommand) {
         val commandConfig = recognizedCommand.config
+        val zone = recognizedCommand.zone
 
         Log.i(TAG, "Executing command: ${commandConfig.id} (zone=$zone)")
 

@@ -41,9 +41,11 @@ class ExecutingCommandState(
 
     override suspend fun execute() {
         val command = context.recognizedCommand ?: run {
-            Log.e(TAG, "No recognized command in context")
+            Log.e(TAG, "No rrecognizedCommandecognized command in context")
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command to execute")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, "No command to execute")
             ))
             return
         }
@@ -55,7 +57,7 @@ class ExecutingCommandState(
             speechRecognizer.setMode(SpeechRecognizer.Mode.MUTED)
 
             // Выполняем команду (внутри TTS скажет "Закрываю окно")
-            commandExecutor.executeCommand(command, context.zone)
+            commandExecutor.executeCommand(command)
             Log.i(TAG, "Command executed successfully: ${command.id}")
 
             // Ждём пока TTS закончит говорить (короткая задержка)
@@ -73,7 +75,8 @@ class ExecutingCommandState(
 
             // Успех → возвращаемся к ожиданию ключевого слова
             finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                          configManager, nluEngine, commandExecutor, context)
             ))
 
         } catch (e: CancellationException) {
@@ -85,7 +88,9 @@ class ExecutingCommandState(
             Log.e(TAG, "Error executing command: ${command.id}", e)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor, context,
+                                  e.message ?: "Unknown error")
             ))
         }
     }

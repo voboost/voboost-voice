@@ -67,12 +67,15 @@ class ListeningCommandState(
                         context.commandText = commandText
                         context.zone = zone
                         finish(StateResult.Next(
-                            RecognizedCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                            RecognizedCommandState(speechRecognizer, overlayManager,
+                                                   volumeManager, ttsEngine, configManager,
+                                                   nluEngine, commandExecutor, context)
                         ))
                     } else {
                         Log.w(TAG, "Empty command received")
                         finish(StateResult.Next(
-                            TimeoutState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                            TimeoutState(speechRecognizer, overlayManager, volumeManager,
+                                         ttsEngine, configManager, nluEngine, commandExecutor, context)
                         ))
                     }
                 }
@@ -80,14 +83,17 @@ class ListeningCommandState(
                 is SpeechResult.Timeout -> {
                     Log.w(TAG, "Command timeout")
                     finish(StateResult.Next(
-                        TimeoutState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                        TimeoutState(speechRecognizer, overlayManager, volumeManager,
+                                     ttsEngine, configManager, nluEngine, commandExecutor, context)
                     ))
                 }
 
                 is SpeechResult.Error -> {
                     Log.e(TAG, "Recognition error: ${result.message}")
                     finish(StateResult.Next(
-                        CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, result.message)
+                        CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                          ttsEngine, configManager, nluEngine, commandExecutor,
+                                          context, result.message)
                     ))
                 }
 
@@ -104,7 +110,9 @@ class ListeningCommandState(
         } catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, e.message ?: "Unknown error")
             ))
         }
     }

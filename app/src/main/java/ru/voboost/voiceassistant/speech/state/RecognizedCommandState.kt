@@ -45,7 +45,9 @@ class RecognizedCommandState(
         val text = context.commandText ?: run {
             Log.e(TAG, "No command text in context")
             finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "No command text")
+                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                  ttsEngine, configManager, nluEngine, commandExecutor,
+                                  context, "No command text")
             ))
             return
         }
@@ -57,26 +59,33 @@ class RecognizedCommandState(
             val recognizedCommand = nluEngine.parseCommand(text)
 
             if (recognizedCommand != null) {
-                Log.d(TAG, "Command parsed: ${recognizedCommand.id}")
-                context.recognizedCommand = recognizedCommand
+                Log.d(TAG, "Command parsed: ${recognizedCommand.id} (zone=${context.zone})")
+                // Добавляем зону в команду
+                val commandWithZone = recognizedCommand.copy(zone = context.zone)
+                context.recognizedCommand = commandWithZone
 
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
                     finish(StateResult.Next(
-                        ConfirmationState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                        ConfirmationState(speechRecognizer, overlayManager, volumeManager,
+                                          ttsEngine, configManager, nluEngine, commandExecutor, context)
                     ))
                 } else {
                     // Выполняем команду без подтверждения
                     Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
                     finish(StateResult.Next(
-                        ExecutingCommandState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+                        ExecutingCommandState(speechRecognizer, overlayManager,
+                                              volumeManager, ttsEngine, configManager, nluEngine,
+                                              commandExecutor, context)
                     ))
                 }
             } else {
                 Log.w(TAG, "Unrecognized command: '$text'")
                 finish(StateResult.Next(
-                    CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, "Unrecognized command: $text")
+                    CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                      ttsEngine, configManager, nluEngine, commandExecutor,
+                                      context, "Unrecognized command: $text")
                 ))
             }
 
