@@ -260,6 +260,39 @@ class CanBusServiceManager(context: Context) {
     }
 
     /**
+     * Установить температуру по зоне говорящего
+     * - front_left → только левая сторона
+     * - front_right → только правая сторона
+     * - center / all_location / second_* → обе стороны
+     */
+    fun setTemperatureByZone(zone: String?, temperature: Int): Boolean {
+        if (!ensureConnected()) return false
+
+        return try {
+            when (zone) {
+                "front_left" -> {
+                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, temperature)
+                    Log.d(TAG, "setTemperatureByZone: LEFT $temperature°C")
+                }
+                "front_right" -> {
+                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, temperature)
+                    Log.d(TAG, "setTemperatureByZone: RIGHT $temperature°C")
+                }
+                else -> {
+                    // center, all_location, second_left, second_right — обе стороны
+                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, temperature)
+                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, temperature)
+                    Log.d(TAG, "setTemperatureByZone: BOTH $temperature°C (zone=$zone)")
+                }
+            }
+            true
+        } catch (e: RemoteException) {
+            Log.e(TAG, "Failed to set temperature by zone", e)
+            false
+        }
+    }
+
+    /**
      * Получить состояние кондиционера
      *
      * @return AirCondition или null если ошибка

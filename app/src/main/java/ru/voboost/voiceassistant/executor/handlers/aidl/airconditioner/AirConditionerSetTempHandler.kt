@@ -7,17 +7,14 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
 /**
  * Установить температуру кондиционера
  *
+ * Учитывает зону говорящего из voiceParams:
+ * - front_left → только левая сторона
+ * - front_right → только правая сторона
+ * - center / all_location / second_* → обе стороны
+ *
  * config.json:
  *   id: "ac_set_temp", classify: 5, command: 3
  *   params: temperature
- *
- * CAN-шина:
- *   Отправляет абсолютное значение температуры
- *   (в отличие от инкрементов/декрементов)
- *
- * Примечание: если на реальном автомобиле нужны
- * инкременты/декременты до нужной температуры,
- * логику нужно будет доработать.
  */
 class AirConditionerSetTempHandler(
     canBusManager: CanBusServiceManager
@@ -30,7 +27,27 @@ class AirConditionerSetTempHandler(
             }
 
         Log.d(TAG, "Set temperature: $temperature°C")
-        // Отправляем абсолютное значение температуры
+        // Возвращаем любое значение — AbstractAirConditionerHandler
+        // не учитывает зону, но это OK т.к. execute() переопределён
+        // ниже для учёта зоны
         return AirConditionState.AC_LEFT_TEMP to temperature
+    }
+
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
+        if (!canBusManager.isConnected()) {
+            Log.w(TAG, "Not connected to CanBusService")
+            return false
+        }
+
+        val temperature = voiceParams["temperature"] as? Int
+            ?: run {
+                Log.w(TAG, "Temperature parameter not found, using default 22")
+                22
+            }
+
+        val zone = voiceParams["_zone"] as? String
+        Log.d(TAG, "Set temperature: $temperature°C (zone=$zone)")
+
+        return canBusManager.setTemperatureByZone(zone, temperature)
     }
 }

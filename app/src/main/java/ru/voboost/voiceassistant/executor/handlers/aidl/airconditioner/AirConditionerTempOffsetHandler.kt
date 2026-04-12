@@ -1,12 +1,15 @@
 package ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner
 
 import android.util.Log
-import com.qinggan.canbus.AirConditionState
 import ru.voboost.voiceassistant.canbus.CanBusServiceManager
 import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 
 /**
  * Изменить температуру климата на заданное смещение
+ * Учитывает зону говорящего из voiceParams:
+ * - front_left → только левая сторона
+ * - front_right → только правая сторона
+ * - center / all_location / second_* → обе стороны
  *
  * @param commandId ID команды (ac_temp_up / ac_temp_down)
  * @param offsetDelta Смещение температуры (+2 или -2)
@@ -40,9 +43,10 @@ class AirConditionerTempOffsetHandler(
 
         val newTemp = (currentTemp + offsetDelta).coerceIn(TEMP_MIN, TEMP_MAX)
         val sign = if (offsetDelta > 0) "+" else ""
+        val zone = voiceParams["_zone"] as? String
 
-        Log.d(TAG, "Temp $sign${offsetDelta}: $currentTemp°C → $newTemp°C")
+        Log.d(TAG, "Temp $sign${offsetDelta}: $currentTemp°C → $newTemp°C (zone=$zone)")
 
-        return canBusManager.setAirConditionState(AirConditionState.AC_LEFT_TEMP, newTemp)
+        return canBusManager.setTemperatureByZone(zone, newTemp)
     }
 }

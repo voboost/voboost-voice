@@ -45,18 +45,22 @@ class CommandExecutor(
 
     /**
      * Выполнить команду
+     * @param zone Зона говорящего (front_left, front_right, center, all_location, и т.д.)
      */
-    suspend fun executeCommand(recognizedCommand: RecognizedCommand) {
+    suspend fun executeCommand(recognizedCommand: RecognizedCommand, zone: String? = null) {
         val commandConfig = recognizedCommand.config
 
-        Log.i(TAG, "Executing command: ${commandConfig.id}")
+        Log.i(TAG, "Executing command: ${commandConfig.id} (zone=$zone)")
 
         // Приглушить звук (Audio Ducking)
         duckAudio(true)
 
         try {
+            // Добавляем зону в voiceParams для команд климата
+            val voiceParamsWithZone = recognizedCommand.extractedParams + ("_zone" to (zone ?: "center"))
+
             // Выполнение действия
-            val success = executeAction(commandConfig, recognizedCommand.extractedParams)
+            val success = executeAction(commandConfig, voiceParamsWithZone)
 
             if (success) {
                 Log.i(TAG, "Command executed successfully")

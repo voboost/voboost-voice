@@ -53,7 +53,7 @@ class VoiceZoneDetector(
             MicphoneModeManager.MODE_SLAVE -> "front_right"
             MicphoneModeManager.MODE_BOTH -> "all_location"
             MicphoneModeManager.MODE_FRONT -> angleToZone(angle)
-            else -> "front_left" // По умолчанию — водитель
+            else -> "center" // По умолчанию — центр (обе стороны)
         }
 
         Log.d(TAG, "🎯 Zone detected: mode=$mode, angle=$angle° → zone='$zone'")
@@ -71,8 +71,8 @@ class VoiceZoneDetector(
             normalizedAngle in ANGLE_FRONT_LEFT_MAX..ANGLE_FRONT_RIGHT_MAX -> "front_right"
             normalizedAngle in ANGLE_FRONT_RIGHT_MAX..ANGLE_SECOND_LEFT_MAX -> "second_left"
             normalizedAngle in ANGLE_SECOND_LEFT_MAX..ANGLE_SECOND_RIGHT_MAX -> "second_right"
-            normalizedAngle in ANGLE_SECOND_RIGHT_MAX..360 -> "front_left"
-            else -> "front_left"
+            normalizedAngle in ANGLE_SECOND_RIGHT_MAX..360 -> "center"
+            else -> "center"
         }
     }
 

@@ -55,7 +55,7 @@ class ExecutingCommandState(
             speechRecognizer.setMode(SpeechRecognizer.Mode.MUTED)
 
             // Выполняем команду (внутри TTS скажет "Закрываю окно")
-            commandExecutor.executeCommand(command)
+            commandExecutor.executeCommand(command, context.zone)
             Log.i(TAG, "Command executed successfully: ${command.id}")
 
             // Ждём пока TTS закончит говорить (короткая задержка)
