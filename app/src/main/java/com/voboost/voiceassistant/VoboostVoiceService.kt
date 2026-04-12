@@ -65,7 +65,6 @@ class VoboostVoiceService : Service() {
         const val ACTION_CANCEL = "com.voboost.voiceassistant.CANCEL"
         const val ACTION_ACTIVATE = "com.voboost.voiceassistant.ACTIVATE"
         val ASR_ENGINE_TYPE = RecognitionEngine.VOSK  // ← Vosk (стабильный)
-        val TTS_ENGINE_TYPE = SpeechEngineFactory.SynthesisEngine.SHERPA  // ← Sherpa TTS (русский есть)
         val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY  // ← TransProxy (системный, с шумоподавлением)
     }
 
@@ -147,16 +146,35 @@ class VoboostVoiceService : Service() {
         // Используем фабрику для создания движков (легко переключаться между Vosk/Sherpa)
         val recommendedConfig = SpeechEngineFactory.getRecommendedConfig(this)
         Log.i(TAG, "Recommended config: ASR=${recommendedConfig.first}, TTS=${recommendedConfig.second}")
+
+        // TTS Engine — выбираем согласно конфигу
+        val ttsConfig = configManager.getConfig().tts
+        val ttsEngineType = when (ttsConfig.offline.engine.lowercase()) {
+            "sherpa" -> {
+                Log.i(TAG, "TTS engine from config: Sherpa-ONNX")
+                SpeechEngineFactory.SynthesisEngine.SHERPA
+            }
+            else -> {
+                Log.i(TAG, "TTS engine from config: System TTS")
+                SpeechEngineFactory.SynthesisEngine.SYSTEM
+            }
+        }
+
         // TTS Engine (используем системный как стабильный, можно заменить на Sherpa)
         try {
             ttsEngine = SpeechEngineFactory.createSynthesisEngine(
                 context = this,
-                engine = TTS_ENGINE_TYPE
+                engine = ttsEngineType
             )
 
             // Инициализация TTS (обязательно для Sherpa)
             ttsEngine.initialize()
-            Log.i(TAG, "TTS engine initialized")
+
+            // Настройки rate/pitch из конфига
+            ttsEngine.setRate(ttsConfig.offline.rate)
+            ttsEngine.setPitch(ttsConfig.offline.pitch)
+
+            Log.i(TAG, "TTS engine initialized (engine=${ttsConfig.offline.engine}, rate=${ttsConfig.offline.rate}, pitch=${ttsConfig.offline.pitch})")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize TTS engine", e)
             ttsEngine = SystemTtsSynthesis(this)  // Fallback

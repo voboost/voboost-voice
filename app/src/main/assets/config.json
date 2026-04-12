@@ -30,7 +30,7 @@
     "offline": {
       "enabled": true,
       "engine": "sherpa",
-      "voice": "ru_RU",
+      "voice": "ru_RU-ruslan-medium",
       "rate": 1.0,
       "pitch": 1.0
     },
