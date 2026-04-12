@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 1. Показать анимацию
  * 2. Приглушить музыку
  * 3. Сказать "Слушаю вас"
- * 4. → finish(StateResult.Next(ListeningCommandState))
+ * 4. → finish(StateResult.Next(StateType.LISTENING_COMMAND))
  */
 class ActivatedState(
     private val speechRecognizer: SpeechRecognizer,
@@ -71,27 +71,17 @@ class ActivatedState(
             speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
 
             // Переходим к слушанию команды
-            finish(StateResult.Next(
-                ListeningCommandState(speechRecognizer, overlayManager, volumeManager,
-                                      ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+            finish(StateResult.Next(StateType.LISTENING_COMMAND))
 
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "ActivatedState cancelled (rapid button press)")
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
-                          configManager, nluEngine, commandExecutor, context)
-            ))
+            finish(StateResult.Next(StateType.IDLE))
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ActivatedState", e)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                  ttsEngine, configManager, nluEngine, commandExecutor,
-                                  context, e.message ?: "Unknown error")
-            ))
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
         }
     }
 
@@ -102,38 +92,37 @@ class ActivatedState(
             try {
                 // Остановить TTS если ещё говорит "Слушаю вас"
                 ttsEngine.stop()
-                
+
                 // Небольшая задержка чтобы TTS успел остановиться
                 kotlinx.coroutines.delay(200)
-                
+
                 // Одинаковый звук отмены с TimeoutState
                 context.soundEffectManager?.playEndSound()
-                
+
                 // Даём звуку закончиться
                 kotlinx.coroutines.delay(400)
-                
+
                 // Говорим "Отмена"
                 val latch = CountDownLatch(1)
                 ttsEngine.speak("Отмена") { latch.countDown() }
                 withContext(kotlinx.coroutines.Dispatchers.IO) {
                     latch.await(5, TimeUnit.SECONDS)
                 }
-                
+
                 Log.d(TAG, "Cancel speech completed")
             } finally {
                 isCancelling.set(false)
             }
-            
+
             overlayManager.hideAnimation()
             volumeManager?.restoreMedia()
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            
+
             cancelled("ActivatedState cancelled by user")
         }
     }
 
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Already in ActivatedState, ignoring")
-        return this
+    override fun reset() {
+        isCancelling.set(false)
     }
 }

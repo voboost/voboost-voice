@@ -8,15 +8,17 @@ import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
 import ru.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
- * Состояние: Таймаут команды
+ * Состояние: Таймаут распознавания
  *
  * Логика:
- * 1. Воспроизвести звук "пик-пик" (время вышло)
- * 2. finish(StateResult.Next(IdleState))
- *
- * canCancel = false — уже переходит в IdleState, кнопка не нужна
+ * 1. Сказать "Отмена" + звук
+ * 2. → finish(StateResult.Next(StateType.IDLE))
  */
 class TimeoutState(
     private val speechRecognizer: SpeechRecognizer,
@@ -29,42 +31,47 @@ class TimeoutState(
     private val context: StateContext
 ) : BaseState() {
     companion object {
-        const val TAG = "TimeoutState"
+        const val TAG = "Timeout"
     }
 
-    override val canCancel = false
+    override val canCancel = true
 
     override suspend fun execute() {
-        Log.i(TAG, "Entering TIMEOUT IState")
+        Log.w(TAG, "Entering TIMEOUT IState")
 
         try {
-            // Воспроизвести звук "пик-пик" (короткий)
+            // Звук окончания
             context.soundEffectManager?.playEndSound()
+            kotlinx.coroutines.delay(200)
 
-            // Переключить режим обратно на KEYWORD
+            // Говорим "Отмена"
+            val latch = CountDownLatch(1)
+            ttsEngine.speak("Отмена") { latch.countDown() }
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                latch.await(5, TimeUnit.SECONDS)
+            }
+
+            overlayManager.hideAnimation()
+            volumeManager?.restoreMedia()
+
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            finish(StateResult.Next(StateType.IDLE))
 
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+        } catch (e: CancellationException) {
+            Log.d(TAG, "TimeoutState cancelled")
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in TimeoutState", e)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+            finish(StateResult.Next(StateType.IDLE))
         }
     }
 
     override suspend fun cancel() {
-        // Не вызывается т.к. canCancel = false
-        Log.w(TAG, "Cancel called but canCancel=false, ignoring")
-    }
-
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Activate from TimeoutState → ActivatedState")
+        Log.i(TAG, "TimeoutState cancelled (button pressed)")
         speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+        cancelled("TimeoutState cancelled by user")
     }
 }

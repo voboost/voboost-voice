@@ -34,4 +34,12 @@ abstract class BaseState : IState {
             throw IllegalStateException("cancellationCallback not set in ${this::class.simpleName}")
         }
     }
+
+    /**
+     * Сбросить состояние по умолчанию — ничего не делает.
+     * Переопределите если нужно сбросить внутренние поля.
+     */
+    override fun reset() {
+        // По умолчанию ничего не сбрасываем
+    }
 }

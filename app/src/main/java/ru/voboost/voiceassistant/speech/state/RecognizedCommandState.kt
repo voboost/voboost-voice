@@ -8,21 +8,17 @@ import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
 import ru.voboost.voiceassistant.ui.OverlayManager
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.withContext
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Состояние: Распознана команда
+ * Состояние: Распознанная команда
  *
  * Логика:
- * 1. Распарсить текст через NLU
- * 2. Если команда распознана:
- *    - Если нужно подтверждение → finish(StateResult.Next(ConfirmationState))
- *    - Если нет → finish(StateResult.Next(ExecutingCommandState))
- * 3. Если не распознана → finish(StateResult.Next(CommandErrorState))
+ * 1. Парсим текст через NLU
+ * 2. Если найдена → проверяем подтверждение
+ *    - требуется → CONFIRMATION
+ *    - не требуется → EXECUTING_COMMAND
+ * 3. Не найдена → COMMAND_ERROR
  */
 class RecognizedCommandState(
     private val speechRecognizer: SpeechRecognizer,
@@ -35,7 +31,7 @@ class RecognizedCommandState(
     private val context: StateContext
 ) : BaseState() {
     companion object {
-        const val TAG = "RecognizedCommandState"
+        const val TAG = "RecognizedCommand"
     }
 
     override val canCancel = true
@@ -44,11 +40,7 @@ class RecognizedCommandState(
     override suspend fun execute() {
         val text = context.commandText ?: run {
             Log.e(TAG, "No command text in context")
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                  ttsEngine, configManager, nluEngine, commandExecutor,
-                                  context, "No command text")
-            ))
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
             return
         }
 
@@ -67,70 +59,44 @@ class RecognizedCommandState(
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
-                    finish(StateResult.Next(
-                        ConfirmationState(speechRecognizer, overlayManager, volumeManager,
-                                          ttsEngine, configManager, nluEngine, commandExecutor, context)
-                    ))
+                    finish(StateResult.Next(StateType.CONFIRMATION))
                 } else {
                     // Выполняем команду без подтверждения
                     Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
-                    finish(StateResult.Next(
-                        ExecutingCommandState(speechRecognizer, overlayManager,
-                                              volumeManager, ttsEngine, configManager, nluEngine,
-                                              commandExecutor, context)
-                    ))
+                    finish(StateResult.Next(StateType.EXECUTING_COMMAND))
                 }
             } else {
                 Log.w(TAG, "Unrecognized command: '$text'")
-                finish(StateResult.Next(
-                    CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                      ttsEngine, configManager, nluEngine, commandExecutor,
-                                      context, "Unrecognized command: $text")
-                ))
+                commandExecutor.handleUnrecognizedCommand(text)
+                finish(StateResult.Next(StateType.IDLE))
             }
 
-        } catch (e: CancellationException) {
-            Log.d(TAG, "RecognizedCommandState cancelled")
-            throw e
-
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing command", e)
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context, e.message ?: "Unknown error")
-            ))
+            Log.e(TAG, "Error parsing command: '$text'", e)
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
         }
     }
 
     override suspend fun cancel() {
         if (isCancelling.compareAndSet(false, true)) {
-            Log.i(TAG, "RecognizedCommandState cancelled (button pressed)")
-
             try {
                 ttsEngine.stop()
                 kotlinx.coroutines.delay(200)
-
                 context.soundEffectManager?.playEndSound()
                 kotlinx.coroutines.delay(400)
-
-                val latch = CountDownLatch(1)
+                val latch = java.util.concurrent.CountDownLatch(1)
                 ttsEngine.speak("Отмена") { latch.countDown() }
-                withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    latch.await(5, TimeUnit.SECONDS)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
                 }
             } finally {
                 isCancelling.set(false)
             }
-
-            overlayManager.hideAnimation()
-            volumeManager?.restoreMedia()
-            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-
-            cancelled("RecognizedCommandState cancelled by user")
+            cancelled("RecognizedCommandState cancelled")
         }
     }
 
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Already in RecognizedCommandState, ignoring")
-        return this
+    override fun reset() {
+        isCancelling.set(false)
     }
 }

@@ -2,23 +2,38 @@
 
 import android.util.Log
 import kotlinx.coroutines.*
+import ru.voboost.voiceassistant.audio.VolumeManager
+import ru.voboost.voiceassistant.config.ConfigManager
+import ru.voboost.voiceassistant.core.ISpeechSynthesis
+import ru.voboost.voiceassistant.executor.CommandExecutor
+import ru.voboost.voiceassistant.nlu.NLUEngine
+import ru.voboost.voiceassistant.speech.SpeechRecognizer
+import ru.voboost.voiceassistant.ui.OverlayManager
 
 /**
- * IState Machine для голосового помощника (Event-driven версия)
+ * State Machine для голосового помощника (Event-driven версия)
  *
  * Принцип работы:
- * 1. StateMachine подписывается на completionCallback и cancellationCallback
- * 2. Состояние само вызывает finish() или cancelled() когда готово
- * 3. StateMachine переключает на следующее состояние
+ * 1. Все состояния создаются один раз при инициализации
+ * 2. StateMachine подписывается на completionCallback и cancellationCallback
+ * 3. Состояние само вызывает finish() или cancelled() когда готово
+ * 4. StateMachine переключает на следующее состояние по типу
+ * 5. Перед переходом вызывается reset() для сброса внутреннего состояния
  *
  * Преимущества:
+ * - ✅ Нет циклических зависимостей между состояниями
+ * - ✅ Нет пересоздания при каждом переходе
  * - ✅ Состояния сами решают когда завершиться
- * - ✅ Нет гонок с currentState
- * - ✅ Чистое разделение ответственности
  * - ✅ canCancel явно декларирует можно ли отменить
  */
 class StateMachine(
-    private val initialState: IState,
+    speechRecognizer: SpeechRecognizer,
+    overlayManager: OverlayManager,
+    volumeManager: VolumeManager?,
+    ttsEngine: ISpeechSynthesis,
+    configManager: ConfigManager,
+    nluEngine: NLUEngine,
+    commandExecutor: CommandExecutor,
     private val scope: CoroutineScope,
     val context: StateContext = StateContext()
 ) {
@@ -26,16 +41,44 @@ class StateMachine(
         const val TAG = "StateMachine"
     }
 
+    private val states = mapOf(
+        StateType.IDLE to IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
+                                    configManager, nluEngine, commandExecutor, context),
+        StateType.ACTIVATED to ActivatedState(speechRecognizer, overlayManager, volumeManager,
+                                              ttsEngine, configManager, nluEngine,
+                                              commandExecutor, context),
+        StateType.LISTENING_COMMAND to ListeningCommandState(speechRecognizer, overlayManager,
+                                                             volumeManager, ttsEngine, configManager,
+                                                             nluEngine, commandExecutor, context),
+        StateType.RECOGNIZED_COMMAND to RecognizedCommandState(speechRecognizer, overlayManager,
+                                                               volumeManager, ttsEngine, configManager,
+                                                               nluEngine, commandExecutor, context),
+        StateType.EXECUTING_COMMAND to ExecutingCommandState(speechRecognizer, overlayManager,
+                                                             volumeManager, ttsEngine, configManager,
+                                                             nluEngine, commandExecutor, context),
+        StateType.CONFIRMATION to ConfirmationState(speechRecognizer, overlayManager, volumeManager,
+                                                    ttsEngine, configManager, nluEngine,
+                                                    commandExecutor, context),
+        StateType.COMMAND_ERROR to CommandErrorState(speechRecognizer, overlayManager, volumeManager,
+                                                     ttsEngine, configManager, nluEngine,
+                                                     commandExecutor, context, ""),
+        StateType.KEYWORD_ERROR to KeywordErrorState(speechRecognizer, overlayManager, volumeManager,
+                                                     ttsEngine, configManager, nluEngine,
+                                                     commandExecutor, context),
+        StateType.TIMEOUT to TimeoutState(speechRecognizer, overlayManager, volumeManager,
+                                          ttsEngine, configManager, nluEngine, commandExecutor, context),
+    )
+
     private var mainJob: Job? = null
 
     @Volatile
-    private var currentState: IState = initialState
+    private var currentState: IState = states[StateType.IDLE]!!
 
     @Volatile
     private var executionJob: Job? = null
 
     /**
-     * Запустить IState Machine
+     * Запустить State Machine
      */
     fun start() {
         if (mainJob?.isActive == true) {
@@ -44,13 +87,13 @@ class StateMachine(
         }
 
         mainJob = scope.launch {
-            Log.i(TAG, "Starting IState Machine from: ${currentState::class.simpleName}")
-            transitionTo(currentState)
+            Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
+            transitionTo(StateType.IDLE)
         }
     }
 
     /**
-     * Остановить IState Machine
+     * Остановить State Machine
      */
     fun stop() {
         mainJob?.cancel()
@@ -65,45 +108,55 @@ class StateMachine(
     fun getCurrentState(): IState = currentState
 
     /**
-     * Перейти к новому состоянию.
+     * Получить состояние по типу
+     */
+    private fun getState(type: StateType): IState {
+        return states[type] ?: throw IllegalArgumentException("Unknown state: $type")
+    }
+
+    /**
+     * Перейти к новому состоянию по типу.
      * Подписывается на колбэки и запускает execute() в фоне.
      */
-    private fun transitionTo(IState: IState) {
+    private fun transitionTo(stateType: StateType) {
         // Отменяем предыдущее выполнение
         executionJob?.cancel()
         executionJob = null
 
-        currentState = IState
-        Log.d(TAG, "Transition to: ${IState::class.simpleName}")
+        val nextState = getState(stateType)
+        nextState.reset()
+
+        currentState = nextState
+        Log.d(TAG, "Transition to: ${nextState::class.simpleName}")
 
         // Подписываемся на колбэки
-        IState.setCompletionCallback { result ->
+        nextState.setCompletionCallback { result ->
             when (result) {
                 is StateResult.Next -> {
-                    Log.d(TAG, "Completion → ${result.IState::class.simpleName}")
-                    transitionTo(result.IState)
+                    Log.d(TAG, "Completion → ${result.stateType}")
+                    transitionTo(result.stateType)
                 }
                 is StateResult.Cancel -> {
-                    Log.d(TAG, "Completion with Cancel → IdleState")
-                    transitionTo(createIdleState())
+                    Log.d(TAG, "Completion with Cancel → IDLE")
+                    transitionTo(StateType.IDLE)
                 }
             }
         }
 
-        IState.setCancellationCallback { reason ->
-            Log.d(TAG, "Cancellation: $reason → IdleState")
-            transitionTo(createIdleState())
+        nextState.setCancellationCallback { reason ->
+            Log.d(TAG, "Cancellation: $reason → IDLE")
+            transitionTo(StateType.IDLE)
         }
 
         // Запускаем execute() в фоне
         executionJob = scope.launch {
             try {
-                IState.execute()
+                nextState.execute()
             } catch (e: CancellationException) {
-                Log.d(TAG, "IState execution cancelled (normal during activation/cancellation)")
+                Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
             } catch (e: Exception) {
-                Log.e(TAG, "IState execution error", e)
-                transitionTo(createIdleState())
+                Log.e(TAG, "State execution error", e)
+                transitionTo(StateType.IDLE)
             }
         }
     }
@@ -145,27 +198,35 @@ class StateMachine(
         if (current.canCancel) {
             onButtonPressed()
         } else {
-            Log.i(TAG, "Activate from non-cancellable IState: ${current::class.simpleName}")
+            Log.i(TAG, "Activate from non-cancellable state: ${current::class.simpleName}")
             val nextState = current.activate()
             if (nextState != null && nextState !== current) {
-                transitionTo(nextState)
+                // activate() возвращает IState — используем его напрямую
+                executionJob?.cancel()
+                executionJob = null
+                currentState = nextState
+                currentState.reset()
+                currentState.setCompletionCallback { result ->
+                    when (result) {
+                        is StateResult.Next -> transitionTo(result.stateType)
+                        is StateResult.Cancel -> transitionTo(StateType.IDLE)
+                    }
+                }
+                currentState.setCancellationCallback { reason ->
+                    Log.d(TAG, "Cancellation: $reason → IDLE")
+                    transitionTo(StateType.IDLE)
+                }
+                executionJob = scope.launch {
+                    try {
+                        currentState.execute()
+                    } catch (e: CancellationException) {
+                        Log.d(TAG, "State execution cancelled")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "State execution error", e)
+                        transitionTo(StateType.IDLE)
+                    }
+                }
             }
         }
-    }
-
-    /**
-     * Создать IdleState с актуальным контекстом.
-     */
-    private fun createIdleState(): IState {
-        return IdleState(
-            speechRecognizer = context.speechRecognizer!!,
-            overlayManager = context.overlayManager!!,
-            volumeManager = context.volumeManager,
-            ttsEngine = context.ttsEngine!!,
-            configManager = context.configManager!!,
-            nluEngine = context.nluEngine!!,
-            commandExecutor = context.commandExecutor!!,
-            context = context
-        )
     }
 }

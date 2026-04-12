@@ -8,12 +8,17 @@ import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
 import ru.voboost.voiceassistant.ui.OverlayManager
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
- * Состояние: Ошибка распознавания ключевого слова
+ * Состояние: Ошибка ключевого слова
  *
- * canCancel = false — уже переходит в IdleState
+ * Логика:
+ * 1. Сказать "Не понял"
+ * 2. → finish(StateResult.Next(StateType.IDLE))
  */
 class KeywordErrorState(
     private val speechRecognizer: SpeechRecognizer,
@@ -23,43 +28,49 @@ class KeywordErrorState(
     private val configManager: ConfigManager,
     private val nluEngine: NLUEngine,
     private val commandExecutor: CommandExecutor,
-    private val context: StateContext,
-    private val error: String
+    private val context: StateContext
 ) : BaseState() {
     companion object {
-        const val TAG = "KeywordErrorState"
+        const val TAG = "KeywordError"
     }
 
-    override val canCancel = false
+    override val canCancel = true
 
     override suspend fun execute() {
-        Log.e(TAG, "Entering KEYWORD_ERROR IState: $error")
+        Log.e(TAG, "Entering KEYWORD_ERROR IState")
 
         try {
-            overlayManager.hideAnimation()
-            volumeManager?.restoreMedia()
+            speechRecognizer.setMode(SpeechRecognizer.Mode.MUTED)
 
-            delay(1000)
+            val notUnderstoodPhrase =
+                configManager.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD)
 
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+            if (!notUnderstoodPhrase.isNullOrEmpty()) {
+                val ttsLatch = CountDownLatch(1)
+                ttsEngine.speak(notUnderstoodPhrase) { ttsLatch.countDown() }
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    ttsLatch.await(5, TimeUnit.SECONDS)
+                }
+            }
+
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            finish(StateResult.Next(StateType.IDLE))
+
+        } catch (e: CancellationException) {
+            Log.d(TAG, "KeywordErrorState cancelled")
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in KeywordErrorState", e)
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            finish(StateResult.Next(StateType.IDLE))
         }
     }
 
     override suspend fun cancel() {
-        Log.w(TAG, "Cancel called but canCancel=false, ignoring")
-    }
-
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Activate from KeywordErrorState → ActivatedState")
+        Log.i(TAG, "KeywordErrorState cancelled (button pressed)")
         speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-        return ActivatedState(speechRecognizer, overlayManager, volumeManager, ttsEngine, configManager, nluEngine, commandExecutor, context)
+        cancelled("KeywordErrorState cancelled by user")
     }
 }

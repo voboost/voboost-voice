@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
  * Логика:
  * 1. Выполнить команду через CommandExecutor
  * 2. Ждём пока TTS закончит говорить
- * 3. finish(StateResult.Next(IdleState))
+ * 3. → finish(StateResult.Next(StateType.IDLE))
  *
  * canCancel = false — кнопка игнорируется (команда уже отправлена)
  */
@@ -33,7 +33,7 @@ class ExecutingCommandState(
     private val context: StateContext
 ) : BaseState() {
     companion object {
-        const val TAG = "ExecutingCommandState"
+        const val TAG = "ExecutingCommand"
     }
 
     // Команда уже выполняется — отменять поздно
@@ -41,12 +41,8 @@ class ExecutingCommandState(
 
     override suspend fun execute() {
         val command = context.recognizedCommand ?: run {
-            Log.e(TAG, "No rrecognizedCommandecognized command in context")
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                  ttsEngine, configManager, nluEngine, commandExecutor,
-                                  context, "No command to execute")
-            ))
+            Log.e(TAG, "No recognized command in context")
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
             return
         }
 
@@ -74,10 +70,7 @@ class ExecutingCommandState(
             }
 
             // Успех → возвращаемся к ожиданию ключевого слова
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
-                          configManager, nluEngine, commandExecutor, context)
-            ))
+            finish(StateResult.Next(StateType.IDLE))
 
         } catch (e: CancellationException) {
             Log.d(TAG, "ExecutingCommandState cancelled")
@@ -87,21 +80,12 @@ class ExecutingCommandState(
         } catch (e: Exception) {
             Log.e(TAG, "Error executing command: ${command.id}", e)
             speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                  ttsEngine, configManager, nluEngine, commandExecutor, context,
-                                  e.message ?: "Unknown error")
-            ))
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
         }
     }
 
     override suspend fun cancel() {
         // Не вызывается т.к. canCancel = false
         Log.w(TAG, "Cancel called but canCancel=false, ignoring")
-    }
-
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Already in ExecutingCommandState, ignoring")
-        return this
     }
 }

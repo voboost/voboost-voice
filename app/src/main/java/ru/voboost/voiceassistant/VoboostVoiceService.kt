@@ -271,7 +271,7 @@ class VoboostVoiceService : Service() {
         )
         Log.i(TAG, "SpeechRecognizer initialized")
 
-        // IState Machine - управление состояниями
+        // State Machine - управление состояниями
         val context = StateContext()
         context.soundEffectManager = soundEffectManager
         context.speechRecognizer = speechRecognizer
@@ -281,8 +281,8 @@ class VoboostVoiceService : Service() {
         context.configManager = configManager
         context.nluEngine = nluEngine
         context.commandExecutor = commandExecutor
-        
-        val initialState = IdleState(
+
+        stateMachine = StateMachine(
             speechRecognizer = speechRecognizer,
             overlayManager = overlayManager,
             volumeManager = volumeManager,
@@ -290,11 +290,6 @@ class VoboostVoiceService : Service() {
             configManager = configManager,
             nluEngine = nluEngine,
             commandExecutor = commandExecutor,
-            context = context
-        )
-
-        stateMachine = StateMachine(
-            initialState = initialState,
             scope = serviceScope,
             context = context
         )

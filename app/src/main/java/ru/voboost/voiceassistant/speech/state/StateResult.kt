@@ -1,6 +1,22 @@
 ﻿package ru.voboost.voiceassistant.speech.state
 
 /**
+ * Типы состояний State Machine
+ * Используются для перехода без пересоздания экземпляров
+ */
+enum class StateType {
+    IDLE,
+    ACTIVATED,
+    LISTENING_COMMAND,
+    RECOGNIZED_COMMAND,
+    EXECUTING_COMMAND,
+    CONFIRMATION,
+    COMMAND_ERROR,
+    KEYWORD_ERROR,
+    TIMEOUT
+}
+
+/**
  * Результат завершения состояния.
  * Определяет, куда должен переключиться StateMachine.
  */
@@ -8,7 +24,7 @@ sealed class StateResult {
     /**
      * Нормальное завершение → переход к следующему состоянию
      */
-    data class Next(val IState: IState) : StateResult()
+    data class Next(val stateType: StateType) : StateResult()
 
     /**
      * Отмена пользователем → всегда возврат в IdleState

@@ -7,20 +7,20 @@ import ru.voboost.voiceassistant.core.ISpeechSynthesis
 import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
+import ru.voboost.voiceassistant.speech.SpeechResult
 import ru.voboost.voiceassistant.ui.OverlayManager
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Состояние: Ожидание подтверждения команды
+ * Состояние: Подтверждение команды
  *
  * Логика:
  * 1. Сказать вопрос подтверждения
- * 2. finish(StateResult.Next(ExecutingCommandState)) — пока без ожидания ответа
- *
- * canCancel = true — можно отменить подтверждение
+ * 2. Ждём ответ (да/нет/таймаут)
+ * 3. Да → EXECUTING_COMMAND, Нет/Таймаут → IDLE
  */
 class ConfirmationState(
     private val speechRecognizer: SpeechRecognizer,
@@ -33,84 +33,93 @@ class ConfirmationState(
     private val context: StateContext
 ) : BaseState() {
     companion object {
-        const val TAG = "ConfirmationState"
+        const val TAG = "Confirmation"
     }
 
     override val canCancel = true
-    private val isCancelling = AtomicBoolean(false)
 
     override suspend fun execute() {
         val command = context.recognizedCommand ?: run {
             Log.e(TAG, "No recognized command in context")
-            finish(StateResult.Next(
-                IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
-                          configManager, nluEngine, commandExecutor, context)
-            ))
+            finish(StateResult.Next(StateType.IDLE))
             return
         }
 
         Log.i(TAG, "Entering CONFIRMATION IState for: ${command.id}")
 
         try {
-            // Сказать вопрос подтверждения
-            val question = command.config.confirmation.question ?: "Подтверждаете?"
-            Log.d(TAG, "Asking: '$question'")
-            
+            speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
+
+            // Спрашиваем подтверждение
+            val question = nluEngine.getConfirmationQuestion(command.config)
             val latch = CountDownLatch(1)
             ttsEngine.speak(question) { latch.countDown() }
             withContext(kotlinx.coroutines.Dispatchers.IO) {
                 latch.await(5, TimeUnit.SECONDS)
             }
 
-            // TODO: Реализовать ожидание ответа пользователя
-            // Пока сразу переходим к выполнению (заглушка)
-            Log.w(TAG, "Confirmation not fully implemented yet, executing command")
+            // Ждём ответ
+            val result = speechRecognizer.results.first {
+                it is SpeechResult.CommandReceived ||
+                it is SpeechResult.Timeout ||
+                it is SpeechResult.Error
+            }
 
-            finish(StateResult.Next(
-                ExecutingCommandState(speechRecognizer, overlayManager, volumeManager,
-                                      ttsEngine, configManager, nluEngine, commandExecutor, context)
-            ))
+            when (result) {
+                is SpeechResult.CommandReceived -> {
+                    val answer = result.text.lowercase().trim()
+                    if (nluEngine.isConfirmationYes(answer, command.config)) {
+                        Log.i(TAG, "Confirmation: YES")
+                        finish(StateResult.Next(StateType.EXECUTING_COMMAND))
+                    } else {
+                        Log.i(TAG, "Confirmation: NO")
+                        finish(StateResult.Next(StateType.IDLE))
+                    }
+                }
+
+                is SpeechResult.Timeout -> {
+                    Log.w(TAG, "Confirmation timeout")
+                    finish(StateResult.Next(StateType.IDLE))
+                }
+
+                is SpeechResult.Error -> {
+                    Log.e(TAG, "Confirmation error: ${result.message}")
+                    finish(StateResult.Next(StateType.COMMAND_ERROR))
+                }
+
+                else -> {
+                    Log.w(TAG, "Unexpected result during confirmation: $result")
+                    finish(StateResult.Next(StateType.IDLE))
+                }
+            }
+
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            Log.d(TAG, "ConfirmationState cancelled")
+            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            throw e
 
         } catch (e: Exception) {
             Log.e(TAG, "Error in ConfirmationState", e)
-            finish(StateResult.Next(
-                CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                  ttsEngine, configManager, nluEngine, commandExecutor,
-                                  context, e.message ?: "Unknown error")
-            ))
+            finish(StateResult.Next(StateType.COMMAND_ERROR))
         }
     }
 
     override suspend fun cancel() {
-        if (isCancelling.compareAndSet(false, true)) {
-            Log.i(TAG, "ConfirmationState cancelled (button pressed)")
-
-            try {
-                ttsEngine.stop()
-                kotlinx.coroutines.delay(200)
-
-                context.soundEffectManager?.playEndSound()
-                kotlinx.coroutines.delay(400)
-
-                val latch = CountDownLatch(1)
-                ttsEngine.speak("Отмена") { latch.countDown() }
-                withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    latch.await(5, TimeUnit.SECONDS)
-                }
-            } finally {
-                isCancelling.set(false)
-            }
-
-            overlayManager.hideAnimation()
-            volumeManager?.restoreMedia()
-            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
-
-            cancelled("ConfirmationState cancelled by user")
+        Log.i(TAG, "ConfirmationState cancelled (button pressed)")
+        ttsEngine.stop()
+        kotlinx.coroutines.delay(200)
+        context.soundEffectManager?.playEndSound()
+        kotlinx.coroutines.delay(400)
+        val latch = CountDownLatch(1)
+        ttsEngine.speak("Отмена") { latch.countDown() }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            latch.await(5, TimeUnit.SECONDS)
         }
-    }
 
-    override suspend fun activate(): IState? {
-        Log.i(TAG, "Already in ConfirmationState, ignoring")
-        return this
+        overlayManager.hideAnimation()
+        volumeManager?.restoreMedia()
+        speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+        cancelled("ConfirmationState cancelled by user")
     }
 }

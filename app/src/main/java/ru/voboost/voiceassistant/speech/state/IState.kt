@@ -51,4 +51,10 @@ interface IState {
      * Только для IdleState → ActivatedState.
      */
     suspend fun activate(): IState? = null
+
+    /**
+     * Сбросить внутреннее состояние перед повторным использованием.
+     * Вызывается StateMachine перед каждым transitionTo().
+     */
+    fun reset()
 }
