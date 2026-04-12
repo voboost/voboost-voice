@@ -72,10 +72,7 @@
       "action": {
         "target": "Chargport",
         "classify": 35,
-        "command": 1,
-        "params": {
-          "location": "all"
-        }
+        "command": 1
       },
       "confirmation": {
         "required": false,
@@ -105,8 +102,7 @@
       "action": {
         "target": "Scuttle",
         "classify": 19,
-        "command": 0,
-        "params": {}
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -128,10 +124,7 @@
       "action": {
         "target": "SmartMode",
         "classify": 22,
-        "command": 0,
-        "params": {
-          "mode": 18
-        }
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -153,10 +146,7 @@
       "action": {
         "target": "SmartMode",
         "classify": 22,
-        "command": 0,
-        "params": {
-          "mode": 22
-        }
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -177,10 +167,7 @@
       "action": {
         "target": "SmartMode",
         "classify": 22,
-        "command": 0,
-        "params": {
-          "mode": 6
-        }
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -202,8 +189,7 @@
       "action": {
         "target": "AirConditioner",
         "classify": 5,
-        "command": 0,
-        "params": {}
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -225,8 +211,7 @@
       "action": {
         "target": "AirConditioner",
         "classify": 5,
-        "command": 1,
-        "params": {}
+        "command": 1
       },
       "confirmation": {
         "required": false
@@ -275,8 +260,7 @@
         "classify": 1,
         "command": 1,
         "params": {
-          "contact": "{contact}",
-          "call_type": "contact"
+          "contact": "{contact}"
         }
       },
       "confirmation": {
@@ -300,8 +284,7 @@
         "classify": 1,
         "command": 1,
         "params": {
-          "number": "{number}",
-          "call_type": "number"
+          "number": "{number}"
         }
       },
       "confirmation": {
@@ -322,8 +305,7 @@
       "action": {
         "target": "Window",
         "classify": 2,
-        "command": 0,
-        "params": {}
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -343,8 +325,7 @@
       "action": {
         "target": "Window",
         "classify": 2,
-        "command": 1,
-        "params": {}
+        "command": 1
       },
       "confirmation": {
         "required": false
@@ -364,8 +345,7 @@
       "action": {
         "target": "Window",
         "classify": 3,
-        "command": 0,
-        "params": {}
+        "command": 0
       },
       "confirmation": {
         "required": false
@@ -385,8 +365,7 @@
       "action": {
         "target": "Window",
         "classify": 3,
-        "command": 1,
-        "params": {}
+        "command": 1
       },
       "confirmation": {
         "required": false

@@ -21,7 +21,7 @@ data class ActionConfig(
     @SerializedName("target") val target: String,
     @SerializedName("classify") val classify: Int,
     @SerializedName("command") val command: Int,
-    @SerializedName("params") val params: Map<String, Any>
+    @SerializedName("params") val params: Map<String, Any> = emptyMap()
 )
 
 /**
