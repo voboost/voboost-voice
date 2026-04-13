@@ -8,8 +8,8 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 /**
  * Базовый обработчик для Broadcast Intent команд
  */
-abstract class AbstractIntentHandler(override val commandId: String,
-                                     protected val context: Context) : ICommandHandler {
+abstract class AbstractIntentHandler(protected val context: Context)
+    : ICommandHandler {
     companion object {
         const val TAG = "IntentHandler"
 
@@ -25,16 +25,21 @@ abstract class AbstractIntentHandler(override val commandId: String,
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         return try {
             val intent = buildIntent(voiceParams)
+
+            if(intent == null)
+            {
+                return false;
+            }
             context.sendBroadcast(intent)
-            Log.d(TAG, "Broadcast sent: commandId='$commandId', action='${intent.action}'")
+            Log.d(TAG, "Broadcast sent: action='${intent.action}'")
             Log.d(TAG, "  Extras: ${intent.extras?.keySet()?.joinToString(", ")}")
             true
         }
         catch (e: Exception) {
-            Log.e(TAG, "Failed to send broadcast: $commandId", e)
+            Log.e(TAG, "Failed to send broadcast", e)
             false
         }
     }
 
-    protected abstract fun buildIntent(voiceParams: Map<String, Any>): Intent
+    protected abstract fun buildIntent(voiceParams: Map<String, Any>): Intent?
 }

@@ -6,6 +6,5 @@ import ru.voboost.voiceassistant.executor.handlers.shell.AbstractShellHandler
  * Открыть лючок зарядки через Shell
  */
 class ChargportOpenShellHandler : AbstractShellHandler(
-    "charge_port_open",
-    { _ -> "$CAN_SERVICE_BASE i32 IVI_CHRG_PORT_CAP i32 2" }
+        { _ -> "$CAN_SERVICE_BASE i32 IVI_CHRG_PORT_CAP i32 2" }
 )

@@ -22,8 +22,6 @@ class FuelTankOpenHandler(
     private val canBusManager: CanBusServiceManager
 ) : ICommandHandler {
 
-    override val commandId: String = "fuel_tank_open"
-
     override fun execute(
         voiceParams: Map<String, Any>
     ): Boolean {
@@ -34,7 +32,7 @@ class FuelTankOpenHandler(
 
         val IState = VehicleState.IVI_FUEL_PORT_CAP
         val value = CanBusServiceManager.VALUE_OPEN  // 1 для этого авто
-        Log.d(TAG, "Scuttle command: id='$commandId', IState=$IState (ordinal=${IState.ordinal}), value=$value")
+        Log.d(TAG, "Scuttle command: IState=$IState (ordinal=${IState.ordinal}), value=$value")
         return canBusManager.setVehicleState(IState, value)
     }
 

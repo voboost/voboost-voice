@@ -14,7 +14,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param canBusManager Менеджер CAN-шины для отправки команд
  */
 abstract class AbstractWindowHandler(
-    override val commandId: String,
     protected val canBusManager: CanBusServiceManager
 ) : ICommandHandler {
 
@@ -27,7 +26,7 @@ abstract class AbstractWindowHandler(
         }
 
         val (IState, value) = getWindowStateAndValue()
-        Log.d(TAG, "Window command: id='$commandId', IState=$IState (ordinal=${IState.ordinal}), value=$value")
+        Log.d(TAG, "Window command: IState=$IState (ordinal=${IState.ordinal}), value=$value")
         return canBusManager.setVehicleState(IState, value)
     }
 

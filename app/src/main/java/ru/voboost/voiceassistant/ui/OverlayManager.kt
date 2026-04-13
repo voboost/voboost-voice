@@ -23,8 +23,8 @@ class OverlayManager(
     companion object {
         const val TAG = "OverlayManager"
         const val OVERLAY_POSITION = "top_left"
-        const val OVERLAY_OFFSET_X_DP = 50
-        const val OVERLAY_OFFSET_Y_DP = 50
+        const val OVERLAY_OFFSET_X_DP = 0
+        const val OVERLAY_OFFSET_Y_DP = 0
         const val SHOW_ANIMATION =  true
         const val ANIMATION_DURATION_MS = 1000L
         const val TOAST_DURATION_MS = 3000
@@ -70,23 +70,29 @@ class OverlayManager(
                     PixelFormat.TRANSLUCENT
                 )
 
-                // Позиция (верхний левый угол)
+                // Позиция: верх, X=0 (центрируем после layout)
                 params.gravity = Gravity.TOP or Gravity.START
+                params.x = 0
+                params.y = 0
 
-                // Смещение в DP
-                val displayMetrics = context.resources.displayMetrics
-                val offsetX = (OVERLAY_OFFSET_X_DP * displayMetrics.density).toInt()
-                val offsetY = (OVERLAY_OFFSET_Y_DP * displayMetrics.density).toInt()
-
-                params.x = offsetX
-                params.y = offsetY
-
-                // Добавляем view и запускаем анимацию
+                // Добавляем view
                 windowManager.addView(voiceClickView, params)
                 (voiceClickView as? VoiceClickView)?.startAnimation()
                 isAnimationShowing = true
 
-                Log.d(TAG, "Animation shown at ($offsetX, $offsetY) — looping until hideAnimation()")
+                // Центрируем после того как View измерен
+                voiceClickView?.post {
+                    val viewWidth = voiceClickView?.width ?: 0
+                    val screenWidth = context.resources.displayMetrics.widthPixels
+                    val centerX = (screenWidth - viewWidth) / 2
+                    val newParams = voiceClickView?.layoutParams as? WindowManager.LayoutParams
+                    newParams?.x = centerX
+                    newParams?.y = 0
+                    voiceClickView?.let { windowManager.updateViewLayout(it, newParams) }
+                    Log.d(TAG, "Centered: screen=$screenWidth, view=$viewWidth, x=$centerX")
+                }
+
+                Log.d(TAG, "Animation shown at top-center")
 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to show animation", e)

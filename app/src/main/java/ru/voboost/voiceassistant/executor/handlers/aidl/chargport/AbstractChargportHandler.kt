@@ -12,7 +12,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param canBusManager Менеджер CAN-шины
  */
 abstract class AbstractChargportHandler(
-    override val commandId: String,
     protected val canBusManager: CanBusServiceManager
 ) : ICommandHandler {
 
@@ -26,7 +25,7 @@ abstract class AbstractChargportHandler(
 
         val value = getChargportValue()
         val IState = VehicleState.IVI_CHRG_PORT_CAP
-        Log.d(TAG, "Chargport command: id='$commandId', IState=$IState (ordinal=${IState.ordinal}), value=$value")
+        Log.d(TAG, "Chargport command:, IState=$IState (ordinal=${IState.ordinal}), value=$value")
         return canBusManager.setVehicleState(IState, value)
     }
 

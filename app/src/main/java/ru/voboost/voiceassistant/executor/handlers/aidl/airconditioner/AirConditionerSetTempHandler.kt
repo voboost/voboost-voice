@@ -18,18 +18,53 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class AirConditionerSetTempHandler(
     canBusManager: CanBusServiceManager
-) : AbstractAirConditionerHandler("ac_set_temp", canBusManager) {
-    override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> {
-        val temperature = voiceParams["temperature"] as? Int
-            ?: run {
-                Log.w(TAG, "Temperature parameter not found, using default 22")
-                22
-            }
+) : AbstractAirConditionerHandler(canBusManager) {
 
-        Log.d(TAG, "Set temperature: $temperature°C")
-        // Возвращаем любое значение — AbstractAirConditionerHandler
-        // не учитывает зону, но это OK т.к. execute() переопределён
-        // ниже для учёта зоны
+    companion object {
+        private const val TAG = "AirConditionerCmd"
+        private val RUSSIAN_NUMBERS = mapOf(
+            "ноль" to 0, "один" to 1, "два" to 2, "три" to 3, "четыре" to 4,
+            "пять" to 5, "шесть" to 6, "семь" to 7, "восемь" to 8, "девять" to 9,
+            "десять" to 10, "одинадцать" to 11, "двенадцать" to 12, "тринадцать" to 13,
+            "четырнадцать" to 14, "пятнадцать" to 15, "шестнадцать" to 16,
+            "семнадцать" to 17, "восемнадцать" to 18, "девятнадцать" to 19,
+            "двадцать" to 20, "двадцать один" to 21, "двадцать два" to 22,
+            "двадцать три" to 23, "двадцать четыре" to 24, "двадцать пять" to 25,
+            "двадцать шесть" to 26, "двадцать семь" to 27, "двадцать восемь" to 28,
+            "двадцать девять" to 29, "тридцать" to 30, "тридцать один" to 31,
+            "тридцать два" to 32
+        )
+    }
+
+    /**
+     * Распознать число из текста (поддержка русских числительных 0-32)
+     * Также обрабатывает обычные цифры: "24" → 24
+     */
+    private fun parseTemperature(raw: String): Int {
+        val text = raw.lowercase().trim()
+
+        // Прямое совпадение
+        RUSSIAN_NUMBERS[text]?.let { return it }
+
+        // Цифры: "24" или "24.0"
+        text.toFloatOrNull()?.let { return it.toInt() }
+
+        // Комбинации: "двадцать" + " четыре"
+        val parts = text.split(Regex("\\s+"))
+        if (parts.size == 2) {
+            val tens = RUSSIAN_NUMBERS[parts[0]] ?: 0
+            val ones = RUSSIAN_NUMBERS[parts[1]] ?: 0
+            if (tens > 0 || ones > 0) return tens + ones
+        }
+
+        Log.w(TAG, "Unknown temperature format: '$text', using default 22")
+        return 22
+    }
+
+    override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> {
+        val rawTemp = voiceParams["temperature"]?.toString() ?: "22"
+        val temperature = parseTemperature(rawTemp)
+        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp')")
         return AirConditionState.AC_LEFT_TEMP to temperature
     }
 
@@ -39,14 +74,10 @@ class AirConditionerSetTempHandler(
             return false
         }
 
-        val temperature = voiceParams["temperature"] as? Int
-            ?: run {
-                Log.w(TAG, "Temperature parameter not found, using default 22")
-                22
-            }
-
+        val rawTemp = voiceParams["temperature"]?.toString() ?: "22"
+        val temperature = parseTemperature(rawTemp)
         val zone = voiceParams["_zone"] as? String
-        Log.d(TAG, "Set temperature: $temperature°C (zone=$zone)")
+        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp', zone=$zone)")
 
         return canBusManager.setTemperatureByZone(zone, temperature)
     }

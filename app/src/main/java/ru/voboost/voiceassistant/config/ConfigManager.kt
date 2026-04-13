@@ -8,9 +8,11 @@ import java.io.IOException
 
 /**
  * Менеджер конфигурации
- * Загружает и кэширует конфигурацию с приоритетом:
- * 1. Внешний конфиг на SD-карте (/sdcard/Android/data/.../files/config.json)
- * 2. Встроенный конфиг из assets/config.json (fallback)
+ * Загружает и кэширует конфигурацию из:
+ * /data/user/0/ru.voboost.voiceassistant/files/config.json
+ * Если не найден — создаёт конфигурацию по умолчанию.
+ *
+ * НЕ используем assets — APK облегчённый, конфиг только в data-папке.
  */
 class ConfigManager private constructor(private val context: Context) {
     private var config: AppConfig? = null
@@ -19,7 +21,6 @@ class ConfigManager private constructor(private val context: Context) {
     companion object {
         const val TAG = "ConfigManager"
         private const val CONFIG_PATH = "config.json"
-        private const val EXTERNAL_CONFIG_PATH = "config.json"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -35,58 +36,46 @@ class ConfigManager private constructor(private val context: Context) {
 
     /**
      * Загрузить конфигурацию
-     * Приоритет: внешний конфиг на SD-карте → assets
+     * Путь: /data/user/0/ru.voboost.voiceassistant/files/config.json
+     * Если не найден — конфигурация по умолчанию.
      */
     fun loadConfig(): AppConfig {
         config?.let { return it }
 
-        // Пробуем загрузить внешний конфиг
-        val externalConfig = loadExternalConfig()
-        if (externalConfig != null) {
-            Log.i(TAG, "Configuration loaded from external storage")
-            config = externalConfig
-            return externalConfig
+        // Пробуем загрузить конфиг из data-папки
+        val loadedConfig = loadConfigFile()
+        if (loadedConfig != null) {
+            config = loadedConfig
+            return loadedConfig
         }
 
-        // Fallback: загружаем из assets
-        return try {
-            context.assets.open(CONFIG_PATH).use { inputStream ->
-                val json = inputStream.bufferedReader().use { it.readText() }
-                val loadedConfig = gson.fromJson(json, AppConfig::class.java)
-                config = loadedConfig
-                Log.i(TAG, "Configuration loaded from assets (fallback), version: ${loadedConfig.version}")
-                loadedConfig
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to load configuration from assets", e)
-            // Возвращаем конфигурацию по умолчанию
-            createDefaultConfig()
-        }
+        // Не найден — используем дефолтный
+        return createDefaultConfig()
     }
 
     /**
-     * Загрузить внешний конфиг с SD-карты
+     * Загрузить config.json из /data/user/0/.../files/config.json
      * @return AppConfig или null если файл не найден
      */
-    private fun loadExternalConfig(): AppConfig? {
+    private fun loadConfigFile(): AppConfig? {
         try {
-            val externalConfigDir = context.getExternalFilesDir(null)
-            val configFile = File(externalConfigDir, EXTERNAL_CONFIG_PATH)
+            val configDir = context.filesDir
+            val configFile = File(configDir, CONFIG_PATH)
 
             if (!configFile.exists()) {
-                Log.d(TAG, "External config not found: ${configFile.absolutePath}")
+                Log.d(TAG, "Config not found: ${configFile.absolutePath}")
                 return null
             }
 
-            Log.i(TAG, "Found external config: ${configFile.absolutePath}")
+            Log.i(TAG, "Found config: ${configFile.absolutePath}")
 
             val json = configFile.readText()
             val loadedConfig = gson.fromJson(json, AppConfig::class.java)
-            Log.i(TAG, "External config loaded successfully, version: ${loadedConfig.version}")
+            Log.i(TAG, "Config loaded successfully, version: ${loadedConfig.version}")
             return loadedConfig
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load external config", e)
+            Log.e(TAG, "Failed to load config", e)
             return null
         }
     }

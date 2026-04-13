@@ -1,6 +1,7 @@
 ﻿package ru.voboost.voiceassistant.executor.handlers.intent.phone
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import ru.voboost.voiceassistant.executor.handlers.intent.AbstractIntentHandler
 
@@ -13,16 +14,23 @@ import ru.voboost.voiceassistant.executor.handlers.intent.AbstractIntentHandler
  *   - screen_int: текущий экран (int, по умолчанию 0)
  *   - mac: MAC-адрес Bluetooth (пустая строка)
  */
-class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler("phone_call_number", context) {
+class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler(context) {
 
-    override fun buildIntent(voiceParams: Map<String, Any>) = android.content.Intent(ACTION_IVOKA_PHONE_CALL).apply {
+    override fun buildIntent(voiceParams: Map<String, Any>): Intent? {
         val phoneNumber = voiceParams["number"] as? String ?: ""
-        putExtra(EXTRA_IVOKA_CALL_INFO, phoneNumber)
-        putExtra(EXTRA_SCREEN_INT, 0)
-        putExtra(EXTRA_MAC, "")
-        
+
         Log.d(TAG, "Phone call to number: '$phoneNumber'")
         Log.d(TAG, "  Action: $ACTION_IVOKA_PHONE_CALL")
         Log.d(TAG, "  Extra Ivoka_CallInfo: '$phoneNumber'")
+
+        if (phoneNumber.isNullOrEmpty()) {
+            return null;
+        }
+
+        return Intent(ACTION_IVOKA_PHONE_CALL).apply {
+            putExtra(EXTRA_IVOKA_CALL_INFO, phoneNumber)
+            putExtra(EXTRA_SCREEN_INT, 0)
+            putExtra(EXTRA_MAC, "")
+        }
     }
 }

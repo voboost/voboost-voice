@@ -14,6 +14,6 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class ChargportCloseHandler(
     canBusManager: CanBusServiceManager
-) : AbstractChargportHandler("charge_port_close", canBusManager) {
+) : AbstractChargportHandler(canBusManager) {
     override fun getChargportValue(): Int = CanBusServiceManager.VALUE_CLOSE
 }

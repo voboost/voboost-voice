@@ -12,7 +12,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param modeId ID режима для отправки в CAN-шину
  */
 abstract class AbstractSmartModeHandler(
-    override val commandId: String,
     protected val canBusManager: CanBusServiceManager,
     private val modeId: Int
 ) : ICommandHandler {
@@ -25,7 +24,7 @@ abstract class AbstractSmartModeHandler(
             return false
         }
 
-        Log.d(TAG, "SmartMode command: id='$commandId', modeId=$modeId")
+        Log.d(TAG, "SmartMode command: modeId=$modeId")
         return canBusManager.setVehicleSceneMode(modeId)
     }
 

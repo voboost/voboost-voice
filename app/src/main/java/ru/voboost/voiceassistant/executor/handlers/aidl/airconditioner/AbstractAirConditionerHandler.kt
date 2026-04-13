@@ -12,7 +12,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param canBusManager Менеджер CAN-шины
  */
 abstract class AbstractAirConditionerHandler(
-    override val commandId: String,
     protected val canBusManager: CanBusServiceManager
 ) : ICommandHandler {
 
@@ -25,7 +24,7 @@ abstract class AbstractAirConditionerHandler(
         }
 
         val (IState, value) = getAirConditionStateAndValue(voiceParams)
-        Log.d(TAG, "AC command: id='$commandId', IState=$IState (${IState.ordinal}), value=$value")
+        Log.d(TAG, "AC command:, IState=$IState (${IState.ordinal}), value=$value")
         return canBusManager.setAirConditionState(IState, value)
     }
 

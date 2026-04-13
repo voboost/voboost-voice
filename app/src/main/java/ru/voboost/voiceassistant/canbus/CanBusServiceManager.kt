@@ -261,28 +261,30 @@ class CanBusServiceManager(context: Context) {
 
     /**
      * Установить температуру по зоне говорящего
-     * - front_left → только левая сторона
-     * - front_right → только правая сторона
-     * - center / all_location / second_* → обе стороны
+     * CAN-bus принимает температуру * 10 (Ivoka: (int)(10.0f * state))
+     * Например: 24°C → 240
      */
     fun setTemperatureByZone(zone: String?, temperature: Int): Boolean {
         if (!ensureConnected()) return false
 
+        // Ivoka умножает на 10 перед отправкой: (int)(10.0f * state)
+        val canValue = temperature * 10
+
         return try {
             when (zone) {
                 "front_left" -> {
-                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, temperature)
-                    Log.d(TAG, "setTemperatureByZone: LEFT $temperature°C")
+                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, canValue)
+                    Log.d(TAG, "setTemperatureByZone: LEFT ${temperature}°C → CAN=$canValue")
                 }
                 "front_right" -> {
-                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, temperature)
-                    Log.d(TAG, "setTemperatureByZone: RIGHT $temperature°C")
+                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, canValue)
+                    Log.d(TAG, "setTemperatureByZone: RIGHT ${temperature}°C → CAN=$canValue")
                 }
                 else -> {
                     // center, all_location, second_left, second_right — обе стороны
-                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, temperature)
-                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, temperature)
-                    Log.d(TAG, "setTemperatureByZone: BOTH $temperature°C (zone=$zone)")
+                    canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, canValue)
+                    canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, canValue)
+                    Log.d(TAG, "setTemperatureByZone: BOTH ${temperature}°C → CAN=$canValue (zone=$zone)")
                 }
             }
             true

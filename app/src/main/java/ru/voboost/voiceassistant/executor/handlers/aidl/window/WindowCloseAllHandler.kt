@@ -16,7 +16,7 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class WindowCloseAllHandler(
     canBusManager: CanBusServiceManager
-) : AbstractWindowHandler("window_all_close", canBusManager) {
+) : AbstractWindowHandler(canBusManager) {
     override fun getWindowStateAndValue(): Pair<VehicleState, Int> =
         VehicleState.ALL_WINDOW_CONTROL to CanBusServiceManager.VALUE_WINDOW_ALL_CLOSE
 }

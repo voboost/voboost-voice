@@ -16,7 +16,7 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class WindowOpenDriverHandler(
     canBusManager: CanBusServiceManager
-) : AbstractWindowHandler("window_open", canBusManager) {
+) : AbstractWindowHandler(canBusManager) {
     override fun getWindowStateAndValue(): Pair<VehicleState, Int> =
         VehicleState.DRIVER_WINDOW_CONTROL to CanBusServiceManager.VALUE_WINDOW_DRIVER_OPEN
 }

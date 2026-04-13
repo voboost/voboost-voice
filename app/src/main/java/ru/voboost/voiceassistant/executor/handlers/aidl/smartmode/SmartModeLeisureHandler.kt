@@ -13,4 +13,4 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class SmartModeLeisureHandler(
     canBusManager: CanBusServiceManager
-) : AbstractSmartModeHandler("smart_mode_leisure", canBusManager, modeId = 18)
+) : AbstractSmartModeHandler(canBusManager, modeId = 18)

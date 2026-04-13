@@ -22,7 +22,6 @@ import ru.voboost.voiceassistant.core.SpeechEngineFactory
 import ru.voboost.voiceassistant.core.SpeechEngineFactory.RecognitionEngine
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.executor.CommandExecutor
-import ru.voboost.voiceassistant.executor.VehicleCommandExecutorFactory
 import ru.voboost.voiceassistant.ui.OverlayManager
 import ru.voboost.voiceassistant.engine.system.SystemTtsSynthesis
 import ru.voboost.voiceassistant.canbus.CanBusServiceManager
@@ -31,14 +30,11 @@ import ru.voboost.voiceassistant.canbus.VoiceAssistantCallback
 import ru.voboost.voiceassistant.canbus.TSRSpeedLimitHandler
 import ru.voboost.voiceassistant.canbus.TTSCallback
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
-import ru.voboost.voiceassistant.speech.SpeechResult
 import ru.voboost.voiceassistant.speech.state.StateMachine
 import ru.voboost.voiceassistant.speech.state.StateContext
 import ru.voboost.voiceassistant.speech.state.IdleState
 import ru.voboost.voiceassistant.speech.CommandHandler
 import kotlinx.coroutines.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import android.Manifest
 import android.content.pm.ServiceInfo
 import ru.voboost.voiceassistant.audio.IAudioSource
@@ -46,6 +42,7 @@ import ru.voboost.voiceassistant.audio.AudioSourceFactory
 import ru.voboost.voiceassistant.audio.MicphoneModeManager
 import ru.voboost.voiceassistant.audio.VolumeManager
 import ru.voboost.voiceassistant.audio.VoiceZoneDetector
+import ru.voboost.voiceassistant.executor.VehicleCommandExecutor
 
 /**
  * Главный сервис голосового помощника
@@ -238,10 +235,8 @@ class VoboostVoiceService : Service() {
 
         // Создаём VehicleCommandExecutor через фабрику
         // Все 15 команд (включая телефонные) выполняются через единый executeByCommandId()
-        val vehicleCommandExecutor = VehicleCommandExecutorFactory.create(
-            context = this
-            // mode = ExecutionMode.AIDL  // ← Раскомментируй для смены режима
-        )
+        val canBusManager = CanBusServiceManager(this)
+        val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
 
         commandExecutor = CommandExecutor(
             context = this,

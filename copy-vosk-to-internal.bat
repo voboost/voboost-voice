@@ -33,14 +33,14 @@ echo.
 
 REM Создание директории
 echo [2/4] Создание директории для модели...
-adb shell "mkdir -p /data/user/0/ru.voboost.voiceassistant/files/vosk"
+adb shell "mkdir -p /data/user/0/ru.voboost.voiceassistant/files/models/vosk"
 echo [OK] Директория создана
 echo.
 
 REM Копирование модели
 echo [3/4] Копирование модели Vosk (это может занять несколько минут)...
 if exist "models\vosk\vosk-model-small-ru-0.22" (
-    adb push "models\vosk\vosk-model-small-ru-0.22" "/data/user/0/ru.voboost.voiceassistant/files/vosk/vosk-model-small-ru-0.22"
+    adb push "models\vosk\vosk-model-small-ru-0.22" "/data/user/0/ru.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22"
     if errorlevel 1 (
         echo [ERROR] Ошибка копирования!
         pause
@@ -54,11 +54,17 @@ if exist "models\vosk\vosk-model-small-ru-0.22" (
 )
 echo.
 
-REM Установка прав
+REM Установка прав (динамический UID из pm list)
 echo [4/4] Установка прав доступа...
-adb shell "chmod -R 755 /data/user/0/ru.voboost.voiceassistant/files/vosk"
-adb shell "chown -R system:system /data/user/0/ru.voboost.voiceassistant/files/vosk"
-echo [OK] Права установлены
+for /f "tokens=3" %%a in ('adb shell "pm list packages -U ru.voboost.voiceassistant"') do (
+    for /f "tokens=2 delims=:" %%b in ("%%a") do set "APP_UID=%%~b"
+)
+if defined APP_UID (
+    adb shell "chown -R %APP_UID%:%APP_UID% /data/user/0/ru.voboost.voiceassistant/files/models/vosk"
+    echo [OK] Права установлены (uid=%APP_UID%)
+) else (
+    echo [WARN] Не удалось определить UID
+)
 echo.
 
 REM Проверка

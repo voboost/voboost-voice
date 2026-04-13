@@ -7,7 +7,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * Базовый обработчик для Shell-команд
  */
 abstract class AbstractShellHandler(
-    override val commandId: String,
     private val commandBuilder: (voiceParams: Map<String, Any>) -> String
 ) : ICommandHandler {
 
@@ -16,20 +15,20 @@ abstract class AbstractShellHandler(
     ): Boolean {
         return try {
             val shellCommand = commandBuilder(voiceParams)
-            Log.d(TAG, "Executing shell: commandId='$commandId', cmd=$shellCommand")
+            Log.d(TAG, "Executing shell: cmd=$shellCommand")
 
             val process = Runtime.getRuntime().exec(shellCommand)
             val exitCode = process.waitFor()
 
             if (exitCode == 0) {
-                Log.i(TAG, "Shell OK: $commandId")
+                Log.i(TAG, "Shell OK")
                 true
             } else {
-                Log.w(TAG, "Shell failed: $commandId (exit code: $exitCode)")
+                Log.w(TAG, "Shell failed: (exit code: $exitCode)")
                 false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Shell exception: $commandId", e)
+            Log.e(TAG, "Shell exception", e)
             false
         }
     }

@@ -16,8 +16,6 @@ class AirConditionerCloseHandler(
     private val canBusManager: CanBusServiceManager
 ) : ICommandHandler {
 
-    override val commandId: String = "ac_close"
-
     override fun execute(
         voiceParams: Map<String, Any>
     ): Boolean {

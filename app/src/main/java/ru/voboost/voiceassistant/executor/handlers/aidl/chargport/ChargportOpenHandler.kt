@@ -14,6 +14,6 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  */
 class ChargportOpenHandler(
     canBusManager: CanBusServiceManager
-) : AbstractChargportHandler("charge_port_open", canBusManager) {
+) : AbstractChargportHandler(canBusManager) {
     override fun getChargportValue(): Int = CanBusServiceManager.VALUE_OPEN
 }

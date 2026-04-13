@@ -19,7 +19,6 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  *   id: "ac_temp_down", classify: 5, command: 3
  */
 class AirConditionerTempOffsetHandler(
-    commandId: String,
     private val canBusManager: CanBusServiceManager,
     private val offsetDelta: Int
 ) : ICommandHandler {
@@ -29,8 +28,6 @@ class AirConditionerTempOffsetHandler(
         private const val TEMP_MIN = 16
         private const val TEMP_MAX = 32
     }
-
-    override val commandId: String = commandId
 
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
