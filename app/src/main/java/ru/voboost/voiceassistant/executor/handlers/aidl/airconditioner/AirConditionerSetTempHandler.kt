@@ -62,7 +62,7 @@ class AirConditionerSetTempHandler(
     }
 
     override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> {
-        val rawTemp = voiceParams["temperature"]?.toString() ?: "22"
+        val rawTemp = voiceParams["temp"]?.toString() ?: "22"
         val temperature = parseTemperature(rawTemp)
         Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp')")
         return AirConditionState.AC_LEFT_TEMP to temperature
@@ -74,7 +74,7 @@ class AirConditionerSetTempHandler(
             return false
         }
 
-        val rawTemp = voiceParams["temperature"]?.toString() ?: "22"
+        val rawTemp = voiceParams["temp"]?.toString() ?: "22"
         val temperature = parseTemperature(rawTemp)
         val zone = voiceParams["_zone"] as? String
         Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp', zone=$zone)")
