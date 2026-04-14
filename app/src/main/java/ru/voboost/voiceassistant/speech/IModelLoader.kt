@@ -7,14 +7,7 @@
 interface IModelLoader {
     /**
      * Загрузить модель из указанного пути
-     * @param modelPath Путь к директории модели
      * @return Объект модели (зависит от движка)
      */
-    fun loadModel(modelPath: String): Any
-    
-    /**
-     * Получить путь к модели
-     * @return Путь к директории модели
-     */
-    fun getModelPath(): String
+    fun loadModel(): Any
 }

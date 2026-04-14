@@ -42,6 +42,7 @@ import ru.voboost.voiceassistant.audio.AudioSourceFactory
 import ru.voboost.voiceassistant.audio.MicphoneModeManager
 import ru.voboost.voiceassistant.audio.VolumeManager
 import ru.voboost.voiceassistant.audio.VoiceZoneDetector
+import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.executor.VehicleCommandExecutor
 
 /**
@@ -159,9 +160,11 @@ class VoboostVoiceService : Service() {
 
         // TTS Engine (используем системный как стабильный, можно заменить на Sherpa)
         try {
+            val sherpaTtsModePath = ExternalStoragePaths.sherpaTtsModelDir.absolutePath
+            val speaker = ttsConfig.offline.speaker
             ttsEngine = SpeechEngineFactory.createSynthesisEngine(
-                context = this,
-                engine = ttsEngineType
+                this, ttsEngineType,
+                sherpaTtsModePath,speaker
             )
 
             // Инициализация TTS (обязательно для Sherpa)

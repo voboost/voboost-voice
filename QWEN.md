@@ -1,7 +1,7 @@
 ﻿# КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Дата последнего обновления:** 2026-04-12
-**Статус:** ВСЕ РАБОТАЕТ -- звонки, кнопка, CAN-bus, распознавание, TTS, визуальный эффект, зона говорящего, команды "мне холодно/жарко"
+**Дата последнего обновления:** 2026-04-14
+**Статус:** ВСЕ РАБОТАЕТ -- звонки, кнопка, CAN-bus, распознавание, TTS, визуальный эффект (центр), зона говорящего, температура (прямая + смещение), русские числа
 
 ---
 
@@ -12,193 +12,92 @@
 - **Package:** `ru.voboost.voiceassistant` (uid: u0_a68, НЕ system)
 - **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
 - **Язык:** Kotlin 100%
-- **Распознавание:** Vosk (offline, русский), TTS: Sherpa-ONNX (ru_RU-ruslan-medium) ИЛИ системный TTS (настраивается в config.json)
+- **Распознавание:** Vosk (offline, русский, small model 50MB)
+- **TTS:** Sherpa-ONNX (ru_RU-ruslan-medium) — выбирается из config.json
 - **CAN-шина:** через AIDL `com.qinggan.canbus.ICanBusService`
+- **Установка:** 2 этапа — APK+libs → reboot → models+config+permissions
 
 ---
 
-## ПОСЛЕДНИЕ КОМИТЫ (хронологический порядок)
+## ПОСЛЕДНИЕ КОМИТЫ
+
+### fb8ba3c — fix: AirConditionerSetTempHandler uses 'temp' key matching config.json {temp}
+- Исправлен ключ `voiceParams["temperature"]` → `voiceParams["temp"]`
+- Теперь параметр из config.json `{temp}` правильно попадает в handler
+
+### 8371386 — fix: installation scripts, overlay centering, phone MAC, temperature x10, russian numbers
+- **VoboostVoiceAssistant-install.bat:** 2-этапная установка (APK+libs → reboot → models+config+perms)
+- **install-update.bat:** упрощён для быстрых обновлений только APK
+- **copy-vosk-to-internal.bat:** динамический UID через `pm list packages -U`
+- **OverlayManager.kt:** центрирование анимации через post-layout measurement (реальный размер View)
+- **PhoneCallContactIntentHandler.kt:** исправление получения Bluetooth MAC через SystemProperties(String, String), отправка пустого MAC
+- **CanBusServiceManager.kt:** температура * 10 для CAN-bus (формат Ivoka: `(int)(10.0f * state)`)
+- **AirConditionerSetTempHandler.kt:** парсинг русских числительных (двадцать четыре → 24)
+- **ConfigManager.kt:** загрузка config.json ТОЛЬКО из `/data/user/0/ru.voboost.voiceassistant/files/` (убран assets fallback)
 
 ### bb927fa — fix: исправление конфига и зависимостей, удаление неиспользуемых phone handler
-- Удалены `AbstractPhoneHandler.kt`, `PhoneCallContactHandler.kt`, `PhoneCallNumberHandler.kt` из `aidl/phone/`
-- Остались только Intent-based handlers: `PhoneCallContactIntentHandler.kt`, `PhoneCallNumberIntentHandler.kt`
-
-### 1f0f072 — feat: TTS engine выбирается из конфига (sherpa/system)
-- Удалён жёсткий `TTS_ENGINE_TYPE`, теперь читается из `config.json` → `tts.offline.engine`
-- Удалён мёртвый `TTSEngine.kt` (не использовался)
-- rate/pitch применяются из конфига после инициализации TTS
-
-### f970f66 — refactor: удаление неиспользуемых params из config.json
-- Убраны `params.mode` из `smart_mode_*`, `params.location` из `charge_port_*`, `params.call_type` из `phone_call_*`
-- Убраны пустые `params: {}` из команд
-
-### 225f219 — refactor: полное удаление action из конфига и кода
-- Удалён блок `action` из всех команд в config.json
-- Удалён data class `ActionConfig` из `CommandConfig.kt`
-- `ICommandHandler.execute(config, voiceParams)` → `execute(voiceParams)`
-- `IVehicleCommandExecutor.executeByCommandId(id, config, params)` → `executeByCommandId(id, params)`
-- Обновлены 34 handler файла
-
-### cec0ae7 — refactor: смена package name с com.voboost.voiceassistant на ru.voboost.voiceassistant
-- applicationId и namespace в build.gradle
-- package в AndroidManifest.xml
-- Все .kt файлы перемещены com/voboost/ → ru/voboost/
-- AIDL com.qinggan.* остались без изменений
-
-### b5a331c — feat: скрипт migrate-package.bat для переименования папок на устройстве
-- Переименовывает `/data/user/0/com.voboost.voiceassistant` → `/data/user/0/ru.voboost.voiceassistant`
-- НЕ очищает папки — библиотеки и модели сохраняются
-
-### 8428707 — feat: замена визуального эффекта на оригинальный из Ivoka
-- Frame-by-frame анимация из 41 PNG (voice_right000..040)
-- AnimationDrawable, oneshot=false (зацикленная)
-- Показывается при активации, скрывается при возврате в Idle
-
-### d72bdce — feat: команды "мне холодно" (+2°C) и "мне жарко" (-2°C)
-- `ac_temp_up` / `ac_temp_down` — корректируют температуру на ±2°C
-- Учитывают зону говорящего
-
-### 48d2e32 — cleanup: удалить черновик AirConditionerTempUpHandler.kt
-
-### ca46011 — fix: AirConditionerSetTempHandler отправлял температуру на AC_POWER_SWITCH вместо AC_LEFT_TEMP
-- Исправлен CanSignal для установки температуры
-
-### a9743fa — feat: установка температуры климата по зоне говорящего (setTemperatureByZone)
-- front_left → AC_LEFT_TEMP
-- front_right → AC_RIGHT_TEMP
-- center/all_location/second_* → обе стороны
-
-### 9302162 — refactor: зона говорящего как отдельное поле в RecognizedCommand
-- `RecognizedCommand.zone` — хранит зону говорящего
-
-### 1b39bd1 — refactor: State Machine — единая инициализация, переходы по типу (StateType enum)
-- Все 9 состояний создаются один раз в StateMachine
-- Переходы по enum StateType вместо создания экземпляров
-- `reset()` вызывается перед каждым переходом
-- Нет циклических зависимостей между состояниями
 
 ---
 
-## АРХИТЕКТУРА
+## СТРУКТУРА ДАННЫХ НА УСТРОЙСТВЕ
 
-### Главный сервис: `VoboostVoiceService.kt`
-- **Foreground service** с типом `microphone`
-- Запускается через `BootActivity` (foreground context) для получения доступа к микрофону
-- Управляет State Machine (9 состояний)
-- Координирует все компоненты системы
-
-### State Machine (9 состояний, StateType enum):
-```
-IdleState -> ActivatedState -> ListeningCommandState -> RecognizedCommandState -> ExecutingCommandState
-                                       |                        |
-                                 KeywordErrorState        ConfirmationState
-                                        |                         |
-                                   CommandErrorState          TimeoutState
-```
-
-Все состояния создаются один раз при инициализации. Переходы выполняются по `StateType` enum. Перед каждым переходом вызывается `reset()`. Нет циклических зависимостей.
+| Что | Путь |
+|-----|------|
+| **APK** | `/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk` |
+| **Нативные библиотеки** | `/system/priv-app/VoboostVoiceAssistant/lib/arm64/` |
+| **config.json** | `/data/user/0/ru.voboost.voiceassistant/files/config.json` |
+| **Vosk модель** | `/data/user/0/ru.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/` |
+| **Sherpa ASR** | `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/asr-ru-model/` |
+| **Sherpa TTS** | `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/tts-ru-model/` |
 
 ---
 
-## СТРУКТУРА ПРОЕКТА
+## УСТАНОВКА (2 ЭТАПА)
 
-```
-app/src/main/
-├── java/ru/voboost/voiceassistant/
-│   ├── audio/                  # AudioSource, VolumeManager, VoiceZoneDetector
-│   ├── canbus/                 # CanBusServiceManager, VoiceButtonHandler, TSRHandler
-│   ├── config/                 # ConfigManager, AppConfig, CommandConfig
-│   ├── core/                   # SpeechEngineFactory, ISpeechRecognition, ISpeechSynthesis
-│   ├── engine/
-│   │   ├── sherpa/             # Sherpa STT + TTS
-│   │   ├── system/             # System TTS (fallback)
-│   │   └── vosk/               # Vosk STT
-│   ├── executor/               # CommandExecutor, VehicleCommandExecutor
-│   │   └── handlers/           # AIDL, Intent, Shell handlers
-│   ├── nlu/                    # NLUEngine, Command
-│   ├── speech/                 # SpeechRecognizer, CommandHandler
-│   │   └── state/              # State Machine (9 состояний, StateType enum)
-│   ├── ui/                     # OverlayManager, VoiceClickView
-│   ├── BootActivity.kt
-│   ├── BootReceiver.kt
-│   ├── SoundEffectManager.kt
-│   ├── VoboostVoiceService.kt  # ГЛАВНЫЙ СЕРВИС
-│   └── VoiceCommandReceiver.kt
-├── aidl/com/qinggan/           # AIDL файлы CAN-bus (VehicleState, AirConditionState и т.д.)
-├── assets/
-│   └── config.json             # Конфиг команд
-└── res/
-    ├── drawable/anim_voice_effect.xml  # Анимация из Ivoka
-    └── drawable-land/voice_right000..040.png  # 41 кадр анимации
-```
+### Этап 1: До перезагрузки
+1. Отключение стандартных ассистентов (ivoka, sttservice)
+2. Копирование APK в `/system/priv-app/`
+3. Копирование нативных библиотек в `/system/priv-app/VoboostVoiceAssistant/lib/arm64/`
+4. Перезагрузка устройства
+
+### Этап 2: После перезагрузки (автоматически)
+5. Копирование моделей (Vosk + Sherpa ASR/TTS)
+6. Копирование config.json
+7. Динамическое определение UID через `pm list packages -U`
+8. Установка прав `chown UID:UID` на `/data/user/0/.../files`
+9. Выдача runtime разрешений (RECORD_AUDIO, READ_CONTACTS, SYSTEM_ALERT_WINDOW)
+10. Запуск VoboostVoiceService
+
+### Скрипты:
+- `VoboostVoiceAssistant-install.bat` — полная установка с нуля (2 этапа)
+- `install-update.bat` — быстрое обновление только APK (без reboot)
+- `copy-vosk-to-internal.bat` — копирование Vosk модели (динамический UID)
 
 ---
 
-## КОНФИГ (config.json)
+## ТЕМПЕРАТУРА КЛИМАТА
 
-### TTS engine:
-```json
-"tts": {
-    "offline": {
-        "engine": "sherpa"  // "sherpa" или "system"
-    }
-}
-```
+### Прямая установка:
+- **Команда:** `"установи температуру {temp} градусов"`, `"поставь {temp} градусов"`
+- **Парсер:** `AirConditionerSetTempHandler.parseTemperature()` поддерживает:
+  - Цифры: `"22"` → 22
+  - Русские числа: `"двадцать четыре"` → 24
+  - Комбинации: `"двадцать" + " четыре"` → 24
+- **CAN-bus:** `temperature * 10` (Ivoka формат: 24°C → 240)
+- **Зона:** учитывается `_zone` из voiceParams
 
-### Параметры команд:
-Остались только реально используемые params:
-- `contact` — имя контакта для звонков
-- `number` — номер телефона
-- `temperature` — температура для кондиционера
-
-Блок `action` полностью удалён. Handler определяется исключительно по `commandId`.
-
----
-
-## CAN-BUS КОМАНДЫ (17)
-
-| Command ID | Handler | Описание |
-|------------|---------|----------|
-| `window_open` | WindowControlHandler | Открыть окно |
-| `window_close` | WindowControlHandler | Закрыть окно |
-| `window_all_open` | WindowControlHandler | Открыть все окна |
-| `window_all_close` | WindowControlHandler | Закрыть все окна |
-| `charge_port_open` | ChargePortHandler | Открыть зарядный порт |
-| `charge_port_close` | ChargePortHandler | Закрыть зарядный порт |
-| `fuel_tank_open` | FuelTankHandler | Открыть бензобак |
-| `smart_mode_leisure` | SmartModeHandler | Режим "Отдых" |
-| `smart_mode_child` | SmartModeHandler | Режим "Ребёнок" |
-| `smart_mode_romantic` | SmartModeHandler | Режим "Романтика" |
-| `ac_open` | AirConditionerOpenHandler | Включить кондиционер |
-| `ac_close` | AirConditionerCloseHandler | Выключить кондиционер |
-| `ac_set_temp` | AirConditionerSetTempHandler | Установить температуру |
-| `ac_temp_up` | AirConditionerTempUpHandler | +2°C (учитывает зону) |
-| `ac_temp_down` | AirConditionerTempDownHandler | -2°C (учитывает зону) |
-| `phone_call_contact` | PhoneCallContactIntentHandler | Звонок по имени контакта |
-| `phone_call_number` | PhoneCallNumberIntentHandler | Звонок по номеру |
-
----
-
-## ЗОНА ГОВОРЯЩЕГО ДЛЯ КЛИМАТА
-
-Зона говорящего хранится в `RecognizedCommand.zone`. Метод `setTemperatureByZone(zone, temp)` в `CanBusServiceManager`:
-
-| Зона | Сигнал |
-|------|--------|
-| `front_left` | AC_LEFT_TEMP |
-| `front_right` | AC_RIGHT_TEMP |
-| `center`, `all_location`, `second_*` | Обе стороны |
-
-Команды `ac_temp_up` / `ac_temp_down` корректируют текущую температуру на ±2°C с учётом зоны говорящего.
+### Смещение:
+- **"мне холодно"** → `ac_temp_up` → текущая +2°C
+- **"мне жарко"** → `ac_temp_down` → текущая -2°C
+- Текущая температура берётся из `airCondition.airLeftTemperature`
 
 ---
 
 ## ВИЗУАЛЬНЫЙ ЭФФЕКТ
 
 - Frame-by-frame анимация из 41 PNG (voice_right000..040), взятых из Ivoka
-- `AnimationDrawable` через `anim_voice_effect.xml`, oneshot=false (зацикленная)
-- Ресурсы: `res/drawable-land/voice_right000.png` .. `voice_right040.png`
-- Показывается при активации (ActivatedState), скрывается при возврате в Idle
+- **Позиция:** верхний центр экрана (автоматическое центрирование post-layout)
+- `params.x = (screenWidth - viewWidth) / 2`, `params.y = 0`
 
 ---
 
@@ -210,6 +109,9 @@ app/src/main/
                                         │
                     PhoneCallContactIntentHandler (Intent-based)
                                         │
+                    getBluetoothMac() → SystemProperties.get("qinggan.bluetooth.mac", "")
+                    Если MAC пустой → ContentProvider без MAC
+                                        │
                     ContentResolver.query() → BluetoothPhone ContentProvider
                     URI: content://com.qinggan.bluetoothphone/contactsinfo/{MAC}
                     columns: name, number
@@ -220,147 +122,75 @@ app/src/main/
                     action="com.qinggan.broadcast.action.ivokaphonecall"
                     extra "Ivoka_CallInfo"="+375445413460"
                     extra "screen_int"=0
-                    extra "mac"=""
+                    extra "mac"=""  ← ПУСТАЯ СТРОКА (не "number"!)
                                         │
-                    BluetoothPhone → набирает номер через HFP
+                    BluetoothPhone → HeadSetProfileManager.makeCall(number, "")
+                    Если MAC пустой → mHfp.dial(number) без MAC
 ```
-
-### Константы Intent:
-```kotlin
-ACTION_IVOKA_PHONE_CALL = "com.qinggan.broadcast.action.ivokaphonecall"
-EXTRA_IVOKA_CALL_INFO = "Ivoka_CallInfo"
-EXTRA_SCREEN_INT = "screen_int"
-EXTRA_MAC = "mac"
-```
-
-### Удалённые файлы (больше не используются):
-- `aidl/phone/AbstractPhoneHandler.kt`
-- `aidl/phone/PhoneCallContactHandler.kt`
-- `aidl/phone/PhoneCallNumberHandler.kt`
 
 ---
 
-## PERMISSIONS И БЕЗОПАСНОСТЬ
+## КОНФИГ (config.json)
 
-### Объявленные permissions:
-```xml
-<permission
-    android:name="com.qinggan.bluetoothphone.PROVIDER"
-    android:protectionLevel="normal" />
-<uses-permission android:name="com.qinggan.bluetoothphone.PROVIDER" />
-```
+### Загрузка:
+- **Путь:** `/data/user/0/ru.voboost.voiceassistant/files/config.json`
+- **НЕ в assets** — APK облегчённый, конфиг только в data-папке
+- Если не найден → дефолтная конфигурация
 
-### Выданные разрешения:
-- `com.qinggan.bluetoothphone.PROVIDER: granted=true`
-- `com.qinggan.permission.WRITE_CANBUS: granted=true`
-- `android.permission.READ_CONTACTS: granted=true`
-- `android.permission.RECORD_AUDIO: granted=true`
+### Параметры команд:
+- `temp` — температура для кондиционера (число или русское число)
+- `contact` — имя контакта для звонков
+- `number` — номер телефона
 
 ---
 
 ## РЕШЁННЫЕ ПРОБЛЕМЫ
 
-### 1. Микрофон в фоне (Android 10+)
-- **Проблема:** ActivityManager блокирует FGS с микрофоном из background
-- **Решение:** BootReceiver → BootActivity (foreground context) → startForegroundService
+### 9. Температура устанавливалась вместо 24°C → 18.5°C
+- **Причина:** CAN-bus принимает `temperature * 10` (Ivoka формат)
+- **Решение:** `CanBusServiceManager.setTemperatureByZone()` умножает на 10
 
-### 2. sharedUserId="android.uid.system" вызывает bootloop
-- **Причина:** APK подписан debug key, а не platform key
+### 10. Прямая установка температуры не работала
+- **Причина 1:** `voiceParams["temperature"]` не совпадал с `{temp}` из конфига
+- **Причина 2:** Vosk small модель путает числа ("двадцать" → "двадцать два")
+- **Решение:** исправлен ключ на `voiceParams["temp"]`, добавлен `parseTemperature()` для русских числительных
 
-### 3. Значения CAN-шины инвертированы
-- Бензобак (IVI_FUEL_PORT_CAP): toggle только с value=1
-- Окна: ALL_WINDOW (3=OPEN, 1=CLOSE); DRIVER_WINDOW (97=CLOSE, 51=OPEN) — инвертировано
-- Кондиционер (AC_POWER_SWITCH): toggle только с value=1
+### 11. Анимация была слева, не по центру
+- **Причина:** `Gravity.TOP or Gravity.START` с фиксированным offset
+- **Решение:** post-layout measurement → `params.x = (screenWidth - viewWidth) / 2`
 
-### 4. Кнопка на руле не регистрировалась
-- **Решение:** Асинхронная регистрация через `ConnectionCallback`
+### 12. UID приложения разный на разных устройствах
+- **Причина:** хардкод `u0_a69` в скриптах
+- **Решение:** динамическое определение через `pm list packages -U %PKG%`
 
-### 5. action блок удалён из конфига и кода
-- Все команды работают без action конфигурации
-- Handler определяется исключительно по commandId
-
-### 6. TTS engine теперь из конфига
-- Жёсткий `TTS_ENGINE_TYPE` заменён на чтение из config.json
-- Удалён неиспользуемый `TTSEngine.kt`
-
-### 7. Package name изменён на ru.voboost.voiceassistant
-- Скрипт `migrate-package.bat` для миграции данных на устройстве
-
-### 8. State Machine рефакторинг
-- Все состояния создаются один раз, переходы по StateType enum
-- `reset()` перед каждым переходом, нет циклических зависимостей
+### 13. Установка скриптов не работала после перезагрузки
+- **Причина:** модели и конфиг копировались ДО перезагрузки, когда `/data/user/0/` ещё не создан
+- **Решение:** 2-этапная установка (APK → reboot → данные)
 
 ---
 
-## УСТАНОВКА
-
-### Путь установки:
-```
-/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
-```
-
-### Конфиг:
-- **Приоритет:** `/storage/emulated/0/Android/data/ru.voboost.voiceassistant/files/config.json`
-- **Fallback:** `assets/config.json` (в APK)
-
-### Модели:
-- **Vosk:** `/data/user/0/ru.voboost.voiceassistant/files/models/vosk/`
-- **Sherpa:** `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/`
-
----
-
-## ADB КОМАНДЫ
-
-### Установка APK:
-```batch
-adb root
-adb remount
-adb push <apk> /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk
-```
-
-### Перезапуск:
-```batch
-adb shell "am force-stop ru.voboost.voiceassistant && am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService"
-```
-
-### Мониторинг логов:
-```batch
-adb logcat -s VoboostVoiceService:I IntentHandler:D PhoneCommand:I CanBusServiceManager:I
-```
-
-### Тест звонка:
-```batch
-adb shell "am broadcast -a com.qinggan.broadcast.action.ivokaphonecall --es Ivoka_CallInfo '4008888488' --ei screen_int 0 --es mac ''"
-```
-
-### Миграция package name:
-```batch
-adb shell migrate-package.bat
-```
-
----
-
-## СОСТОЯНИЕ НА ДАННЫЙ МОМЕНENT
+## СОСТОЯНИЕ НА ДАННЫЙ МОМЕНТ
 
 ### РАБОТАЕТ:
-- TTS (Sherpa или системный) — выбирается из config.json
-- Vosk STT — распознаёт команды
-- Кнопка на руле — keycode=16 через CAN-шину (асинхронная регистрация)
-- State Machine — 9 состояний, переходы по StateType enum
-- CAN-bus — 17 AIDL команд (окна, кондиционер, бензобак, smart mode, звонки)
-- Звонки по номеру и имени контакта — через Intent broadcast
-- Permission `com.qinggan.bluetoothphone.PROVIDER` — получена
-- Permission `com.qinggan.permission.WRITE_CANBUS` — получена
-- Визуальный эффект — оригинальная анимация из Ivoka (41 PNG)
-- Температура климата по зоне говорящего
-- Команды "мне холодно" / "мне жарко" (+2/-2°C)
-- Package name: ru.voboost.voiceassistant
+- ✅ TTS Sherpa — русская речь (ru_RU-ruslan-medium)
+- ✅ Vosk STT — распознавание команд
+- ✅ Кнопка на руле — keycode=16 через CAN-шину
+- ✅ State Machine — 9 состояний
+- ✅ CAN-bus — 17 AIDL команд
+- ✅ Звонки по имени контакта (через BluetoothPhone ContentProvider)
+- ✅ Звонки по номеру
+- ✅ Визуальный эффект — по центру вверху экрана
+- ✅ Температура: прямая установка ("поставь двадцать четыре градусов")
+- ✅ Температура: смещение ("мне холодно" / "мне жарко")
+- ✅ Зона говорящего для климата
+- ✅ 2-этапная установка (APK → reboot → данные)
+- ✅ Динамический UID в скриптах
 
 ### НЕ РАБОТАЕТ:
-- Всё работает!
+- Vosk small модель иногда путает числа (20 ↔ 22) — ограничение модели
 
 ---
 
-**Последнее обновление:** 2026-04-12
+**Последнее обновление:** 2026-04-14
 **Build:** assembleDebug SUCCESS
-**Git коммиты:** bb927fa, 1f0f072, f970f66, 225f219, cec0ae7, b5a331c, 8428707, d72bdce, 48d2e32, ca46011, a9743fa, 9302162, 1b39bd1
+**Git коммиты:** fb8ba3c, 8371386, bb927fa, 1f0f072, f970f66, 225f219, cec0ae7, b5a331c, 8428707, d72bdce, 48d2e32, ca46011, a9743fa, 9302162, 1b39bd1

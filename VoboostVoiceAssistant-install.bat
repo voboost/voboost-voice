@@ -29,7 +29,7 @@ set "CONFIG_PATH=app\src\main\assets\config.json"
 
 set "PKG=ru.voboost.voiceassistant"
 set "SYSTEM_DIR=/system/priv-app/VoboostVoiceAssistant"
-set "DATA_DIR=/data/user/0/%PKG%"
+set "EXTERNAL_DIR=/storage/emulated/0/Android/data/%PKG%/files"
 
 echo.
 echo ============================================================================
@@ -134,13 +134,14 @@ REM --- Шаг 7: Копирование моделей ---
 echo [7/8] Копирование моделей и конфига...
 
 REM Создаём директории
-adb shell "mkdir -p %DATA_DIR%/files/models/vosk" >nul 2>&1
-adb shell "mkdir -p %DATA_DIR%/files/models/sherpa" >nul 2>&1
+adb shell "mkdir -p %EXTERNAL_DIR%/models/vosk" >nul 2>&1
+adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/asr-ru-model" >nul 2>&1
+adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/tts-ru-model" >nul 2>&1
 
 REM Копируем Vosk модель
 if exist "models\vosk\vosk-model-small-ru-0.22" (
     adb push "models\vosk\vosk-model-small-ru-0.22" ^
-      "%DATA_DIR%/files/models/vosk/" >nul 2>&1
+      "%EXTERNAL_DIR%/models/vosk/" >nul 2>&1
     echo   [OK] Vosk модель скопирована
 ) else (
     echo   [WARN] Vosk модель не найдена: models\vosk\vosk-model-small-ru-0.22
@@ -149,7 +150,7 @@ if exist "models\vosk\vosk-model-small-ru-0.22" (
 REM Копируем Sherpa ASR модель
 if exist "models\sherpa\asr-ru-model" (
     adb push "models\sherpa\asr-ru-model" ^
-      "%DATA_DIR%/files/models/sherpa/" >nul 2>&1
+      "%EXTERNAL_DIR%/models/sherpa/asr-ru-model" >nul 2>&1
     echo   [OK] Sherpa ASR модель скопирована
 ) else (
     echo   [WARN] Sherpa ASR модель не найдена: models\sherpa\asr-ru-model
@@ -158,35 +159,28 @@ if exist "models\sherpa\asr-ru-model" (
 REM Копируем Sherpa TTS модель (из tts-ru-model-temp/tts-ru-model)
 if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
     adb push "models\sherpa\tts-ru-model-temp\tts-ru-model" ^
-      "%DATA_DIR%/files/models/sherpa/tts-ru-model" >nul 2>&1
+      "%EXTERNAL_DIR%/models/sherpa/tts-ru-model" >nul 2>&1
     echo   [OK] Sherpa TTS модель скопирована
 ) else (
     echo   [WARN] Sherpa TTS модель не найдена: models\sherpa\tts-ru-model-temp\tts-ru-model
 )
 
+REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
+adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/espeak-ng-data" >nul 2>&1
+echo   [OK] Разрешения eSpeak-ng исправлены (755)
+
 REM Копируем config.json
 if exist "%CONFIG_PATH%" (
-    adb push "%CONFIG_PATH%" "%DATA_DIR%/files/config.json" >nul 2>&1
+    adb push "%CONFIG_PATH%" "%EXTERNAL_DIR%/config.json" >nul 2>&1
     echo   [OK] config.json скопирован
 ) else (
     echo   [WARN] config.json не найден: %CONFIG_PATH%
 )
+echo   [OK] Модели и конфиг скопированы на внешнее хранилище
 
-REM Устанавливаем права на файлы данных (динамический UID из pm list)
-for /f "tokens=3" %%a in ('adb shell "pm list packages -U %PKG%"') do (
-    for /f "tokens=2 delims=:" %%b in ("%%a") do set "APP_UID=%%~b"
-)
-if defined APP_UID (
-    adb shell "chown -R %APP_UID%:%APP_UID% %DATA_DIR%/files" >nul 2>&1
-    adb shell "chmod -R 755 %DATA_DIR%/files" >nul 2>&1
-    adb shell "chown -R %APP_UID%:%APP_UID% %DATA_DIR%/cache" >nul 2>&1
-    adb shell "chmod 775 %DATA_DIR%/cache" >nul 2>&1
-    adb shell "chown -R %APP_UID%:%APP_UID% %DATA_DIR%/code_cache" >nul 2>&1
-    adb shell "chmod 775 %DATA_DIR%/code_cache" >nul 2>&1
-    echo   [OK] Права установлены (uid=%APP_UID%)
-) else (
-    echo   [WARN] Не удалось определить UID — пропускаем chown
-)
+REM Устанавливаем права на внешнее хранилище (chmod, chown не нужен для external storage)
+adb shell "chmod -R 755 %EXTERNAL_DIR%" >nul 2>&1
+echo   [OK] Права установлены на внешнее хранилище
 echo.
 
 REM --- Шаг 8: Разрешения и запуск ---

@@ -1,55 +1,44 @@
 ﻿package ru.voboost.voiceassistant.engine.sherpa
 
-import android.content.Context
 import android.util.Log
-import ru.voboost.voiceassistant.config.ConfigManager
+import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.speech.IModelLoader
-import java.io.File
 
 /**
  * Загрузчик моделей Sherpa-ONNX
  * Реализует универсальный интерфейс IModelLoader
+ *
+ * Модель загружается из внешнего хранилища:
+ * /storage/emulated/0/voboost/models/sherpa/asr-ru-model/
  */
-class SherpaModelLoader(
-    private val context: Context
-) : IModelLoader {
-    
+class SherpaModelLoader() : IModelLoader {
+
     companion object {
         const val TAG = "SherpaModelLoader"
     }
-    
-    private val configManager = ConfigManager.getInstance(context)
-    
+
     /**
      * Загрузить модель Sherpa-ONNX из указанного пути
      * @param modelPath Путь к директории модели
      * @return Путь к модели (String)
      */
-    override fun loadModel(modelPath: String): Any {
-        val modelDir = File(modelPath)
-        
-        if (!modelDir.exists()) {
-            throw IllegalStateException("Sherpa model not found at: $modelPath")
-        }
-        
-        Log.i(TAG, "Sherpa model verified at: ${modelDir.absolutePath}")
-        // Возвращаем путь к модели для SherpaStreamFactory
-        return modelPath
+    override fun loadModel(): Any {
+        return getModelPath()
     }
-    
+
     /**
-     * Получить путь к модели Sherpa-ONNX
+     * Получить путь к модели Sherpa-ONNX из внешнего хранилища
      * @return Путь к директории модели
      */
-    override fun getModelPath(): String {
-        val internalModelDir = File(context.filesDir, "sherpa/asr-ru-model")
+    private fun getModelPath(): String {
+        val externalModelDir = ExternalStoragePaths.sherpaAsrModelDir
 
-        if (internalModelDir.exists() && internalModelDir.isDirectory) {
-            Log.i(TAG, "Using Sherpa model from internal storage: ${internalModelDir.absolutePath}")
-            return internalModelDir.absolutePath
+        if (externalModelDir.exists() && externalModelDir.isDirectory) {
+            Log.i(TAG, "Using Sherpa model from external storage: ${externalModelDir.absolutePath}")
+            return externalModelDir.absolutePath
         }
 
-        Log.w(TAG, "Sherpa model not found at: ${internalModelDir.absolutePath}")
+        Log.w(TAG, "Sherpa model not found at: ${externalModelDir.absolutePath}")
         return ""
     }
 }

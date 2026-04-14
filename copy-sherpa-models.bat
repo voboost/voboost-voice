@@ -1,38 +1,93 @@
 @echo off
-REM Скрипт для копирования моделей Sherpa-ONNX в assets
+REM ============================================================================
+REM  Копирование моделей Sherpa-ONNX во внешнее хранилище
+REM ============================================================================
 
-echo ============================================
-REM Копирование моделей Sherpa-ONNX в assets
-echo ============================================
+setlocal enabledelayedexpansion
+
+REM Путь к ADB
+set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
+set "PATH=%ADB_PATH%;%PATH%"
+
+REM Пакет приложения
+set "PKG=ru.voboost.voiceassistant"
+
+echo.
+echo ============================================================================
+echo  Copying Sherpa Models to External Storage
+echo  /storage/emulated/0/Android/data/%PKG%/files/
+echo ============================================================================
 echo.
 
-set SOURCE_DIR=sherpa-models
-set ASSETS_DIR=app\src\main\assets\sherpa
-
-REM Создаем директорию assets
-if not exist %ASSETS_DIR% mkdir %ASSETS_DIR%
-
-echo Copying ASR model...
-if exist %SOURCE_DIR%\sherpa-onnx-zipformer-ru-2024-09-18 (
-    rmdir /s /q %ASSETS_DIR%\asr-ru-model 2>nul
-    mkdir %ASSETS_DIR%\asr-ru-model
-    xcopy /E /I /Y %SOURCE_DIR%\sherpa-onnx-zipformer-ru-2024-09-18\* %ASSETS_DIR%\asr-ru-model\
-    echo ASR model copied to %ASSETS_DIR%\asr-ru-model\
-) else (
-    echo ASR model not found. Run download-sherpa-models.bat first
+REM Проверка подключения
+adb devices >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] ADB не найден!
+    pause
+    exit /b 1
 )
 
+REM Создание директории
+echo [1/3] Создание директорий для моделей...
+adb shell "mkdir -p /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/asr-ru-model"
+adb shell "mkdir -p /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model"
+echo [OK] Директории созданы
 echo.
-echo Copying TTS model...
-if exist %SOURCE_DIR%\ru_RU-irina-low.onnx (
-    copy /Y %SOURCE_DIR%\ru_RU-irina-low.onnx %ASSETS_DIR%\tts-ru-model\
-    echo TTS model copied to %ASSETS_DIR%\tts-ru-model\
-) else (
-    echo TTS model not found. Run download-sherpa-models.bat first
-)
 
+REM Копирование ASR модели
+echo [2/3] Копирование ASR модели...
+if exist "models\sherpa\asr-ru-model" (
+    adb push "models\sherpa\asr-ru-model" "/storage/emulated/0/Android/data/%PKG%/files/models/sherpa/asr-ru-model"
+    if errorlevel 1 (
+        echo [ERROR] Ошибка копирования ASR модели!
+        pause
+        exit /b 1
+    )
+    echo [OK] ASR модель скопирована
+) else (
+    echo [ERROR] ASR модель не найдена: models\sherpa\asr-ru-model
+    pause
+    exit /b 1
+)
 echo.
-echo ============================================
-echo Models copied successfully!
-echo ============================================
+
+REM Копирование TTS модели
+echo [3/4] Копирование TTS модели...
+if exist "models\sherpa\tts-ru-model" (
+    adb push "models\sherpa\tts-ru-model" "/storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model"
+    if errorlevel 1 (
+        echo [ERROR] Ошибка копирования TTS модели!
+        pause
+        exit /b 1
+    )
+    echo [OK] TTS модель скопирована
+) else (
+    echo [WARN] TTS модель не найдена: models\sherpa\tts-ru-model
+    echo [INFO] Пропускаем TTS модель
+)
+echo.
+
+REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
+echo [4/4] Исправление разрешений для eSpeak-ng...
+adb shell "chmod -R 755 /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/espeak-ng-data"
+echo [OK] Разрешения исправлены (755)
+echo.
+
+REM Проверка
+echo Проверка установленных моделей:
+adb shell "ls -la /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/asr-ru-model/"
+adb shell "ls -la /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/"
+echo.
+echo Проверка разрешений espeak-ng-data:
+adb shell "ls -la /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/espeak-ng-data/" | findstr "espeak-ng-data"
+echo.
+
+echo ============================================================================
+echo  Готово!
+echo ============================================================================
+echo.
+echo Теперь нужно перезапустить приложение:
+echo   adb shell am force-stop ru.voboost.voiceassistant
+echo   adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
+echo.
 pause

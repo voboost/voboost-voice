@@ -59,7 +59,8 @@ data class OfflineTtsConfig(
     @SerializedName("engine") val engine: String = "system",
     @SerializedName("voice") val voice: String = "",
     @SerializedName("rate") val rate: Float = 1.0f,
-    @SerializedName("pitch") val pitch: Float = 1.0f
+    @SerializedName("pitch") val pitch: Float = 1.0f,
+    @SerializedName ("speaker") val speaker: Int = 0
 )
 
 data class OnlineTtsConfig(

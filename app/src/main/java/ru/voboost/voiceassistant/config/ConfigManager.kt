@@ -9,10 +9,10 @@ import java.io.IOException
 /**
  * Менеджер конфигурации
  * Загружает и кэширует конфигурацию из:
- * /data/user/0/ru.voboost.voiceassistant/files/config.json
+ * /storage/emulated/0/voboost/config.json (внешнее хранилище)
  * Если не найден — создаёт конфигурацию по умолчанию.
  *
- * НЕ используем assets — APK облегчённый, конфиг только в data-папке.
+ * Данные на внешнем хранилище не удаляются при перезагрузке или очистке данных приложения.
  */
 class ConfigManager private constructor(private val context: Context) {
     private var config: AppConfig? = null
@@ -20,7 +20,6 @@ class ConfigManager private constructor(private val context: Context) {
 
     companion object {
         const val TAG = "ConfigManager"
-        private const val CONFIG_PATH = "config.json"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -36,13 +35,13 @@ class ConfigManager private constructor(private val context: Context) {
 
     /**
      * Загрузить конфигурацию
-     * Путь: /data/user/0/ru.voboost.voiceassistant/files/config.json
+     * Путь: /storage/emulated/0/voboost/config.json (внешнее хранилище)
      * Если не найден — конфигурация по умолчанию.
      */
     fun loadConfig(): AppConfig {
         config?.let { return it }
 
-        // Пробуем загрузить конфиг из data-папки
+        // Пробуем загрузить конфиг из внешнего хранилища
         val loadedConfig = loadConfigFile()
         if (loadedConfig != null) {
             config = loadedConfig
@@ -54,13 +53,12 @@ class ConfigManager private constructor(private val context: Context) {
     }
 
     /**
-     * Загрузить config.json из /data/user/0/.../files/config.json
+     * Загрузить config.json из внешнего хранилища
      * @return AppConfig или null если файл не найден
      */
     private fun loadConfigFile(): AppConfig? {
         try {
-            val configDir = context.filesDir
-            val configFile = File(configDir, CONFIG_PATH)
+            val configFile = ExternalStoragePaths.configFile
 
             if (!configFile.exists()) {
                 Log.d(TAG, "Config not found: ${configFile.absolutePath}")

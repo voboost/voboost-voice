@@ -1,23 +1,15 @@
 ﻿package ru.voboost.voiceassistant.engine.vosk
 
-import android.content.Context
 import android.util.Log
-import ru.voboost.voiceassistant.config.ConfigManager
-import ru.voboost.voiceassistant.speech.IModelLoader
 import org.vosk.Model
+import ru.voboost.voiceassistant.config.ExternalStoragePaths
+import ru.voboost.voiceassistant.speech.IModelLoader
 import java.io.File
 
-/**
- * Загрузчик моделей Vosk
- * Реализует универсальный интерфейс IModelLoader
- */
-class VoskModelLoader(
-    private val context: Context
-) : IModelLoader {
-    
+public class VoskModelLoader() : IModelLoader {
+
     companion object {
         const val TAG = "VoskModelLoader"
-        const val MODEL_NAME = "vosk-model-small-ru-0.22"
     }
 
     /**
@@ -25,30 +17,25 @@ class VoskModelLoader(
      * @param modelPath Путь к директории модели
      * @return Model объект Vosk
      */
-    override fun loadModel(modelPath: String): Any {
+    override fun loadModel(): Any {
+        val modelPath = getModelPath()
         val modelDir = File(modelPath)
-        
-        if (!modelDir.exists()) {
-            throw IllegalStateException("Vosk model not found at: $modelPath")
-        }
-        
-        Log.i(TAG, "Loading Vosk model from: ${modelDir.absolutePath}")
         return Model(modelDir.absolutePath)
     }
-    
+
     /**
-     * Получить путь к модели Vosk
+     * Получить путь к модели Vosk из внешнего хранилища
      * @return Путь к директории модели
      */
-    override fun getModelPath(): String {
-        val internalModelDir = File(context.filesDir, "models/vosk/$MODEL_NAME")
+    private fun getModelPath(): String {
+        val externalModelDir = ExternalStoragePaths.voskModelDir
 
-        if (internalModelDir.exists() && internalModelDir.isDirectory) {
-            Log.i(TAG, "Using Vosk model from internal storage: ${internalModelDir.absolutePath}")
-            return internalModelDir.absolutePath
+        if (externalModelDir.exists() && externalModelDir.isDirectory) {
+            Log.i(TAG, "Using Vosk model from external storage: ${externalModelDir.absolutePath}")
+            return externalModelDir.absolutePath
         }
 
-        Log.w(TAG, "Vosk model not found at: ${internalModelDir.absolutePath}")
+        Log.w(TAG, "Vosk model not found at: ${externalModelDir.absolutePath}")
         return ""
     }
 }

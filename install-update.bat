@@ -58,4 +58,7 @@ echo.
 echo Полная установка с моделями:
 echo   VoboostVoiceAssistant-install.bat
 echo.
+echo Модели и конфиг хранятся на внешнем хранилище:
+echo   /storage/emulated/0/Android/data/ru.voboost.voiceassistant/files/
+echo.
 pause

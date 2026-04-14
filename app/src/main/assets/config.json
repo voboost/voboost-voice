@@ -32,7 +32,8 @@
       "engine": "sherpa",
       "voice": "ru_RU-ruslan-medium",
       "rate": 1.0,
-      "pitch": 1.0
+      "pitch": 1.0,
+      "speaker": 1
     },
     "online": {
       "enabled": false,

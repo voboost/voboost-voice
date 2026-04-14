@@ -19,7 +19,9 @@
     <uses-permission android:name="com.qinggan.permission.WRITE_CANBUS" />
     <!-- ✅ Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- ✅ Доступ к внешнему хранилищу (для системных приложений) -->
+    <!-- ✅ Доступ к внешнему хранилищу (модели и конфиг) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
