@@ -2,84 +2,85 @@
 
 import android.content.Context
 import android.util.Log
+import com.qinggan.audiorecord.record.NativeRecord
 
 /**
  * Фабрика IAudioSource
  * Автоматически выбирает лучший доступный аудио-источник
- * 
+ *
  * Приоритет:
- * 1. TransProxy (системный, с шумоподавлением) ← РЕКОМЕНДУЕТСЯ
+ * 1. MultiChannel (4 микрофона + TDOA определение зоны) ← РЕКОМЕНДУЕТСЯ
  * 2. RecorderManager (системный, с шумоподавлением)
- * 3. Android AudioRecord (fallback)
+ * 3. Android AudioRecord (fallback, зона = front_left)
  */
 object AudioSourceFactory {
-    
+
     const val TAG = "AudioSourceFactory"
-    
+
     /**
      * Тип аудио-источника
      */
     enum class SourceType {
-        /** RecorderManager через QGSpeechService (рекомендуется) */
+        /** MultiChannel с 4 микрофонами + определение зоны через TDOA */
+        MULTI_CHANNEL,
+
+        /** RecorderManager через QGSpeechService (системный, 1-2 микрофона) */
         RECORDER_MANAGER,
 
-        /** TransProxy через QGSpeechService (НЕ работает - только выход на телефон) */
-        @Deprecated("TransProxy does NOT provide microphone input")
-        TRANSPROXY,
-
-        /** Стандартный Android AudioRecord (fallback) */
+        /** Стандартный Android AudioRecord (fallback, зона = front_left) */
         ANDROID
     }
-    
+
     /**
      * Создать IAudioSource с автоматическим выбором лучшего источника
      *
      * @param context Android Context
-     * @param preferredType Предпочтительный тип (по умолчанию RECORDER_MANAGER)
+     * @param preferredType Предпочтительный тип (по умолчанию MULTI_CHANNEL)
      * @return IAudioSource (никогда null)
      */
     fun create(
         context: Context,
-        preferredType: SourceType = SourceType.RECORDER_MANAGER
+        preferredType: SourceType
     ): IAudioSource {
         return when (preferredType) {
-            SourceType.RECORDER_MANAGER -> {
-                val recorderManagerSource = RecorderManagerAudioSource(context)
-                if (recorderManagerSource.initialize()) {
-                    Log.i(TAG, "✅ Using RecorderManagerAudioSource (system microphone)")
-                    recorderManagerSource
+            SourceType.MULTI_CHANNEL -> {
+                val multiChannelSource = MultiChannelAudioSource(context)
+                if (multiChannelSource.initialize()) {
+                    Log.i(TAG, "✅ Using MultiChannelAudioSource (4 mics + TDOA zone detection)")
+                    multiChannelSource
                 } else {
-                    Log.w(TAG, "⚠️ RecorderManager unavailable, falling back to AndroidAudioSource")
-                    createAndroidSource(context)
+                    Log.w(TAG, "⚠️ Multi-channel unavailable, falling back to RecorderManager")
+                    createRecorderManagerSource(context)
                 }
             }
 
-            SourceType.TRANSPROXY -> {
-                // TransProxy НЕ работает для получения микрофона!
-                Log.w(TAG, "⚠️ TransProxy deprecated - does NOT provide microphone input")
-                Log.w(TAG, "⚠️ Falling back to AndroidAudioSource")
-                createAndroidSource(context)
+            SourceType.RECORDER_MANAGER -> {
+                createRecorderManagerSource(context)
             }
 
             SourceType.ANDROID -> {
-                Log.i(TAG, "Using AndroidAudioSource (fallback)")
+                Log.i(TAG, "Using AndroidAudioSource (fallback, zone=front_left)")
                 createAndroidSource(context)
             }
         }
     }
-    
+
     /**
-     * Проверить доступен ли TransProxy
+     * Проверить поддержку многоканальной записи
      */
-    fun isTransProxyAvailable(context: Context): Boolean {
+    fun isMultiChannelSupported(context: Context): Boolean {
         return try {
-            val clazz = Class.forName("com.qinggan.qinglink.transProxy.api.IPcmModule")
+            // Проверяем доступна ли системная библиотека
+            val nativeRecord = NativeRecord.getInstance()
+            // Если getInstance() не выбросил — библиотека загрузилась
+            Log.d(TAG, "NativeRecord4Mic is available")
             true
         } catch (e: Exception) {
+            Log.w(TAG, "Multi-channel not supported: ${e.message}")
             false
         }
     }
-    
+
     /**
      * Проверить доступен ли RecorderManager
      */
@@ -92,7 +93,18 @@ object AudioSourceFactory {
             false
         }
     }
-    
+
+    private fun createRecorderManagerSource(context: Context): IAudioSource {
+        val recorderManagerSource = RecorderManagerAudioSource(context)
+        if (recorderManagerSource.initialize()) {
+            Log.i(TAG, "✅ Using RecorderManagerAudioSource (system microphone)")
+            return recorderManagerSource
+        } else {
+            Log.w(TAG, "⚠️ RecorderManager unavailable, falling back to AndroidAudioSource")
+            return createAndroidSource(context)
+        }
+    }
+
     private fun createAndroidSource(context: Context): IAudioSource {
         return AndroidAudioSource(context).apply {
             if (!initialize()) {

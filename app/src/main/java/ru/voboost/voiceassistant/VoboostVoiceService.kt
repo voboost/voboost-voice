@@ -39,9 +39,7 @@ import android.Manifest
 import android.content.pm.ServiceInfo
 import ru.voboost.voiceassistant.audio.IAudioSource
 import ru.voboost.voiceassistant.audio.AudioSourceFactory
-import ru.voboost.voiceassistant.audio.MicphoneModeManager
 import ru.voboost.voiceassistant.audio.VolumeManager
-import ru.voboost.voiceassistant.audio.VoiceZoneDetector
 import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.executor.VehicleCommandExecutor
 
@@ -63,7 +61,7 @@ class VoboostVoiceService : Service() {
         const val ACTION_CANCEL = "ru.voboost.voiceassistant.CANCEL"
         const val ACTION_ACTIVATE = "ru.voboost.voiceassistant.ACTIVATE"
         val ASR_ENGINE_TYPE = RecognitionEngine.VOSK  // ← Vosk (стабильный)
-        val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.TRANSPROXY  // ← TransProxy (системный, с шумоподавлением)
+        val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.ANDROID  // ← TransProxy (системный, с шумоподавлением)
     }
 
     // Компоненты системы
@@ -88,13 +86,9 @@ class VoboostVoiceService : Service() {
 
     // TSR Speed Limit Handler - предупреждения о превышении скорости
     private var tsrSpeedLimitHandler: TSRSpeedLimitHandler? = null
-    
+
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
-
-    // Voice Zone Detector - определение зоны говорящего
-    private var micphoneModeManager: MicphoneModeManager? = null
-    private var voiceZoneDetector: VoiceZoneDetector? = null
 
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -254,18 +248,12 @@ class VoboostVoiceService : Service() {
         commandHandler = CommandHandler(nluEngine, commandExecutor)
         Log.i(TAG, "CommandHandler initialized")
 
-        // Voice Zone Detector - определение зоны говорящего
-        micphoneModeManager = ru.voboost.voiceassistant.audio.MicphoneModeManager(this)
-        micphoneModeManager?.connect()
-        voiceZoneDetector = ru.voboost.voiceassistant.audio.VoiceZoneDetector(micphoneModeManager!!)
-        Log.i(TAG, "VoiceZoneDetector initialized")
-
         // SpeechRecognizer - распознавание речи (утилита без состояний)
+        // Зона определяется автоматически через MultiChannelAudioSource или TDOA
         speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(
             context = this,
             engine = ASR_ENGINE_TYPE,
-            audioSource = audioSource,
-            zoneDetector = voiceZoneDetector
+            audioSource = audioSource
         )
         Log.i(TAG, "SpeechRecognizer initialized")
 
@@ -374,12 +362,6 @@ class VoboostVoiceService : Service() {
         volumeManager = null
         Log.d(TAG, "VolumeManager disconnected")
 
-        // Отключаем Voice Zone Detector
-        micphoneModeManager?.disconnect()
-        micphoneModeManager = null
-        voiceZoneDetector = null
-        Log.d(TAG, "VoiceZoneDetector disconnected")
-        
         // Освобождаем IAudioSource (если инициализирован)
         if (::audioSource.isInitialized) {
             audioSource.stop()

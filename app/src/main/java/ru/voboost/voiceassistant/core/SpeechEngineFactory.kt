@@ -3,7 +3,6 @@
 import android.content.Context
 import android.util.Log
 import ru.voboost.voiceassistant.audio.IAudioSource
-import ru.voboost.voiceassistant.audio.VoiceZoneDetector
 import ru.voboost.voiceassistant.config.ConfigManager
 import ru.voboost.voiceassistant.engine.sherpa.SherpaModelLoader
 import ru.voboost.voiceassistant.engine.sherpa.SherpaStreamFactory
@@ -37,14 +36,13 @@ object SpeechEngineFactory {
      * @param context Контекст приложения
      * @param engine Тип движка (по умолчанию Vosk как стабильный)
      * @param IAudioSource Источник аудио (создаётся через AudioSourceFactory)
-     * @param zoneDetector Детектор зоны говорящего (опционально)
+     * @param defaultZone Зона по умолчанию (опционально, зона теперь определяется в AudioSource callback)
      * @return SpeechRecognizer для управления распознаванием
      */
     fun createSpeechRecognizer(
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
-        audioSource: IAudioSource,
-        zoneDetector: VoiceZoneDetector? = null
+        audioSource: IAudioSource
     ): SpeechRecognizer {
         val configManager = ConfigManager.getInstance(context)
         val keywordChecker = KeywordChecker(configManager)
@@ -68,8 +66,7 @@ object SpeechEngineFactory {
         return SpeechRecognizer(
             audioSource = audioSource,
             recognitionEngine = recognitionEngine,
-            keywordChecker = keywordChecker,
-            zoneDetector = zoneDetector
+            keywordChecker = keywordChecker
         )
     }
 

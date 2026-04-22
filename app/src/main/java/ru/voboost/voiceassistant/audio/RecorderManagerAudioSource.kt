@@ -96,9 +96,11 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
                             val length = args[1] as Int
 
                             if (length > 0) {
+                                // RecorderManager возвращает данные с 1-2 микрофонов
+                                // Зону определить не может, возвращаем front_left по умолчанию
                                 for (listener in listeners) {
                                     try {
-                                        listener.onAudioData(pcmData, length)
+                                        listener.onAudioData(pcmData, length, "front_left")
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Error in audio listener", e)
                                     }

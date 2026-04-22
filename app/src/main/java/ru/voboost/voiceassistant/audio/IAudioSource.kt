@@ -2,26 +2,27 @@
 
 /**
  * Абстрактный интерфейс для получения аудио-потока
- * 
+ *
  * Позволяет использовать разные источники аудио:
  * - Системный RecorderManager (с шумоподавлением и эхокомпенсацией)
  * - Стандартный Android AudioRecord (fallback)
- * - TYPE_REMOTE_SUBMIX (аудио-микс автомобиля)
- * 
+ * - MultiChannel AudioRecord (4 микрофона + определение зоны)
+ *
  * Поток данных:
  * 1. Вызвать start() для начала записи
- * 2. Подписаться через addListener() для получения PCM данных
+ * 2. Подписаться через addListener() для получения PCM данных + зоны
  * 3. Вызвать stop() для остановки
  */
 interface IAudioSource {
-    
+
     /**
      * Слушатель аудио-данных
      * @param data PCM данные (16-bit, mono, 16000 Hz)
      * @param bytesRead количество прочитанных байт
+     * @param zone Зона говорящего: front_left, front_right, second_left, second_right, all_location
      */
     fun interface Listener {
-        fun onAudioData(data: ByteArray, bytesRead: Int)
+        fun onAudioData(data: ByteArray, bytesRead: Int, zone: String)
     }
     
     /**

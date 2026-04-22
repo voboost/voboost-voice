@@ -2,7 +2,6 @@
 
 import android.util.Log
 import ru.voboost.voiceassistant.audio.IAudioSource
-import ru.voboost.voiceassistant.audio.VoiceZoneDetector
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,15 +21,16 @@ import java.util.concurrent.atomic.AtomicReference
  * - ✅ Нет race conditions
  * - ✅ Непрерывный поток (нельзя пропустить ключевое слово)
  * - ✅ Легко тестировать
+ * - ✅ Зона определяется в IAudioSource callback
  */
 class SpeechRecognizer(
     private val audioSource: IAudioSource,
     private val recognitionEngine: IRecognitionEngine,
-    private val keywordChecker: KeywordChecker,
-    private val zoneDetector: VoiceZoneDetector? = null
+    private val keywordChecker: KeywordChecker // Зона теперь определяется в AudioSource callback
 ) {
     companion object {
         const val TAG = "SpeechRecognizer"
+        const val DEFAULT_ZONE = "front_left"
         private const val KEYWORD_TIMEOUT_MS = 30000L
         private const val COMMAND_TIMEOUT_MS = 5000L
     }
@@ -61,6 +61,8 @@ class SpeechRecognizer(
     private val hasNewData = AtomicBoolean(false)
     private var isRunning = AtomicBoolean(false)
 
+    private var currentZone: String = DEFAULT_ZONE
+
     // Таймауты
     private var timeoutStart: Long = 0
 
@@ -80,13 +82,14 @@ class SpeechRecognizer(
             try {
                 Log.i(TAG, "Starting recognition via ${IAudioSource::class.simpleName}")
 
-                val audioListener = IAudioSource.Listener { data, bytesRead ->
+                val audioListener = IAudioSource.Listener { data, bytesRead, zone ->
                     if (isRunning.get()) {
                         val currentBuffer = audioBuffer.get()
                         val newBuffer = ByteArray(currentBuffer.size + bytesRead)
                         System.arraycopy(currentBuffer, 0, newBuffer, 0, currentBuffer.size)
                         System.arraycopy(data, 0, newBuffer, currentBuffer.size, bytesRead)
                         audioBuffer.set(newBuffer)
+                        currentZone = zone
                         hasNewData.set(true)
                     }
                 }
@@ -120,6 +123,7 @@ class SpeechRecognizer(
 
         // Сбросить буфер и recognizer при смене режима
         audioBuffer.set(ByteArray(0))
+        currentZone = DEFAULT_ZONE
         hasNewData.set(false)
         recognitionEngine.reset()
         timeoutStart = System.currentTimeMillis()
@@ -143,6 +147,7 @@ class SpeechRecognizer(
     fun reset() {
         recognitionEngine.reset()
         audioBuffer.set(ByteArray(0))
+        currentZone = DEFAULT_ZONE
         hasNewData.set(false)
         timeoutStart = System.currentTimeMillis()
     }
@@ -217,19 +222,18 @@ class SpeechRecognizer(
      * Обработать результат распознавания
      */
     private fun handleRecognitionResult(result: RecognitionResult) {
-        val zone = zoneDetector?.detectZone() ?: "front_left"
 
         when (mode) {
             Mode.KEYWORD -> {
                 if (keywordChecker.isActivationKeyword(result.text)) {
-                    Log.i(TAG, "🎯 KEYWORD DETECTED: ${result.text} (zone=$zone)")
-                    results.tryEmit(SpeechResult.KeywordDetected(result.text, zone))
+                    Log.i(TAG, "🎯 KEYWORD DETECTED: ${result.text} (zone=$currentZone)")
+                    results.tryEmit(SpeechResult.KeywordDetected(result.text, currentZone))
                 }
             }
 
             Mode.COMMAND -> {
-                Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text} (zone=$zone)")
-                results.tryEmit(SpeechResult.CommandReceived(result.text, zone))
+                Log.i(TAG, "📝 COMMAND RECEIVED: ${result.text} (zone=$currentZone)")
+                results.tryEmit(SpeechResult.CommandReceived(result.text, currentZone))
             }
 
             Mode.MUTED -> {

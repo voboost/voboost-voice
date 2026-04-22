@@ -33,7 +33,7 @@
       "voice": "ru_RU-ruslan-medium",
       "rate": 1.0,
       "pitch": 1.0,
-      "speaker": 1
+      "speaker": 0
     },
     "online": {
       "enabled": false,

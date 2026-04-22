@@ -56,7 +56,7 @@ data class TtsConfig(
 
 data class OfflineTtsConfig(
     @SerializedName("enabled") val enabled: Boolean = true,
-    @SerializedName("engine") val engine: String = "system",
+    @SerializedName("engine") val engine: String = "sherpa",
     @SerializedName("voice") val voice: String = "",
     @SerializedName("rate") val rate: Float = 1.0f,
     @SerializedName("pitch") val pitch: Float = 1.0f,

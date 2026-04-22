@@ -191,6 +191,56 @@
 
 ---
 
-**Последнее обновление:** 2026-04-14
+**Последнее обновление:** 2026-04-14 23:30
 **Build:** assembleDebug SUCCESS
-**Git коммиты:** fb8ba3c, 8371386, bb927fa, 1f0f072, f970f66, 225f219, cec0ae7, b5a331c, 8428707, d72bdce, 48d2e32, ca46011, a9743fa, 9302162, 1b39bd1
+**Git коммиты:** 9623e65, fb8ba3c, 8371386, bb927fa, 1f0f072, f970f66, 225f219, cec0ae7, b5a331c, 8428707, d72bdce, 48d2e32, ca46011, a9743fa, 9302162, 1b39bd1
+
+---
+
+## ПОСЛЕДНИЙ КОМИТ
+
+### 9623e65 — fix: Sherpa TTS eSpeak-ng permissions + ExternalStoragePaths
+- **Исправление разрешений espeak-ng-data** (chmod 755) для работы TTS
+- **Добавлен ExternalStoragePaths** для путей к внешнему хранилищу
+- **Обновлены скрипты:** `copy-sherpa-models.bat`, `VoboostVoiceAssistant-install.bat`
+- **SherpaSynthesis:** восстановлен `setDataDir()` для eSpeak-ng
+- **Конфигурация TTS** загружается из `/data/user/0/.../files/config.json`
+
+**Проблема:** После переезда на внешнее хранилище TTS не работал с ошибкой 
+`Failed to set eSpeak-ng voice`. 
+
+**Причина:** Неправильные права на папку `espeak-ng-data` 
+(`drwxr-s--x` вместо `drwxr-xr-x`). Нативная библиотека eSpeak-ng не могла 
+прочитать файлы словарей.
+
+**Решение:** `chmod -R 755` для `espeak-ng-data` после копирования модели.
+
+---
+
+## СТРУКТУРА ДАННЫХ НА УСТРОЙСТВЕ (ОБНОВЛЕНО)
+
+| Что | Путь | Примечание |
+|-----|------|------------|
+| **APK** | `/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk` | |
+| **Нативные библиотеки** | `/system/priv-app/VoboostVoiceAssistant/lib/arm64/` | |
+| **config.json** | `/data/user/0/ru.voboost.voiceassistant/files/config.json` | |
+| **Vosk модель** | `/storage/emulated/0/Android/data/.../files/models/vosk/` | Внешнее хранилище |
+| **Sherpa ASR** | `/storage/emulated/0/Android/data/.../files/models/sherpa/asr-ru-model/` | Внешнее хранилище |
+| **Sherpa TTS** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/` | Внешнее хранилище |
+| **TTS eSpeak-ng-data** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/espeak-ng-data/` | **Разрешения: 755** |
+
+---
+
+## СКРИПТЫ (ОБНОВЛЕНО)
+
+### copy-sherpa-models.bat
+```batch
+[4/4] Исправление разрешений для eSpeak-ng...
+adb shell "chmod -R 755 /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/espeak-ng-data"
+```
+
+### VoboostVoiceAssistant-install.bat
+```batch
+REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
+adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/espeak-ng-data"
+```

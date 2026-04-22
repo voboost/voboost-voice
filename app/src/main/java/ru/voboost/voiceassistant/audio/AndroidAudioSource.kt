@@ -311,7 +311,7 @@ class AndroidAudioSource(private val context: Context,
 
     override fun isRecording(): Boolean = isRecording
 
-    //Runnable для чтения аудио-данных в отдельном потоке
+    // Runnable для чтения аудио-данных в отдельном потоке
     private inner class AudioRecordRunnable(initialRecorder: AudioRecord) : Runnable {
 
         @Volatile
@@ -332,7 +332,8 @@ class AndroidAudioSource(private val context: Context,
                         for (listener in listeners) {
                             try {
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    listener.onAudioData(dataCopy, bytesRead)
+                                    // AndroidAudioSource всегда возвращает front_left (водитель)
+                                    listener.onAudioData(dataCopy, bytesRead, "front_left")
                                 }
                             }
                             catch (e: Exception) {
@@ -342,10 +343,7 @@ class AndroidAudioSource(private val context: Context,
                     }
                     else if (bytesRead < 0) {
                         Log.e(TAG,
-                              "AudioRecord read error: $bytesRead") // Опционально: остановить запись, если ошибка критическая
-                        //                        if (bytesRead == AudioRecord.ERROR_DEAD_OBJECT) {
-                        //                            isRecording = false // Триггер на пересоздание
-                        //                        }
+                              "AudioRecord read error: $bytesRead")
                     }
                 }
             }
