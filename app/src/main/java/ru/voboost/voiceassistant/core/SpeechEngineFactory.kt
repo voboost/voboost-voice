@@ -6,29 +6,25 @@ import ru.voboost.voiceassistant.audio.IAudioSource
 import ru.voboost.voiceassistant.config.ConfigManager
 import ru.voboost.voiceassistant.engine.sherpa.SherpaModelLoader
 import ru.voboost.voiceassistant.engine.sherpa.SherpaStreamFactory
-import ru.voboost.voiceassistant.engine.sherpa.SherpaSynthesis
-import ru.voboost.voiceassistant.engine.system.SystemTtsSynthesis
+import ru.voboost.voiceassistant.engine.sherpa.SherpaSpeechSynthesis
+import ru.voboost.voiceassistant.engine.system.SystemSpeechSynthesis
 import ru.voboost.voiceassistant.engine.vosk.VoskModelLoader
 import ru.voboost.voiceassistant.engine.vosk.VoskStreamFactory
 import ru.voboost.voiceassistant.speech.KeywordChecker
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
 
-/**
- * Фабрика для создания модулей распознавания и синтеза речи
- * Позволяет легко переключаться между реализациями (Vosk, Sherpa, System)
- */
 object SpeechEngineFactory {
 
     const val TAG = "SpeechEngineFactory"
 
     enum class RecognitionEngine {
-        VOSK,       // Текущая реализация (стабильная)
-        SHERPA,     // Новая реализация (требует правильной версии API)
+        VOSK,
+        SHERPA,
     }
 
     enum class SynthesisEngine {
-        SYSTEM,     // Системный TTS (простой, но может не поддерживать русский)
-        SHERPA,     // Sherpa-ONNX TTS (качественный, офлайн)
+        SYSTEM,
+        SHERPA,
     }
 
     /**
@@ -43,7 +39,7 @@ object SpeechEngineFactory {
         context: Context,
         engine: RecognitionEngine = RecognitionEngine.VOSK,
         audioSource: IAudioSource
-    ): SpeechRecognizer {
+    ): ISpeechRecognizer {
         val configManager = ConfigManager.getInstance(context)
         val keywordChecker = KeywordChecker(configManager)
 
@@ -86,12 +82,12 @@ object SpeechEngineFactory {
         return when (engine) {
             SynthesisEngine.SYSTEM -> {
                 Log.i(TAG, "Creating System TTS engine")
-                SystemTtsSynthesis(context)
+                SystemSpeechSynthesis(context)
             }
 
             SynthesisEngine.SHERPA -> {
                 Log.i(TAG, "Creating Sherpa TTS engine")
-                SherpaSynthesis(context, modelPath, speakerId)
+                SherpaSpeechSynthesis(modelPath, speakerId)
             }
         }
     }
@@ -100,17 +96,14 @@ object SpeechEngineFactory {
      * Рекомендованная конфигурация для текущего устройства
      */
     fun getRecommendedConfig(context: Context): Pair<RecognitionEngine, SynthesisEngine> {
-        // Проверить системный TTS на поддержку русского
+
         val systemTtsAvailable = isSystemTtsRussianAvailable(context)
 
         return when {
-            // Если System TTS доступен - использовать его
             systemTtsAvailable -> {
                 Log.i(TAG, "Recommended: Vosk ASR + System TTS")
                 Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)
             }
-
-            // Fallback - только Vosk
             else -> {
                 Log.i(TAG, "Recommended: Vosk ASR only (no TTS available)")
                 Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)

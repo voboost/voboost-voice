@@ -3,28 +3,27 @@
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
-import ru.voboost.voiceassistant.VoboostVoiceService
 import ru.voboost.voiceassistant.config.CommandConfig
 import ru.voboost.voiceassistant.nlu.RecognizedCommand
 import ru.voboost.voiceassistant.config.ConfigManager
 import ru.voboost.voiceassistant.core.ISpeechSynthesis
-import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 
 /**
  * Выполнение команд
  * Использует VehicleCommandExecutor для отправки команд автомобилю
- * 
+ *
  * @param vehicleCommandExecutor Реализация выполнения команд (Intent или Shell)
  */
 class CommandExecutor(
     private val context: Context,
-    private val ttsEngine: ISpeechSynthesis,
-    private val nluEngine: NLUEngine,
+    private val queueSpeech: QueueSpeechSynthesis,
     private val overlayManager: OverlayManager,
     private val coroutineScope: CoroutineScope,
     private val vehicleCommandExecutor: IVehicleCommandExecutor  // ← Интерфейс выполнения
@@ -71,23 +70,41 @@ class CommandExecutor(
                 val finalPhrase = substituteParams(successPhrase, recognizedCommand.extractedParams)
 
                 // Голос + Overlay (всегда!)
-                ttsEngine.speak(finalPhrase)
-                overlayManager.showToast(finalPhrase)
+                if(!finalPhrase.isNullOrEmpty())
+                {
+                    val queueSpeechJob = coroutineScope.async {
+                        queueSpeech.enqueueAsync(finalPhrase)}
+                    overlayManager.showToast(finalPhrase)
+                    queueSpeechJob.await()
+                }
+
             } else {
                 Log.w(TAG, "Command execution failed")
                 val failurePhrase = commandConfig.phrases?.failure
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
 
                 // Голос + Overlay (всегда!)
-                ttsEngine.speak(failurePhrase)
-                overlayManager.showToast(failurePhrase)
+                if(!failurePhrase.isNullOrEmpty())
+                {
+                    val queueSpeechJob = coroutineScope.async{
+                        queueSpeech.enqueueAsync(failurePhrase)}
+                    overlayManager.showToast(failurePhrase)
+                    queueSpeechJob.await()
+                }
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error executing command", e)
             val errorPhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
-            ttsEngine.speak(errorPhrase)
-            overlayManager.showToast(errorPhrase)
+            if(!errorPhrase.isNullOrEmpty())
+            {
+                val queueSpeechJob = coroutineScope.async{
+                    queueSpeech.enqueueAsync(errorPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
+                }
+                overlayManager.showToast(errorPhrase)
+                queueSpeechJob.await()
+            }
+
         } finally {
             // Восстановить громкость
             duckAudio(false)
@@ -178,15 +195,18 @@ class CommandExecutor(
     /**
      * Обработать нераспознанную команду
      */
-    fun handleUnrecognizedCommand(text: String) {
+    suspend fun handleUnrecognizedCommand(text: String) {
         Log.w(TAG, "Command not recognized: $text")
 
         val notUnderstoodPhrase =
             configManager.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD)
 
         if (!notUnderstoodPhrase.isNullOrEmpty()) {
-            ttsEngine.speak(notUnderstoodPhrase)
+            val queueSpeechJob = coroutineScope.async{
+                queueSpeech.enqueueAsync(notUnderstoodPhrase, QueueSpeechSynthesis.PRIOR_MEDIUM)
+            }
             overlayManager.showToast(notUnderstoodPhrase)
+            queueSpeechJob.await()
         } else {
             Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
             overlayManager.showToast("Команда не распознана")

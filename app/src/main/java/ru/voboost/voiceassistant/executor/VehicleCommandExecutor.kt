@@ -8,7 +8,6 @@ import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirCondit
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerOpenHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerSetTempHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.airconditioner.AirConditionerTempOffsetHandler
-import ru.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportCloseHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.chargport.ChargportOpenHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.scuttle.FuelTankOpenHandler
 import ru.voboost.voiceassistant.executor.handlers.aidl.smartmode.SmartModeChildHandler
@@ -40,7 +39,6 @@ class VehicleCommandExecutor(
         "window_all_open" to WindowOpenAllHandler(canBusManager),
         "window_all_close" to WindowCloseAllHandler(canBusManager),
         "charge_port_open" to ChargportOpenHandler(canBusManager),
-        "charge_port_close" to ChargportCloseHandler(canBusManager),
         "fuel_tank_open" to FuelTankOpenHandler(canBusManager),
         "smart_mode_leisure" to SmartModeLeisureHandler(canBusManager),
         "smart_mode_child" to SmartModeChildHandler(canBusManager),

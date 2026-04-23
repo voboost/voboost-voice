@@ -3,6 +3,7 @@
 import android.util.Log
 import com.qinggan.canbus.CanBusListener
 import com.qinggan.canbus.VehicleState
+import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 
 /**
  * Обработчик предупреждений TSR (Traffic Sign Recognition)
@@ -14,7 +15,7 @@ import com.qinggan.canbus.VehicleState
  * @param ttsCallback Callback для воспроизведения TTS предупреждений
  */
 class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
-                           private val ttsCallback: TTSCallback) {
+                           private val queueSpeech: QueueSpeechSynthesis) {
     private var currentSpeed = 0
     private var isaWarningEnabled = true
     private var isCallbackRegistered = false
@@ -39,7 +40,7 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
             VehicleState.ISA_ISLC_STATUS -> { // Приняли статус — теперь запросим детали
                 if (IState == 7) {
                     if(isaWarningEnabled){// Факт превышения скорости
-                        ttsCallback.playWarning("Превышение скорости")
+                        queueSpeech.enqueue("Превышение скорости", QueueSpeechSynthesis.PRIOR_CRITICAL)
                     }
                 }
             }

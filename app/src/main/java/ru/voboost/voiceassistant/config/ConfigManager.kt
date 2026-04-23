@@ -1,10 +1,9 @@
 ﻿package ru.voboost.voiceassistant.config
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
-import java.io.File
-import java.io.IOException
 
 /**
  * Менеджер конфигурации
@@ -21,6 +20,7 @@ class ConfigManager private constructor(private val context: Context) {
     companion object {
         const val TAG = "ConfigManager"
 
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var instance: ConfigManager? = null
 
@@ -72,7 +72,8 @@ class ConfigManager private constructor(private val context: Context) {
             Log.i(TAG, "Config loaded successfully, version: ${loadedConfig.version}")
             return loadedConfig
 
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Failed to load config", e)
             return null
         }
@@ -83,52 +84,36 @@ class ConfigManager private constructor(private val context: Context) {
      */
     private fun createDefaultConfig(): AppConfig {
         Log.w(TAG, "Using default configuration")
-        return AppConfig(
-            version = "1.0",
-            language = "ru-RU",
-            activation = ActivationConfig(
-                keyword = "привет машина",
-                alternativeKeywords = listOf("окей вобуст", "привет вобуст"),
-                buttonKeycode = 16,
-            ),
-            speech = SpeechConfig(
-                offline = OfflineSpeechConfig(
-                    enabled = true,
-                    engine = "vosk"
-                ),
-                online = OnlineSpeechConfig(
-                    enabled = false,
-                    engine = "yandex",
-                    apiKey = "",
-                    folderId = ""
-                )
-            ),
-            tts = TtsConfig(
-                offline = OfflineTtsConfig(
-                    enabled = true,
-                    engine = "system",
-                    voice = "",
-                    rate = 1.0f,
-                    pitch = 1.0f
-                ),
-                online = OnlineTtsConfig(
-                    enabled = false,
-                    engine = "yandex",
-                    apiKey = ""
-                )
-            ),
-            confirmation = ConfirmationConfig(),
-            phrases = DefaultPhrases(
-                listening = "Слушаю вас",
-                success = "Выполнено",
-                failure = "Произошла ошибка",
-                notUnderstood = "Не понял команду",
-                confirmQuestion = "Вы уверены?",
-                confirmYes = "Да",
-                confirmNo = "Нет"
-            ),
-            commands = emptyList()
-        )
+        return AppConfig(version = "1.0",
+                         language = "ru-RU",
+                         activation = ActivationConfig(
+                             keyword = "привет машина",
+                             alternativeKeywords = listOf("окей вобуст", "привет вобуст"),
+                             buttonKeycode = 16,
+                         ),
+                         speech = SpeechConfig(offline = OfflineSpeechConfig(enabled = true,
+                                                                             engine = "vosk"),
+                                               online = OnlineSpeechConfig(enabled = false,
+                                                                           engine = "yandex",
+                                                                           apiKey = "",
+                                                                           folderId = "")),
+                         tts = TtsConfig(offline = OfflineTtsConfig(enabled = true,
+                                                                    engine = "system",
+                                                                    voice = "",
+                                                                    rate = 1.0f,
+                                                                    pitch = 1.0f),
+                                         online = OnlineTtsConfig(enabled = false,
+                                                                  engine = "yandex",
+                                                                  apiKey = "")),
+                         confirmation = ConfirmationConfig(),
+                         phrases = DefaultPhrases(listening = "Слушаю вас",
+                                                  success = "Выполнено",
+                                                  failure = "Произошла ошибка",
+                                                  notUnderstood = "Не понял команду",
+                                                  confirmQuestion = "Вы уверены?",
+                                                  confirmYes = "Да",
+                                                  confirmNo = "Нет"),
+                         commands = emptyList())
     }
 
     /**
@@ -162,7 +147,8 @@ class ConfigManager private constructor(private val context: Context) {
             return config.activation.alternativeKeywords.any {
                 normalizedText == it.lowercase()
             }
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Error checking activation keyword", e)
             return false
         }
@@ -178,26 +164,35 @@ class ConfigManager private constructor(private val context: Context) {
             val phrases = config.phrases
 
             when (type) {
-                PhraseType.SUCCESS ->
-                    phrases.success.takeUnless { it.isNullOrEmpty() } ?: "Выполнено"
-                PhraseType.FAILURE ->
-                    phrases.failure.takeUnless { it.isNullOrEmpty() } ?: "Произошла ошибка"
-                PhraseType.NOT_UNDERSTOOD ->
-                    phrases.notUnderstood.takeUnless { it.isNullOrEmpty() } ?: "Не понял"
-                PhraseType.CONFIRM_QUESTION ->
-                    phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() } ?: "Вы уверены?"
-                PhraseType.LISTENING ->
-                    phrases.listening.takeUnless { it.isNullOrEmpty() } ?: "Слушаю"
+                PhraseType.SUCCESS -> phrases.success.takeUnless { it.isNullOrEmpty() }
+                    ?: "Выполнено"
+
+                PhraseType.FAILURE -> phrases.failure.takeUnless { it.isNullOrEmpty() }
+                    ?: "Произошла ошибка"
+
+                PhraseType.NOT_UNDERSTOOD -> phrases.notUnderstood.takeUnless { it.isNullOrEmpty() }
+                    ?: "Не понял"
+
+                PhraseType.CONFIRM_QUESTION -> phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() }
+                    ?: "Вы уверены?"
+
+                PhraseType.LISTENING -> phrases.listening.takeUnless { it.isNullOrEmpty() }
+                    ?: "Слушаю"
+
+                PhraseType.CANCEL -> phrases.cancel.takeUnless { it.isNullOrEmpty() } ?: "Отмена"
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting default phrase for $type", e)
-            // Возвращаем значение по умолчанию при любой ошибке
+        }
+        catch (e: Exception) {
+            Log.e(TAG,
+                  "Error getting default phrase for $type",
+                  e) // Возвращаем значение по умолчанию при любой ошибке
             when (type) {
                 PhraseType.SUCCESS -> "Выполнено"
                 PhraseType.FAILURE -> "Произошла ошибка"
                 PhraseType.NOT_UNDERSTOOD -> "Не понял"
                 PhraseType.CONFIRM_QUESTION -> "Вы уверены?"
                 PhraseType.LISTENING -> "Слушаю"
+                PhraseType.CANCEL -> "Отмена"
             }
         }
     }
@@ -207,6 +202,7 @@ class ConfigManager private constructor(private val context: Context) {
         FAILURE,
         NOT_UNDERSTOOD,
         CONFIRM_QUESTION,
-        LISTENING
+        LISTENING,
+        CANCEL
     }
 }

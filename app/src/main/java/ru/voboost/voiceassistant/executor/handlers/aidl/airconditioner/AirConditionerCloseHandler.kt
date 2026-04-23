@@ -12,13 +12,10 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * - Если уже выключен — ничего не делает
  * - Если включён — отправляет команду выключения
  */
-class AirConditionerCloseHandler(
-    private val canBusManager: CanBusServiceManager
-) : ICommandHandler {
+class AirConditionerCloseHandler(private val canBusManager: CanBusServiceManager) :
+        ICommandHandler {
 
-    override fun execute(
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false

@@ -18,13 +18,9 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * Примечание: команда закрытия бензобака в config.json отсутствует
  * Если понадобится — добавить FuelTankCloseHandler по аналогии
  */
-class FuelTankOpenHandler(
-    private val canBusManager: CanBusServiceManager
-) : ICommandHandler {
+class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
 
-    override fun execute(
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false

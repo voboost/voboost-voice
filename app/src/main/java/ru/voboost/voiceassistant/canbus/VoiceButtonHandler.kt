@@ -3,7 +3,6 @@
 import android.content.Context
 import android.util.Log
 import com.qinggan.canbus.CanBusListener
-import ru.voboost.voiceassistant.config.ActivationConfig
 import ru.voboost.voiceassistant.config.ConfigManager
 
 /**
@@ -73,12 +72,3 @@ class VoiceButtonHandler(context: Context,
     }
 }
 
-/**
- * Callback для уведомления о нажатии кнопки голосового помощника
- */
-interface VoiceAssistantCallback {
-    /**
-     * Вызывается при нажатии кнопки на руле
-     */
-    fun onVoiceButtonPressed()
-}

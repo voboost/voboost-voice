@@ -88,5 +88,7 @@ data class DefaultPhrases(
     @SerializedName("confirm_question") val confirmQuestion: String = "Вы уверены?",
     @SerializedName("confirm_yes") val confirmYes: String = "Да",
     @SerializedName("confirm_no") val confirmNo: String = "Нет",
-    @SerializedName("listening") val listening: String = "Слушаю"
+    @SerializedName("listening") val listening: String = "Слушаю",
+    @SerializedName("cancel") val cancel: String = "Отмена"
+
 )

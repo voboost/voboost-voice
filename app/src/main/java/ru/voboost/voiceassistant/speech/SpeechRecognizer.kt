@@ -5,8 +5,7 @@ import ru.voboost.voiceassistant.audio.IAudioSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.first
+import ru.voboost.voiceassistant.core.ISpeechRecognizer
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -23,11 +22,9 @@ import java.util.concurrent.atomic.AtomicReference
  * - ✅ Легко тестировать
  * - ✅ Зона определяется в IAudioSource callback
  */
-class SpeechRecognizer(
-    private val audioSource: IAudioSource,
-    private val recognitionEngine: IRecognitionEngine,
-    private val keywordChecker: KeywordChecker // Зона теперь определяется в AudioSource callback
-) {
+class SpeechRecognizer(private val audioSource: IAudioSource,
+                       private val recognitionEngine: IRecognitionEngine,
+                       private val keywordChecker: KeywordChecker) : ISpeechRecognizer {
     companion object {
         const val TAG = "SpeechRecognizer"
         const val DEFAULT_ZONE = "front_left"
@@ -38,17 +35,17 @@ class SpeechRecognizer(
     enum class Mode {
         /** Ожидание ключевого слова */
         KEYWORD,
+
         /** Ожидание команды */
         COMMAND,
+
         /** МИКРОФОН ОТКЛЮЧЁН — TTS говорит, не распознаём */
         MUTED
     }
 
     /** Результаты распознавания (SharedFlow — не накапливает, всегда актуальные) */
-    val results: MutableSharedFlow<SpeechResult> = MutableSharedFlow(
-        extraBufferCapacity = 10,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    override val results: MutableSharedFlow<SpeechResult>
+        = MutableSharedFlow(extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     @Volatile
     private var mode: Mode = Mode.KEYWORD
@@ -69,7 +66,7 @@ class SpeechRecognizer(
     /**
      * Запустить распознавание (непрерывный поток)
      */
-    fun start() {
+    override fun start() {
         if (recognitionJob?.isActive == true) {
             Log.w(TAG, "Already running, ignoring")
             return
@@ -99,13 +96,16 @@ class SpeechRecognizer(
 
                 try {
                     recognitionLoop()
-                } finally {
+                }
+                finally {
                     audioSource.removeListener(audioListener)
                 }
 
-            } catch (e: CancellationException) {
+            }
+            catch (e: CancellationException) {
                 Log.i(TAG, "Recognition cancelled")
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Recognition error", e)
                 results.tryEmit(SpeechResult.Error(e.message ?: "Unknown error"))
             }
@@ -115,7 +115,7 @@ class SpeechRecognizer(
     /**
      * Установить режим распознавания
      */
-    fun setMode(newMode: Mode) {
+    override fun setMode(newMode: Mode) {
         val oldMode = mode
         mode = newMode
 
@@ -135,8 +135,7 @@ class SpeechRecognizer(
     /**
      * Очистить буфер результатов от старых событий
      */
-    private fun drainResults() {
-        // SharedFlow не поддерживает drain напрямую, но при смене режима
+    private fun drainResults() { // SharedFlow не поддерживает drain напрямую, но при смене режима
         // старые события будут проигнорированы фильтрами в IState-классах
         Log.d(TAG, "Results buffer drained (SharedFlow auto-cleanup)")
     }
@@ -155,7 +154,7 @@ class SpeechRecognizer(
     /**
      * Остановить распознавание
      */
-    fun stop() {
+    override fun stop() {
         isRunning.set(false)
         recognitionJob?.cancel()
         audioSource.stop()
@@ -164,21 +163,18 @@ class SpeechRecognizer(
     /**
      * Освободить ресурсы
      */
-    fun shutdown() {
+    override fun shutdown() {
         stop()
         scope.cancel()
         results.resetReplayCache()
         recognitionEngine.release()
     }
 
-    // ==================== ВНУТРЕННИЕ МЕТОДЫ ====================
-
     /**
      * Непрерывный цикл распознавания (БЕЗ перезапусков!)
      */
     private suspend fun recognitionLoop() {
-        while (isRunning.get()) {
-            // В режиме MUTED — пропускаем обработку (TTS говорит)
+        while (isRunning.get()) { // В режиме MUTED — пропускаем обработку (TTS говорит)
             if (mode == Mode.MUTED) {
                 delay(50)
                 continue
@@ -200,7 +196,7 @@ class SpeechRecognizer(
                     val result = recognitionEngine.acceptWaveform(buffer)
 
                     if (result != null && result.isFinal && result.text.isNotEmpty()) {
-                        handleRecognitionResult(result)
+                        onRecognitionResult(result)
                         timeoutStart = System.currentTimeMillis()
                     }
                 }
@@ -221,7 +217,7 @@ class SpeechRecognizer(
     /**
      * Обработать результат распознавания
      */
-    private fun handleRecognitionResult(result: RecognitionResult) {
+    private fun onRecognitionResult(result: RecognitionResult) {
 
         when (mode) {
             Mode.KEYWORD -> {
@@ -236,8 +232,7 @@ class SpeechRecognizer(
                 results.tryEmit(SpeechResult.CommandReceived(result.text, currentZone))
             }
 
-            Mode.MUTED -> {
-                // Игнорируем результаты когда TTS говорит
+            Mode.MUTED -> { // Игнорируем результаты когда TTS говорит
                 Log.d(TAG, "Ignoring result during TTS: ${result.text}")
             }
         }
@@ -258,8 +253,7 @@ class SpeechRecognizer(
                 results.tryEmit(SpeechResult.Timeout)
             }
 
-            Mode.MUTED -> {
-                // Нет таймаута когда TTS говорит
+            Mode.MUTED -> { // Нет таймаута когда TTS говорит
             }
         }
     }
@@ -277,12 +271,3 @@ class SpeechRecognizer(
     }
 }
 
-/**
- * Результат распознавания
- */
-sealed class SpeechResult {
-    data class KeywordDetected(val text: String, val zone: String = "front_left") : SpeechResult()
-    data class CommandReceived(val text: String, val zone: String = "front_left") : SpeechResult()
-    object Timeout : SpeechResult()
-    data class Error(val message: String) : SpeechResult()
-}

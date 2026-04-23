@@ -11,13 +11,10 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param commandId Уникальный ID команды (совпадает с config.json)
  * @param canBusManager Менеджер CAN-шины
  */
-abstract class AbstractChargportHandler(
-    protected val canBusManager: CanBusServiceManager
-) : ICommandHandler {
+abstract class AbstractChargportHandler(protected val canBusManager: CanBusServiceManager) :
+        ICommandHandler {
 
-    override fun execute(
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false

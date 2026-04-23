@@ -11,13 +11,10 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  * @param commandId Уникальный ID команды (совпадает с config.json)
  * @param canBusManager Менеджер CAN-шины
  */
-abstract class AbstractAirConditionerHandler(
-    protected val canBusManager: CanBusServiceManager
-) : ICommandHandler {
+abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBusServiceManager) :
+        ICommandHandler {
 
-    override fun execute(
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false
@@ -32,9 +29,7 @@ abstract class AbstractAirConditionerHandler(
      * Возвращает пару (AirConditionState, значение) для отправки в CAN-шину
      * Для установки температуры значение берётся из voiceParams["temperature"]
      */
-    protected abstract fun getAirConditionStateAndValue(
-        voiceParams: Map<String, Any>
-    ): Pair<AirConditionState, Int>
+    protected abstract fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int>
 
     companion object {
         const val TAG = "AirConditionerCmd"

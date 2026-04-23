@@ -1,18 +1,13 @@
 ﻿package ru.voboost.voiceassistant.speech.state
 
 import android.util.Log
-import ru.voboost.voiceassistant.audio.VolumeManager
-import ru.voboost.voiceassistant.config.ConfigManager
-import ru.voboost.voiceassistant.core.ISpeechSynthesis
-import ru.voboost.voiceassistant.executor.CommandExecutor
-import ru.voboost.voiceassistant.nlu.NLUEngine
+import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 import ru.voboost.voiceassistant.speech.SpeechRecognizer
 import ru.voboost.voiceassistant.speech.SpeechResult
-import ru.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import ru.voboost.voiceassistant.config.ConfigManager.PhraseType
 
 /**
  * Состояние: Слушание команды
@@ -21,16 +16,7 @@ import java.util.concurrent.TimeUnit
  * 1. Ждём CommandReceived/Timeout/Error
  * 2. Команда → RECOGNIZED_COMMAND, Timeout → TIMEOUT, Error → COMMAND_ERROR
  */
-class ListeningCommandState(
-    private val speechRecognizer: SpeechRecognizer,
-    private val overlayManager: OverlayManager,
-    private val volumeManager: VolumeManager?,
-    private val ttsEngine: ISpeechSynthesis,
-    private val configManager: ConfigManager,
-    private val nluEngine: NLUEngine,
-    private val commandExecutor: CommandExecutor,
-    private val context: StateContext
-) : BaseState() {
+class ListeningCommandState(private val context: StateContext) : BaseState() {
     companion object {
         const val TAG = "ListeningCommand"
     }
@@ -41,13 +27,11 @@ class ListeningCommandState(
         Log.i(TAG, "Entering LISTENING_COMMAND IState")
 
         try {
-            speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
+            context.speechRecognizer?.setMode(SpeechRecognizer.Mode.COMMAND)
 
             // Ждём результат
-            val result = speechRecognizer.results.first {
-                it is SpeechResult.CommandReceived ||
-                it is SpeechResult.Timeout ||
-                it is SpeechResult.Error
+            val result = context.speechRecognizer?.results?.first {
+                it is SpeechResult.CommandReceived || it is SpeechResult.Timeout || it is SpeechResult.Error
             }
 
             when (result) {
@@ -59,7 +43,8 @@ class ListeningCommandState(
                         context.commandText = commandText
                         context.zone = zone
                         finish(StateResult.Next(StateType.RECOGNIZED_COMMAND))
-                    } else {
+                    }
+                    else {
                         Log.w(TAG, "Empty command received")
                         finish(StateResult.Next(StateType.TIMEOUT))
                     }
@@ -82,14 +67,16 @@ class ListeningCommandState(
                 }
             }
 
-        } catch (e: CancellationException) {
+        }
+        catch (e: CancellationException) {
             Log.d(TAG, "ListeningCommandState cancelled")
-            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            context.speechRecognizer?.setMode(SpeechRecognizer.Mode.KEYWORD)
             throw e
 
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)
-            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+            context.speechRecognizer?.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(StateType.COMMAND_ERROR))
         }
     }
@@ -97,32 +84,30 @@ class ListeningCommandState(
     override suspend fun cancel() {
         Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
 
-        try {
-            // Остановить TTS если говорит
-            ttsEngine.stop()
-            kotlinx.coroutines.delay(200)
-
-            // Звук отмены
+        try { // Звук отмены
             context.soundEffectManager?.playEndSound()
-            kotlinx.coroutines.delay(400)
+            delay(400)
 
-            // Говорим "Отмена"
-            val latch = CountDownLatch(1)
-            ttsEngine.speak("Отмена") { latch.countDown() }
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                latch.await(5, TimeUnit.SECONDS)
+            // Говорим "Отмена" с высоким приоритетом
+            val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
+            if(!cancelPhrase.isNullOrEmpty())
+            {
+                context.queueSpeech?.enqueueAsync(cancelPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
             }
-        } finally {
-            speechRecognizer.setMode(SpeechRecognizer.Mode.KEYWORD)
+
+            Log.d(TAG, "Cancel speech initiated")
+        }
+        finally {
+            context.speechRecognizer?.setMode(SpeechRecognizer.Mode.KEYWORD)
         }
 
-        overlayManager.hideAnimation()
-        volumeManager?.restoreMedia()
+        context.overlayManager?.hideAnimation()
+        context.volumeManager?.restoreMedia()
 
         cancelled("ListeningCommandState cancelled by user")
     }
 
     override fun reset() {
-        speechRecognizer.setMode(SpeechRecognizer.Mode.COMMAND)
+        context.speechRecognizer?.setMode(SpeechRecognizer.Mode.COMMAND)
     }
 }

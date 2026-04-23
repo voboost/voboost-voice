@@ -8,8 +8,7 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 /**
  * Базовый обработчик для Broadcast Intent команд
  */
-abstract class AbstractIntentHandler(protected val context: Context)
-    : ICommandHandler {
+abstract class AbstractIntentHandler(protected val context: Context) : ICommandHandler {
     companion object {
         const val TAG = "IntentHandler"
 
@@ -26,8 +25,7 @@ abstract class AbstractIntentHandler(protected val context: Context)
         return try {
             val intent = buildIntent(voiceParams)
 
-            if(intent == null)
-            {
+            if (intent == null) {
                 return false;
             }
             context.sendBroadcast(intent)

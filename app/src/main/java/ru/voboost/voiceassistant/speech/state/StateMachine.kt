@@ -2,13 +2,6 @@
 
 import android.util.Log
 import kotlinx.coroutines.*
-import ru.voboost.voiceassistant.audio.VolumeManager
-import ru.voboost.voiceassistant.config.ConfigManager
-import ru.voboost.voiceassistant.core.ISpeechSynthesis
-import ru.voboost.voiceassistant.executor.CommandExecutor
-import ru.voboost.voiceassistant.nlu.NLUEngine
-import ru.voboost.voiceassistant.speech.SpeechRecognizer
-import ru.voboost.voiceassistant.ui.OverlayManager
 
 /**
  * State Machine для голосового помощника (Event-driven версия)
@@ -26,54 +19,27 @@ import ru.voboost.voiceassistant.ui.OverlayManager
  * - ✅ Состояния сами решают когда завершиться
  * - ✅ canCancel явно декларирует можно ли отменить
  */
-class StateMachine(
-    speechRecognizer: SpeechRecognizer,
-    overlayManager: OverlayManager,
-    volumeManager: VolumeManager?,
-    ttsEngine: ISpeechSynthesis,
-    configManager: ConfigManager,
-    nluEngine: NLUEngine,
-    commandExecutor: CommandExecutor,
-    private val scope: CoroutineScope,
-    val context: StateContext = StateContext()
-) {
+class StateMachine(private val scope: CoroutineScope,
+                   private val context: StateContext) {
     companion object {
         const val TAG = "StateMachine"
     }
 
     private val states = mapOf(
-        StateType.IDLE to IdleState(speechRecognizer, overlayManager, volumeManager, ttsEngine,
-                                    configManager, nluEngine, commandExecutor, context),
-        StateType.ACTIVATED to ActivatedState(speechRecognizer, overlayManager, volumeManager,
-                                              ttsEngine, configManager, nluEngine,
-                                              commandExecutor, context),
-        StateType.LISTENING_COMMAND to ListeningCommandState(speechRecognizer, overlayManager,
-                                                             volumeManager, ttsEngine, configManager,
-                                                             nluEngine, commandExecutor, context),
-        StateType.RECOGNIZED_COMMAND to RecognizedCommandState(speechRecognizer, overlayManager,
-                                                               volumeManager, ttsEngine, configManager,
-                                                               nluEngine, commandExecutor, context),
-        StateType.EXECUTING_COMMAND to ExecutingCommandState(speechRecognizer, overlayManager,
-                                                             volumeManager, ttsEngine, configManager,
-                                                             nluEngine, commandExecutor, context),
-        StateType.CONFIRMATION to ConfirmationState(speechRecognizer, overlayManager, volumeManager,
-                                                    ttsEngine, configManager, nluEngine,
-                                                    commandExecutor, context),
-        StateType.COMMAND_ERROR to CommandErrorState(speechRecognizer, overlayManager, volumeManager,
-                                                     ttsEngine, configManager, nluEngine,
-                                                     commandExecutor, context, ""),
-        StateType.KEYWORD_ERROR to KeywordErrorState(speechRecognizer, overlayManager, volumeManager,
-                                                     ttsEngine, configManager, nluEngine,
-                                                     commandExecutor, context),
-        StateType.TIMEOUT to TimeoutState(speechRecognizer, overlayManager, volumeManager,
-                                          ttsEngine, configManager, nluEngine, commandExecutor, context),
+        StateType.IDLE to IdleState(context),
+        StateType.ACTIVATED to ActivatedState(context),
+        StateType.LISTENING_COMMAND to ListeningCommandState(context),
+        StateType.RECOGNIZED_COMMAND to RecognizedCommandState(context),
+        StateType.EXECUTING_COMMAND to ExecutingCommandState(context),
+        StateType.CONFIRMATION to ConfirmationState(context),
+        StateType.COMMAND_ERROR to CommandErrorState(context),
+        StateType.KEYWORD_ERROR to KeywordErrorState(context),
+        StateType.TIMEOUT to TimeoutState(context),
     )
 
     private var mainJob: Job? = null
-
     @Volatile
     private var currentState: IState = states[StateType.IDLE]!!
-
     @Volatile
     private var executionJob: Job? = null
 
@@ -118,8 +84,7 @@ class StateMachine(
      * Перейти к новому состоянию по типу.
      * Подписывается на колбэки и запускает execute() в фоне.
      */
-    private fun transitionTo(stateType: StateType) {
-        // Отменяем предыдущее выполнение
+    private fun transitionTo(stateType: StateType) { // Отменяем предыдущее выполнение
         executionJob?.cancel()
         executionJob = null
 
@@ -136,6 +101,7 @@ class StateMachine(
                     Log.d(TAG, "Completion → ${result.stateType}")
                     transitionTo(result.stateType)
                 }
+
                 is StateResult.Cancel -> {
                     Log.d(TAG, "Completion with Cancel → IDLE")
                     transitionTo(StateType.IDLE)
@@ -152,9 +118,11 @@ class StateMachine(
         executionJob = scope.launch {
             try {
                 nextState.execute()
-            } catch (e: CancellationException) {
+            }
+            catch (e: CancellationException) {
                 Log.d(TAG, "State execution cancelled (normal during activation/cancellation)")
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "State execution error", e)
                 transitionTo(StateType.IDLE)
             }
@@ -197,11 +165,11 @@ class StateMachine(
 
         if (current.canCancel) {
             onButtonPressed()
-        } else {
+        }
+        else {
             Log.i(TAG, "Activate from non-cancellable state: ${current::class.simpleName}")
             val nextState = current.activate()
-            if (nextState != null && nextState !== current) {
-                // activate() возвращает IState — используем его напрямую
+            if (nextState != null && nextState !== current) { // activate() возвращает IState — используем его напрямую
                 executionJob?.cancel()
                 executionJob = null
                 currentState = nextState
@@ -219,9 +187,11 @@ class StateMachine(
                 executionJob = scope.launch {
                     try {
                         currentState.execute()
-                    } catch (e: CancellationException) {
+                    }
+                    catch (e: CancellationException) {
                         Log.d(TAG, "State execution cancelled")
-                    } catch (e: Exception) {
+                    }
+                    catch (e: Exception) {
                         Log.e(TAG, "State execution error", e)
                         transitionTo(StateType.IDLE)
                     }

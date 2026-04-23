@@ -55,7 +55,8 @@
       "confirm_question": "Подтверждаете?",
       "confirm_yes": "Да",
       "confirm_no": "Нет",
-      "listening": "Слушаю"
+      "listening": "Слушаю",
+      "cancel": "Отмена"
     }
   },
   

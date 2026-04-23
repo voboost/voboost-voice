@@ -17,26 +17,24 @@ import ru.voboost.voiceassistant.config.ConfigManager
  * Менеджер UI оверлеев
  * Показывает анимацию и уведомления поверх других приложений
  */
-class OverlayManager(
-    private val context: Context
-) {
+class OverlayManager(private val context: Context) {
     companion object {
         const val TAG = "OverlayManager"
         const val OVERLAY_POSITION = "top_left"
         const val OVERLAY_OFFSET_X_DP = 0
         const val OVERLAY_OFFSET_Y_DP = 0
-        const val SHOW_ANIMATION =  true
+        const val SHOW_ANIMATION = true
         const val ANIMATION_DURATION_MS = 1000L
         const val TOAST_DURATION_MS = 3000
     }
-    
+
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val configManager = ConfigManager.getInstance(context)
     private val handler = Handler(Looper.getMainLooper())
-    
+
     private var voiceClickView: View? = null
     private var isAnimationShowing = false
-    
+
     /**
      * Показать анимацию голосового помощника
      * Анимация крутится бесконечно пока ассистент активен.
@@ -61,14 +59,11 @@ class OverlayManager(
                 voiceClickView = VoiceClickView(context)
 
                 // Параметры окна
-                val params = WindowManager.LayoutParams(
-                    WindowManager.LayoutParams.WRAP_CONTENT,
-                    WindowManager.LayoutParams.WRAP_CONTENT,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    PixelFormat.TRANSLUCENT
-                )
+                val params = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
+                                                        WindowManager.LayoutParams.WRAP_CONTENT,
+                                                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                                                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                                                        PixelFormat.TRANSLUCENT)
 
                 // Позиция: верх, X=0 (центрируем после layout)
                 params.gravity = Gravity.TOP or Gravity.START
@@ -94,7 +89,8 @@ class OverlayManager(
 
                 Log.d(TAG, "Animation shown at top-center")
 
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Failed to show animation", e)
             }
         }
@@ -113,12 +109,13 @@ class OverlayManager(
                     isAnimationShowing = false
                     Log.d(TAG, "Animation hidden")
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Failed to hide animation", e)
             }
         }
     }
-    
+
     /**
      * Показать Toast уведомление
      */
@@ -138,15 +135,16 @@ class OverlayManager(
                 val toast = Toast(context).apply {
                     duration = Toast.LENGTH_SHORT
                     setGravity(Gravity.TOP or Gravity.START,
-                        (OVERLAY_OFFSET_X_DP * context.resources.displayMetrics.density).toInt(),
-                        (OVERLAY_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt() + 200)
+                               (OVERLAY_OFFSET_X_DP * context.resources.displayMetrics.density).toInt(),
+                               (OVERLAY_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt() + 200)
                     this.view = view
                 }
                 toast.show()
 
                 Log.d(TAG, "Toast shown: $message")
 
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Failed to show toast", e)
 
                 // Fallback к стандартному Toast
@@ -154,7 +152,7 @@ class OverlayManager(
             }
         }
     }
-    
+
     /**
      * Показать уведомление о выполнении команды
      */
@@ -164,20 +162,21 @@ class OverlayManager(
         // Анимация уже показана во время распознавания
         // Здесь только текст
     }
-    
+
     /**
      * Очистить все оверлеи
      */
     fun clearAll() {
         hideAnimation()
-        
+
         handler.post {
             try {
                 voiceClickView?.let { view ->
                     windowManager.removeView(view)
                     voiceClickView = null
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Error clearing overlays", e)
             }
         }
