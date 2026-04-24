@@ -1,8 +1,11 @@
-﻿package ru.voboost.voiceassistant.canbus
+package ru.voboost.voiceassistant.canbus.handlers
 
 import android.util.Log
 import com.qinggan.canbus.CanBusListener
 import com.qinggan.canbus.VehicleState
+import ru.voboost.voiceassistant.VoboostVoiceService
+import ru.voboost.voiceassistant.canbus.CanBusServiceManager
+import ru.voboost.voiceassistant.canbus.ICanBusServiceConnectionCallback
 import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 
 /**
@@ -14,8 +17,9 @@ import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
  * @param canBusManager Менеджер CanBusService для регистрации callback
  * @param ttsCallback Callback для воспроизведения TTS предупреждений
  */
-class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
-                           private val queueSpeech: QueueSpeechSynthesis) {
+class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
+        ICanBusServiceConnectionCallback {
+    private var canBusManager: CanBusServiceManager? = null
     private var currentSpeed = 0
     private var isaWarningEnabled = true
     private var isCallbackRegistered = false
@@ -39,8 +43,9 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
         when (vehicle) {
             VehicleState.ISA_ISLC_STATUS -> { // Приняли статус — теперь запросим детали
                 if (IState == 7) {
-                    if(isaWarningEnabled){// Факт превышения скорости
-                        queueSpeech.enqueue("Превышение скорости", QueueSpeechSynthesis.PRIOR_CRITICAL)
+                    if (isaWarningEnabled) { // Факт превышения скорости
+                        queueSpeech.enqueue("Превышение скорости",
+                                            QueueSpeechSynthesis.Companion.PRIOR_CRITICAL)
                     }
                 }
             }
@@ -60,32 +65,48 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
         currentSpeed = speed // Log.d(TAG, "🚗 Скорость: $speed км/ч")
     }
 
+    override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
+        canBusManager = canBusServiceManager
+        register()
+        Log.d(TAG, "register")
+    }
+
+    override fun handlerDisconnected(canBusServiceManager: CanBusServiceManager) {
+        unregister()
+        canBusManager = null
+        Log.d(TAG, "unregistered")
+    }
+
+    override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager,
+                                         error: String) {
+    }
+
     /**
      * Зарегистрировать callback
      */
-    fun register(): Boolean {
+    private fun register(): Boolean {
         if (isCallbackRegistered) return true
-        val success = canBusManager.registerCallback(mCanBusListener)
-        if (success) {
+        val success = canBusManager?.registerCallback(mCanBusListener)
+        if (success == true) {
             isCallbackRegistered = true
-            val isaWarningState = canBusManager.getVehicleState(VehicleState.ISA_ISLC_OVER_SPEED_WARNING_SWITCH)
+            val isaWarningState = canBusManager?.getVehicleState(VehicleState.ISA_ISLC_OVER_SPEED_WARNING_SWITCH)
             isaWarningEnabled = (isaWarningState == 2)
             Log.d(TAG, "🔧 start get ISA_OVER_SPEED_WARNING_SWITCH: $isaWarningState")
         }
-        return success
+        return success == true
     }
 
     /**
      * Отписаться от callback
      */
-    fun unregister(): Boolean {
+    private fun unregister(): Boolean {
         if (!isCallbackRegistered) return true
-        val success = canBusManager.unregisterCallback(mCanBusListener)
-        if (success) {
+        val success = canBusManager?.unregisterCallback(mCanBusListener)
+        if (success == true) {
             isCallbackRegistered = false
             Log.i(TAG, "TSR handler unregistered")
         }
-        return success
+        return success == true
     }
 
     /**
@@ -98,4 +119,3 @@ class TSRSpeedLimitHandler(private val canBusManager: CanBusServiceManager,
      */
     fun isISAWarningEnabled(): Boolean = isaWarningEnabled
 }
-

@@ -56,34 +56,20 @@ class CanBusServiceManager(context: Context) {
     private var canBusService: ICanBusService? = null
 
     // Callback'и для уведомления о подключении
-    private val connectionCallbacks = mutableListOf<ConnectionCallback>()
+    private val connectionCallbacks = mutableListOf<ICanBusServiceConnectionCallback>()
 
     // ServiceConnection для подключения к CanBusService
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Log.i(TAG, "Connected to CanBusService")
-            canBusService = ICanBusService.Stub.asInterface(service)
-            isBound = true
-            isConnecting = false
-
-            // Уведомляем callback'и
-            connectionCallbacks.forEach { it.onConnected() }
+            this@CanBusServiceManager.onServiceConnected(name, service)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Log.w(TAG, "Disconnected from CanBusService")
-            canBusService = null
-            isBound = false
-
-            // Уведомляем callback'и
-            connectionCallbacks.forEach { it.onDisconnected() }
+            this@CanBusServiceManager.onServiceDisconnected(name)
         }
 
         override fun onBindingDied(name: ComponentName?) {
-            Log.e(TAG, "Binding died for CanBusService")
-            isBound = false
-            isConnecting = false
-            canBusService = null
+            this@CanBusServiceManager.onBindingDied(name)
         }
     }
 
@@ -112,26 +98,50 @@ class CanBusServiceManager(context: Context) {
             if (!result) {
                 Log.e(TAG, "Failed to bind to CanBusService - bindService returned false")
                 isConnecting = false
-                connectionCallbacks.forEach { it.onConnectionFailed("bindService returned false") }
+                onConnectionFailed("bindService returned false")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to bind to CanBusService", e)
             isConnecting = false
-            connectionCallbacks.forEach { it.onConnectionFailed(e.message ?: "Unknown error") }
+            onConnectionFailed(e.message ?: "Unknown error")
         }
+    }
+
+    private fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        Log.i(TAG, "Connected to CanBusService")
+        canBusService = ICanBusService.Stub.asInterface(service)
+        isBound = true
+        isConnecting = false
+        // Уведомляем callback'и
+        onConnected()
+    }
+
+    private fun onServiceDisconnected(name: ComponentName?) {
+        Log.w(TAG, "Disconnected from CanBusService")
+        canBusService = null
+        isBound = false
+        // Уведомляем callback'и
+        onDisconnected()
+    }
+
+    private fun onBindingDied(name: ComponentName?) {
+        Log.e(TAG, "Binding died for CanBusService")
+        isBound = false
+        isConnecting = false
+        canBusService = null
     }
 
     /**
      * Зарегистрировать callback подключения
      */
-    fun addConnectionCallback(callback: ConnectionCallback) {
+    fun registerConnectionCallback(callback: ICanBusServiceConnectionCallback) {
         connectionCallbacks.add(callback)
     }
 
     /**
      * Удалить callback подключения
      */
-    fun removeConnectionCallback(callback: ConnectionCallback) {
+    fun unregisterConnectionCallback(callback: ICanBusServiceConnectionCallback) {
         connectionCallbacks.remove(callback)
     }
 
@@ -158,10 +168,6 @@ class CanBusServiceManager(context: Context) {
             false
         }
     }
-
-    // ============================================================================
-    // МЕТОДЫ УПРАВЛЕНИЯ АВТОМОБИЛЕМ
-    // ============================================================================
 
     /**
      * Установить состояние автомобиля
@@ -234,10 +240,6 @@ class CanBusServiceManager(context: Context) {
             0
         }
     }
-
-    // ============================================================================
-    // МЕТОДЫ УПРАВЛЕНИЯ КОНДИЦИОНЕРОМ
-    // ============================================================================
 
     /**
      * Установить состояние кондиционера
@@ -420,10 +422,6 @@ class CanBusServiceManager(context: Context) {
         }
     }
 
-    // ============================================================================
-    // МЕТОДЫ РЕГИСТРАЦИИ CALLBACK'ОВ
-    // ============================================================================
-
     /**
      * Зарегистрировать callback для получения событий от CanBus
      *
@@ -432,7 +430,6 @@ class CanBusServiceManager(context: Context) {
      */
     fun registerCallback(callback: ICanBusServiceCallback): Boolean {
         if (!ensureConnected()) return false
-
         return try {
             canBusService?.addCallback(callback) == true
             Log.i(TAG, "Callback registered: ${callback.javaClass.simpleName}")
@@ -462,9 +459,21 @@ class CanBusServiceManager(context: Context) {
         }
     }
 
-    // ============================================================================
-    // МЕТОДЫ ОЧИСТКИ РЕСУРСОВ
-    // ============================================================================
+
+    fun onConnected()
+    {
+        connectionCallbacks.forEach { it.handlerConnected(this) }
+    }
+
+    fun onDisconnected()
+    {
+        connectionCallbacks.forEach { it.handlerDisconnected(this) }
+    }
+
+    private fun onConnectionFailed(error: String)
+    {
+        connectionCallbacks.forEach { it.handlerConnectionFailed(this, error) }
+    }
 
     /**
      * Отключиться от сервиса
@@ -499,22 +508,3 @@ class CanBusServiceManager(context: Context) {
     }
 }
 
-/**
- * Callback для уведомления о подключении к CanBusService
- */
-interface ConnectionCallback {
-    /**
-     * Вызывается при успешном подключении
-     */
-    fun onConnected() {}
-
-    /**
-     * Вызывается при отключении
-     */
-    fun onDisconnected() {}
-
-    /**
-     * Вызывается при ошибке подключения
-     */
-    fun onConnectionFailed(error: String) {}
-}

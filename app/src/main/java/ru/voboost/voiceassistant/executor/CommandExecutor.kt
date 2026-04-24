@@ -21,18 +21,16 @@ import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
  *
  * @param vehicleCommandExecutor Реализация выполнения команд (Intent или Shell)
  */
-class CommandExecutor(
-    private val context: Context,
-    private val queueSpeech: QueueSpeechSynthesis,
-    private val overlayManager: OverlayManager,
-    private val coroutineScope: CoroutineScope,
-    private val vehicleCommandExecutor: IVehicleCommandExecutor  // ← Интерфейс выполнения
-) {
+class CommandExecutor(private val context: Context,
+                      private val queueSpeech: QueueSpeechSynthesis,
+                      private val overlayManager: OverlayManager,
+                      private val coroutineScope: CoroutineScope,
+                      private val vehicleCommandExecutor: IVehicleCommandExecutor,
+                      private val configManager: ConfigManager) {
     companion object {
         const val TAG = "CommandExecutor"
     }
 
-    private val configManager = ConfigManager.getInstance(context)
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     // Сохраняем уровень громкости до приглушения
@@ -54,9 +52,9 @@ class CommandExecutor(
         // Приглушить звук (Audio Ducking)
         duckAudio(true)
 
-        try {
-            // Добавляем зону в voiceParams для команд климата
-            val voiceParamsWithZone = recognizedCommand.extractedParams + ("_zone" to (zone ?: "center"))
+        try { // Добавляем зону в voiceParams для команд климата
+            val voiceParamsWithZone =
+                recognizedCommand.extractedParams + ("_zone" to (zone ?: "center"))
 
             // Выполнение действия
             val success = executeAction(commandConfig, voiceParamsWithZone)
@@ -70,43 +68,44 @@ class CommandExecutor(
                 val finalPhrase = substituteParams(successPhrase, recognizedCommand.extractedParams)
 
                 // Голос + Overlay (всегда!)
-                if(!finalPhrase.isNullOrEmpty())
-                {
+                if (!finalPhrase.isNullOrEmpty()) {
                     val queueSpeechJob = coroutineScope.async {
-                        queueSpeech.enqueueAsync(finalPhrase)}
+                        queueSpeech.enqueueAsync(finalPhrase)
+                    }
                     overlayManager.showToast(finalPhrase)
                     queueSpeechJob.await()
                 }
 
-            } else {
+            }
+            else {
                 Log.w(TAG, "Command execution failed")
                 val failurePhrase = commandConfig.phrases?.failure
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
 
                 // Голос + Overlay (всегда!)
-                if(!failurePhrase.isNullOrEmpty())
-                {
-                    val queueSpeechJob = coroutineScope.async{
-                        queueSpeech.enqueueAsync(failurePhrase)}
+                if (!failurePhrase.isNullOrEmpty()) {
+                    val queueSpeechJob = coroutineScope.async {
+                        queueSpeech.enqueueAsync(failurePhrase)
+                    }
                     overlayManager.showToast(failurePhrase)
                     queueSpeechJob.await()
                 }
             }
 
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Error executing command", e)
             val errorPhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
-            if(!errorPhrase.isNullOrEmpty())
-            {
-                val queueSpeechJob = coroutineScope.async{
+            if (!errorPhrase.isNullOrEmpty()) {
+                val queueSpeechJob = coroutineScope.async {
                     queueSpeech.enqueueAsync(errorPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
                 }
                 overlayManager.showToast(errorPhrase)
                 queueSpeechJob.await()
             }
 
-        } finally {
-            // Восстановить громкость
+        }
+        finally { // Восстановить громкость
             duckAudio(false)
         }
     }
@@ -116,34 +115,28 @@ class CommandExecutor(
      */
     private fun duckAudio(duck: Boolean) {
         try {
-            if (duck) {
-                // Сохраняем текущую громкость
+            if (duck) { // Сохраняем текущую громкость
                 originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
                 // Уменьшаем громкость на 50%
                 val duckedVolume = (originalVolume * 0.5).toInt()
-                audioManager.setStreamVolume(
-                    AudioManager.STREAM_MUSIC,
-                    duckedVolume.coerceAtLeast(0),
-                    0
-                )
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                                             duckedVolume.coerceAtLeast(0),
+                                             0)
                 Log.d(TAG, "Audio ducked: $originalVolume -> $duckedVolume")
-            } else {
-                // Восстанавливаем громкость через 1 секунду (чтобы TTS закончил)
+            }
+            else { // Восстанавливаем громкость через 1 секунду (чтобы TTS закончил)
                 coroutineScope.launch {
                     delay(1000)
                     if (originalVolume >= 0 && isActive) {
-                        audioManager.setStreamVolume(
-                            AudioManager.STREAM_MUSIC,
-                            originalVolume,
-                            0
-                        )
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, 0)
                         Log.d(TAG, "Audio restored: $originalVolume")
                         originalVolume = -1
                     }
                 }
             }
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.w(TAG, "Failed to duck audio", e)
         }
     }
@@ -152,28 +145,26 @@ class CommandExecutor(
      * Выполнить действие команды
      * @return true если успешно
      */
-    private fun executeAction(
-        commandConfig: CommandConfig,
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    private fun executeAction(commandConfig: CommandConfig,
+                              voiceParams: Map<String, Any>): Boolean {
         Log.d(TAG, "Executing via ${vehicleCommandExecutor.executionMethod}")
         Log.d(TAG, "Command: ${commandConfig.id}")
 
         return try {
-            val success = vehicleCommandExecutor.executeByCommandId(
-                commandId = commandConfig.id,
-                voiceParams = voiceParams
-            )
+            val success = vehicleCommandExecutor.executeByCommandId(commandId = commandConfig.id,
+                                                                    voiceParams = voiceParams)
 
             if (success) {
                 Log.i(TAG, "Command executed successfully")
-            } else {
+            }
+            else {
                 Log.w(TAG, "Command execution failed")
             }
 
             success
 
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Failed to execute command", e)
             false
         }
@@ -202,12 +193,13 @@ class CommandExecutor(
             configManager.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD)
 
         if (!notUnderstoodPhrase.isNullOrEmpty()) {
-            val queueSpeechJob = coroutineScope.async{
+            val queueSpeechJob = coroutineScope.async {
                 queueSpeech.enqueueAsync(notUnderstoodPhrase, QueueSpeechSynthesis.PRIOR_MEDIUM)
             }
             overlayManager.showToast(notUnderstoodPhrase)
             queueSpeechJob.await()
-        } else {
+        }
+        else {
             Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
             overlayManager.showToast("Команда не распознана")
         }
@@ -216,7 +208,6 @@ class CommandExecutor(
     /**
      * Очистить ресурсы
      */
-    fun cleanup() {
-        // coroutineScope.cancel() // Не отменяем - scope принадлежит сервису
+    fun cleanup() { // coroutineScope.cancel() // Не отменяем - scope принадлежит сервису
     }
 }

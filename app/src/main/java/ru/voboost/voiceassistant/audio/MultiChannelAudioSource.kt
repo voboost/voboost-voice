@@ -1,6 +1,5 @@
 package ru.voboost.voiceassistant.audio
 
-import android.content.Context
 import android.util.Log
 import com.qinggan.audiorecord.record.NativeRecord
 import com.qinggan.audiorecord.record.api.IRecordListener
@@ -13,17 +12,13 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - Захват с 4 микрофонов + 2 reference канала для AEC
  * - TDOA анализ для определения зоны говорящего
  *
- * @param context Контекст приложения
  * @param sampleRate Частота дискретизации (по умолчанию 16000 Гц)
  * @param micSpacing Расстояние между микрофонами в метрах (по умолчанию 15 см)
  * @param channelCount Желаемое количество каналов (4 или 6 с AEC)
  */
-class MultiChannelAudioSource(
-    private val context: Context,
-    private val sampleRate: Int = IAudioSource.SAMPLE_RATE,
-    private val micSpacing: Float = 0.15f,
-    private val channelCount: Int = 6
-) : IAudioSource {
+class MultiChannelAudioSource(private val sampleRate: Int,
+                              private val micSpacing: Float,
+                              private val channelCount: Int) : IAudioSource {
 
     companion object {
         const val TAG = "MultiChannelAudioSource"
@@ -39,10 +34,17 @@ class MultiChannelAudioSource(
     private val nativeRecord = NativeRecord.getInstance()
     private val tdoaDetector = TdoaZoneDetector(micSpacing, sampleRate)
 
-    @Volatile private var isRecording = false
-    @Volatile private var isInitialized = false
-    @Volatile private var lastDetectedZone: String = ZONE_FRONT_LEFT
-    @Volatile private var actualChannelCount: Int = channelCount
+    @Volatile
+    private var isRecording = false
+
+    @Volatile
+    private var isInitialized = false
+
+    @Volatile
+    private var lastDetectedZone: String = ZONE_FRONT_LEFT
+
+    @Volatile
+    private var actualChannelCount: Int = channelCount
 
     // Слушатель для NativeRecord — сигнатура: onData(byte[], int)
     private val recordListener = object : IRecordListener {
@@ -52,8 +54,7 @@ class MultiChannelAudioSource(
                 return
             }
 
-            try {
-                // Демультиплексируем interleaved PCM
+            try { // Демультиплексируем interleaved PCM
                 val channels = demuxChannels(data, length, actualChannelCount)
 
                 if (channels.size >= 2) {
@@ -64,26 +65,31 @@ class MultiChannelAudioSource(
                     for (listener in listeners) {
                         try {
                             listener.onAudioData(interleavedData, interleavedData.size, zone)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Listener callback error", e)
                         }
-                    }
-                } else {
-                    Log.w(TAG, "Single channel audio, using default zone")
-                    for (listener in listeners) {
-                        try {
-                            listener.onAudioData(data, length, ZONE_ALL_LOCATION)
-                        } catch (e: Exception) {
+                        catch (e: Exception) {
                             Log.e(TAG, "Listener callback error", e)
                         }
                     }
                 }
-            } catch (e: Exception) {
+                else {
+                    Log.w(TAG, "Single channel audio, using default zone")
+                    for (listener in listeners) {
+                        try {
+                            listener.onAudioData(data, length, ZONE_ALL_LOCATION)
+                        }
+                        catch (e: Exception) {
+                            Log.e(TAG, "Listener callback error", e)
+                        }
+                    }
+                }
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Error processing audio data", e)
                 for (listener in listeners) {
                     try {
                         listener.onAudioData(data, length, ZONE_ALL_LOCATION)
-                    } catch (ex: Exception) {
+                    }
+                    catch (ex: Exception) {
                         Log.e(TAG, "Fallback listener error", ex)
                     }
                 }
@@ -119,7 +125,8 @@ class MultiChannelAudioSource(
             isInitialized = true
             Log.i(TAG, "✅ Initialized (channels=$actualChannelCount)")
             true
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "❌ Failed to initialize", e)
             false
         }
@@ -157,13 +164,13 @@ class MultiChannelAudioSource(
 
     override fun release() {
         stop()
-        try {
-            // ✅ Удаляем слушателя перед release()
+        try { // ✅ Удаляем слушателя перед release()
             nativeRecord.removeRecordListener(recordListener)
             nativeRecord.release()
             isInitialized = false
             Log.i(TAG, "✅ Released")
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Error releasing", e)
         }
     }
@@ -186,7 +193,9 @@ class MultiChannelAudioSource(
     fun getLastDetectedZone(): String = lastDetectedZone
     fun getActualChannelCount(): Int = actualChannelCount
 
-    private fun demuxChannels(buffer: ByteArray, bytesRead: Int, totalChannels: Int): Array<ShortArray> {
+    private fun demuxChannels(buffer: ByteArray,
+                              bytesRead: Int,
+                              totalChannels: Int): Array<ShortArray> {
         val bytesPerSample = 2
         val frameSize = totalChannels * bytesPerSample
         if (frameSize <= 0 || bytesRead < frameSize) return emptyArray()
@@ -201,8 +210,8 @@ class MultiChannelAudioSource(
             for (ch in 0 until outputChannels) {
                 val offset = (frame * frameSize) + (ch * bytesPerSample)
                 if (offset + 1 < bytesRead) {
-                    val sample = ((buffer[offset].toInt() and 0xFF) or
-                            (buffer[offset + 1].toInt() shl 8)).toShort()
+                    val sample =
+                        ((buffer[offset].toInt() and 0xFF) or (buffer[offset + 1].toInt() shl 8)).toShort()
                     channels[ch][frame] = sample
                 }
             }
@@ -231,12 +240,10 @@ class MultiChannelAudioSource(
 
     fun isMultiChannelSupported(): Boolean = true
 
-    fun getDebugInfo(): Map<String, Any> = mapOf(
-        "requestedChannels" to channelCount,
-        "actualChannels" to actualChannelCount,
-        "sampleRate" to sampleRate,
-        "isInitialized" to isInitialized,
-        "isRecording" to isRecording,
-        "lastZone" to lastDetectedZone
-    )
+    fun getDebugInfo(): Map<String, Any> = mapOf("requestedChannels" to channelCount,
+                                                 "actualChannels" to actualChannelCount,
+                                                 "sampleRate" to sampleRate,
+                                                 "isInitialized" to isInitialized,
+                                                 "isRecording" to isRecording,
+                                                 "lastZone" to lastDetectedZone)
 }

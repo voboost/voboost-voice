@@ -17,7 +17,8 @@ import ru.voboost.voiceassistant.config.ConfigManager
  * Менеджер UI оверлеев
  * Показывает анимацию и уведомления поверх других приложений
  */
-class OverlayManager(private val context: Context) {
+class OverlayManager(private val context: Context,
+                     private val configManager: ConfigManager) {
     companion object {
         const val TAG = "OverlayManager"
         const val OVERLAY_POSITION = "top_left"
@@ -29,7 +30,6 @@ class OverlayManager(private val context: Context) {
     }
 
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val configManager = ConfigManager.getInstance(context)
     private val handler = Handler(Looper.getMainLooper())
 
     private var voiceClickView: View? = null

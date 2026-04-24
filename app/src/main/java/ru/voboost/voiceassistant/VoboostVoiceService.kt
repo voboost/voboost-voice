@@ -23,11 +23,8 @@ import ru.voboost.voiceassistant.core.SpeechEngineFactory.RecognitionEngine
 import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.ui.OverlayManager
-import ru.voboost.voiceassistant.engine.system.SystemSpeechSynthesis
 import ru.voboost.voiceassistant.canbus.CanBusServiceManager
-import ru.voboost.voiceassistant.canbus.VoiceButtonHandler
-import ru.voboost.voiceassistant.canbus.VoiceAssistantCallback
-import ru.voboost.voiceassistant.canbus.TSRSpeedLimitHandler
+import ru.voboost.voiceassistant.canbus.handlers.TSRSpeedLimitHandler
 import ru.voboost.voiceassistant.speech.state.StateMachine
 import ru.voboost.voiceassistant.speech.state.StateContext
 import ru.voboost.voiceassistant.speech.state.IdleState
@@ -38,6 +35,7 @@ import android.content.pm.ServiceInfo
 import ru.voboost.voiceassistant.audio.IAudioSource
 import ru.voboost.voiceassistant.audio.AudioSourceFactory
 import ru.voboost.voiceassistant.audio.VolumeManager
+import ru.voboost.voiceassistant.canbus.handlers.VoiceButtonHandler
 import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.core.ISpeechRecognizer
 import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
@@ -52,17 +50,13 @@ class VoboostVoiceService : Service() {
         const val TAG = "VoboostVoiceService"
         private const val NOTIFICATION_CHANNEL_ID = "voboost_voice_channel"
         private const val NOTIFICATION_ID = 1001
-
         @Volatile
         private var instance: VoboostVoiceService? = null
-
         fun getInstance(): VoboostVoiceService? = instance
-
         const val ACTION_CANCEL = "ru.voboost.voiceassistant.CANCEL"
         const val ACTION_ACTIVATE = "ru.voboost.voiceassistant.ACTIVATE"
-        val ASR_ENGINE_TYPE = RecognitionEngine.VOSK  // ← Vosk (стабильный)
-        val AUDIO_SOURCE_TYPE =
-            AudioSourceFactory.SourceType.ANDROID  // ← TransProxy (системный, с шумоподавлением)
+        val ASR_ENGINE_TYPE = RecognitionEngine.VOSK
+        val AUDIO_SOURCE_TYPE = AudioSourceFactory.SourceType.ANDROID
     }
 
     // Компоненты системы
@@ -76,25 +70,20 @@ class VoboostVoiceService : Service() {
     private lateinit var speechSynthesis: ISpeechSynthesis  // ← Интерфейс
     private lateinit var queueSpeech: QueueSpeechSynthesis
     private lateinit var soundEffectManager: SoundEffectManager
-
     // IAudioSource - единый источник аудио данных
     private lateinit var audioSource: IAudioSource
-
     // CanBus Manager - единая точка доступа к CAN шине
     private lateinit var canBusManager: CanBusServiceManager
-
     // Voice Button Handler - обработка кнопки на руле
     private var voiceButtonHandler: VoiceButtonHandler? = null
-
     // TSR Speed Limit Handler - предупреждения о превышении скорости
     private var tsrSpeedLimitHandler: TSRSpeedLimitHandler? = null
-
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
-
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
+    // Флаг остановки сервиса (для отмены retry в startKeywordSpotting)
+    private var isDestroying = false
     // Receiver для отмены распознавания
     private val cancelReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -137,19 +126,17 @@ class VoboostVoiceService : Service() {
     /**
      * Инициализация движков в фоне
      */
-    private suspend fun initializeEngines() { // Используем фабрику для создания движков (легко переключаться между Vosk/Sherpa)
+    private suspend fun initializeEngines() {
         val recommendedConfig = SpeechEngineFactory.getRecommendedConfig(this)
-        Log.i(TAG,
-              "Recommended config: ASR=${recommendedConfig.first}, TTS=${recommendedConfig.second}")
+        Log.i(TAG,"Recommended config: ASR=${recommendedConfig.first}, TTS=${recommendedConfig.second}")
 
         // TTS Engine — выбираем согласно конфигу
-        val ttsConfig = configManager.getConfig().tts
-        val ttsEngineType = when (ttsConfig.offline.engine.lowercase()) {
+        val speechConfig = configManager.getConfig().tts
+        val speechEngineType = when (speechConfig.offline.engine.lowercase()) {
             "sherpa" -> {
                 Log.i(TAG, "TTS engine from config: Sherpa-ONNX")
                 SpeechEngineFactory.SynthesisEngine.SHERPA
             }
-
             else -> {
                 Log.i(TAG, "TTS engine from config: System TTS")
                 SpeechEngineFactory.SynthesisEngine.SYSTEM
@@ -158,31 +145,29 @@ class VoboostVoiceService : Service() {
 
         // TTS Engine (используем системный как стабильный, можно заменить на Sherpa)
         try {
-            val sherpaTtsModePath = ExternalStoragePaths.sherpaTtsModelDir.absolutePath
-            val speaker = ttsConfig.offline.speaker
+            val sherpaSpeechModePath = ExternalStoragePaths.sherpaTtsModelDir.absolutePath
+            val speaker = speechConfig.offline.speaker
             speechSynthesis = SpeechEngineFactory.createSynthesisEngine(this,
-                                                                        ttsEngineType,
-                                                                        sherpaTtsModePath,
+                                                                        speechEngineType,
+                                                                        sherpaSpeechModePath,
                                                                         speaker)
 
             // Инициализация TTS (обязательно для Sherpa)
             speechSynthesis.initialize()
 
             // Настройки rate/pitch из конфига
-            speechSynthesis.setRate(ttsConfig.offline.rate)
-            speechSynthesis.setPitch(ttsConfig.offline.pitch)
+            speechSynthesis.setRate(speechConfig.offline.rate)
+            speechSynthesis.setPitch(speechConfig.offline.pitch)
 
-            Log.i(TAG,
-                  "TTS engine initialized (engine=${ttsConfig.offline.engine}, rate=${ttsConfig.offline.rate}, pitch=${ttsConfig.offline.pitch})")
+            Log.i(TAG,"TTS engine initialized (engine=${speechConfig.offline.engine}, rate=${speechConfig.offline.rate}, pitch=${speechConfig.offline.pitch})")
         }
         catch (e: Exception) {
             Log.e(TAG, "Failed to initialize TTS engine", e)
-            speechSynthesis = SystemSpeechSynthesis(this)  // Fallback
         }
 
         queueSpeech = QueueSpeechSynthesis(speechSynthesis)
-        nluEngine = NLUEngine(this)
-        overlayManager = OverlayManager(this)
+        nluEngine = NLUEngine(configManager)
+        overlayManager = OverlayManager(this, configManager)
         soundEffectManager = SoundEffectManager(this)
 
         // IAudioSource - создаётся ОДИН раз и передаётся в движок распознавания
@@ -194,54 +179,30 @@ class VoboostVoiceService : Service() {
         volumeManager?.connect()
         Log.i(TAG, "VolumeManager connected - can duck/restore media volume")
 
+        // Voice Button Handler - регистрация обработчика кнопки на руле
+        voiceButtonHandler = VoiceButtonHandler(serviceScope, configManager)
+        // TSR Speed Limit Handler — регистрируем через callback подключения
+        tsrSpeedLimitHandler = TSRSpeedLimitHandler(queueSpeech)
+
         // CanBus Manager - инициализация (автоматически подключается к CanBusService)
         canBusManager = CanBusServiceManager(this)
         Log.i(TAG, "CanBusServiceManager initialized")
-
-        // Voice Button Handler - регистрация обработчика кнопки на руле
-        // Voice Button Handler — регистрируем через callback подключения
-        voiceButtonHandler =
-            VoiceButtonHandler(this, canBusManager, object : VoiceAssistantCallback {
-                override fun onVoiceButtonPressed() {
-                    Log.i(TAG, "Voice button pressed on steering wheel - activating assistant")
-                    serviceScope.launch {
-                        activateVoiceAssistant()
-                    }
-                }
-            })
-
-        // TSR Speed Limit Handler — регистрируем через callback подключения
-        tsrSpeedLimitHandler = TSRSpeedLimitHandler(canBusManager, queueSpeech)
-
-        // Регистрируем callback подключения — обработчики регистрируются когда CanBusService готов
-        canBusManager.addConnectionCallback(object :
-                                                    ru.voboost.voiceassistant.canbus.ConnectionCallback {
-            override fun onConnected() {
-                Log.i(TAG, "CanBusService connected — registering handlers")
-                registerCanBusHandlers()
-            }
-
-            override fun onDisconnected() {
-                Log.w(TAG, "CanBusService disconnected")
-            }
-        })
-
+        voiceButtonHandler?.let { canBusManager.registerConnectionCallback(it) }
+        tsrSpeedLimitHandler?.let {  canBusManager.registerConnectionCallback(it)}
         // Если уже подключён — регистрируем сразу
         if (canBusManager.isConnected()) {
             Log.i(TAG, "CanBusService already connected — registering handlers immediately")
-            registerCanBusHandlers()
+            canBusManager.onConnected()
         }
 
         // Создаём VehicleCommandExecutor через фабрику
-        // Все 15 команд (включая телефонные) выполняются через единый executeByCommandId()
-        val canBusManager = CanBusServiceManager(this)
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
-
         commandExecutor = CommandExecutor(context = this,
                                           queueSpeech = queueSpeech,
                                           overlayManager = overlayManager,
                                           coroutineScope = serviceScope,
-                                          vehicleCommandExecutor = vehicleCommandExecutor)
+                                          vehicleCommandExecutor = vehicleCommandExecutor,
+                                          configManager = configManager)
 
         // Command Handler - обработка команд
         commandHandler = CommandHandler(nluEngine, commandExecutor)
@@ -249,11 +210,10 @@ class VoboostVoiceService : Service() {
 
         // SpeechRecognizer - распознавание речи (утилита без состояний)
         // Зона определяется автоматически через MultiChannelAudioSource или TDOA
-        speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(context = this,
-                                                                      engine = ASR_ENGINE_TYPE,
-                                                                      audioSource = audioSource)
+        speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(engine = ASR_ENGINE_TYPE,
+                                                                      audioSource = audioSource,
+                                                                      configManager = configManager)
         Log.i(TAG, "SpeechRecognizer initialized")
-
 
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
@@ -265,10 +225,9 @@ class VoboostVoiceService : Service() {
                                    nluEngine = nluEngine,
                                    commandExecutor = commandExecutor)
 
-        stateMachine = StateMachine(scope = serviceScope,
-                                    context = context)
-
+        stateMachine = StateMachine(serviceScope, context)
         Log.i(TAG, "IState Machine initialized")
+        voiceButtonHandler?.stateMachine = stateMachine
 
         // Регистрируем receiver
         val filter = IntentFilter(ACTION_CANCEL)
@@ -296,7 +255,6 @@ class VoboostVoiceService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand: action=${intent?.action}")
-
         startForeground(NOTIFICATION_ID, createNotification())
 
         when (intent?.action) {
@@ -304,12 +262,10 @@ class VoboostVoiceService : Service() {
                 Log.i(TAG, "Activate request received from button")
                 activateVoiceAssistant()
             }
-
             ACTION_CANCEL -> {
                 Log.i(TAG, "Cancel request received from button")
                 cancelRecognition()
             }
-
             else -> {
                 Log.d(TAG, "Service started, keyword spotting active")
             }
@@ -322,8 +278,9 @@ class VoboostVoiceService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
-
-        instance = null
+        
+        // ✅ Устанавливаем флаг ДО отмены scope, чтобы retry знал о остановке
+        isDestroying = true
         serviceScope.cancel()
 
         try {
@@ -333,16 +290,6 @@ class VoboostVoiceService : Service() {
         catch (e: Exception) {
             Log.w(TAG, "Failed to unregister receiver", e)
         }
-
-        // Отключаем Voice Button Handler
-        voiceButtonHandler?.unregister()
-        voiceButtonHandler = null
-        Log.d(TAG, "VoiceButtonHandler unregistered")
-
-        // Отключаем TSR Speed Limit Handler
-        tsrSpeedLimitHandler?.unregister()
-        tsrSpeedLimitHandler = null
-        Log.d(TAG, "TSRSpeedLimitHandler unregistered")
 
         // Отключаем Volume Manager
         volumeManager?.disconnect()
@@ -359,6 +306,14 @@ class VoboostVoiceService : Service() {
             Log.w(TAG, "IAudioSource not initialized, skipping release")
         }
 
+        canBusManager.onDisconnected()
+        // Отключаем Voice Button Handler
+        voiceButtonHandler?.let { canBusManager.unregisterConnectionCallback(it) }
+        voiceButtonHandler = null
+        // Отключаем TSR Speed Limit Handler
+        tsrSpeedLimitHandler?.let {  canBusManager.unregisterConnectionCallback(it)}
+        tsrSpeedLimitHandler = null
+
         // Отключаем CanBus Manager
         try {
             canBusManager.unbind(this)
@@ -374,27 +329,8 @@ class VoboostVoiceService : Service() {
         speechSynthesis.shutdown()
         soundEffectManager.release()
 
+        instance = null  // ← Очищаем instance ПОСЛЕ всех операций
         super.onDestroy()
-    }
-
-    /**
-     * Зарегистрировать CAN-bus обработчики (кнопка, TSR)
-     * Вызывается когда CanBusService подключён
-     */
-    private fun registerCanBusHandlers() {
-        if (voiceButtonHandler?.register() == true) {
-            Log.i(TAG, "✅ Voice button handler registered")
-        }
-        else {
-            Log.w(TAG, "❌ Failed to register voice button handler")
-        }
-
-        if (tsrSpeedLimitHandler?.register() == true) {
-            Log.i(TAG, "✅ TSR speed limit handler registered")
-        }
-        else {
-            Log.w(TAG, "❌ Failed to register TSR speed limit handler")
-        }
     }
 
     /**
@@ -416,15 +352,25 @@ class VoboostVoiceService : Service() {
                 stateMachine.start()      // Запускаем IState Machine
             }
             catch (e: Exception) {
-                Log.e(TAG,
-                      "Failed to start keyword spotting",
-                      e) // Попытка перезапуска через 3 секунды
-                serviceScope.launch {
-                    delay(3000)
-                    if (serviceScope.isActive) {
-                        Log.i(TAG, "Retrying keyword spotting after exception...")
-                        startKeywordSpotting()
+                Log.e(TAG, "Failed to start keyword spotting", e)
+                
+                // Retry с таймером и проверкой onStopping/onDestroy
+                // Используем withTimeoutOption для проверки isActive
+                try {
+                    withContext(Dispatchers.Default) {
+                        delay(3000)
+                        // Проверяем, что сервис не остановлен
+                        if (this@VoboostVoiceService !is Service || !this@VoboostVoiceService.isDestroying) {
+                            Log.i(TAG, "Retrying keyword spotting after exception...")
+                            startKeywordSpotting()
+                        } else {
+                            Log.w(TAG, "Service is stopping, aborting retry")
+                        }
                     }
+                }
+                catch (retryException: Exception) {
+                    // delay() может быть отменён при onDestroy()
+                    Log.w(TAG, "Retry cancelled", retryException)
                 }
             }
         }
@@ -433,30 +379,17 @@ class VoboostVoiceService : Service() {
     /**
      * Активировать голосовой помощник (после ключевой фразы или кнопки)
      */
-    private fun activateVoiceAssistant() {
-        Log.i(TAG, "Activating voice assistant...")
-
-        serviceScope.launch {
-            try { // IState Machine сам обработает активацию в текущем IState
-                stateMachine.activate()
-            }
-            catch (e: Exception) {
-                Log.e(TAG, "Error activating voice assistant", e)
-            }
-        }
-    }
+    private fun activateVoiceAssistant() {}
 
     /**
      * Отменить распознавание (повторное нажатие кнопки или от Frida)
      */
     fun cancelRecognition() {
         Log.i(TAG, "❌ Cancelling recognition...")
-
         serviceScope.launch {
             try { // IState Machine сам обработает отмену в текущем IState
                 stateMachine.onButtonPressed()
                 Log.i(TAG, "✅ Recognition cancelled")
-
             }
             catch (e: Exception) {
                 Log.e(TAG, "Error cancelling recognition", e)
@@ -502,5 +435,4 @@ class VoboostVoiceService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
     }
-
 }

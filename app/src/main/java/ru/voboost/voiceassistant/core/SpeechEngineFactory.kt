@@ -18,13 +18,11 @@ object SpeechEngineFactory {
     const val TAG = "SpeechEngineFactory"
 
     enum class RecognitionEngine {
-        VOSK,
-        SHERPA,
+        VOSK, SHERPA,
     }
 
     enum class SynthesisEngine {
-        SYSTEM,
-        SHERPA,
+        SYSTEM, SHERPA,
     }
 
     /**
@@ -35,12 +33,9 @@ object SpeechEngineFactory {
      * @param defaultZone Зона по умолчанию (опционально, зона теперь определяется в AudioSource callback)
      * @return SpeechRecognizer для управления распознаванием
      */
-    fun createSpeechRecognizer(
-        context: Context,
-        engine: RecognitionEngine = RecognitionEngine.VOSK,
-        audioSource: IAudioSource
-    ): ISpeechRecognizer {
-        val configManager = ConfigManager.getInstance(context)
+    fun createSpeechRecognizer(engine: RecognitionEngine,
+                               audioSource: IAudioSource,
+                               configManager: ConfigManager): ISpeechRecognizer {
         val keywordChecker = KeywordChecker(configManager)
 
         val recognitionEngine = when (engine) {
@@ -59,11 +54,9 @@ object SpeechEngineFactory {
             }
         }
 
-        return SpeechRecognizer(
-            audioSource = audioSource,
-            recognitionEngine = recognitionEngine,
-            keywordChecker = keywordChecker
-        )
+        return SpeechRecognizer(audioSource = audioSource,
+                                recognitionEngine = recognitionEngine,
+                                keywordChecker = keywordChecker)
     }
 
     /**
@@ -73,12 +66,10 @@ object SpeechEngineFactory {
      * @param modelPath Путь к модели (опционально)
      * @param speakerId ID спикера для Sherpa (0-4)
      */
-    fun createSynthesisEngine(
-        context: Context,
-        engine: SynthesisEngine,
-        modelPath: String,
-        speakerId: Int
-    ): ISpeechSynthesis {
+    fun createSynthesisEngine(context: Context,
+                              engine: SynthesisEngine,
+                              modelPath: String,
+                              speakerId: Int): ISpeechSynthesis {
         return when (engine) {
             SynthesisEngine.SYSTEM -> {
                 Log.i(TAG, "Creating System TTS engine")
@@ -104,6 +95,7 @@ object SpeechEngineFactory {
                 Log.i(TAG, "Recommended: Vosk ASR + System TTS")
                 Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)
             }
+
             else -> {
                 Log.i(TAG, "Recommended: Vosk ASR only (no TTS available)")
                 Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)
@@ -119,9 +111,9 @@ object SpeechEngineFactory {
             val tts = android.speech.tts.TextToSpeech(context) { /* dummy */ }
             val result = tts.isLanguageAvailable(java.util.Locale.forLanguageTag("ru-RU"))
             tts.shutdown()
-            result != android.speech.tts.TextToSpeech.LANG_MISSING_DATA &&
-            result != android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
-        } catch (e: Exception) {
+            result != android.speech.tts.TextToSpeech.LANG_MISSING_DATA && result != android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
+        }
+        catch (e: Exception) {
             Log.w(TAG, "Failed to check system TTS", e)
             false
         }

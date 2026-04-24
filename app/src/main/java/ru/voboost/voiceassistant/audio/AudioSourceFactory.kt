@@ -38,17 +38,18 @@ object AudioSourceFactory {
      * @param preferredType Предпочтительный тип (по умолчанию MULTI_CHANNEL)
      * @return IAudioSource (никогда null)
      */
-    fun create(
-        context: Context,
-        preferredType: SourceType
-    ): IAudioSource {
+    fun create(context: Context,
+               preferredType: SourceType): IAudioSource {
         return when (preferredType) {
             SourceType.MULTI_CHANNEL -> {
-                val multiChannelSource = MultiChannelAudioSource(context)
+                val multiChannelSource = MultiChannelAudioSource(sampleRate = IAudioSource.SAMPLE_RATE,
+                                                                 micSpacing = 0.15f,
+                                                                 channelCount = 6)
                 if (multiChannelSource.initialize()) {
                     Log.i(TAG, "✅ Using MultiChannelAudioSource (4 mics + TDOA zone detection)")
                     multiChannelSource
-                } else {
+                }
+                else {
                     Log.w(TAG, "⚠️ Multi-channel unavailable, falling back to RecorderManager")
                     createRecorderManagerSource(context)
                 }
@@ -69,13 +70,13 @@ object AudioSourceFactory {
      * Проверить поддержку многоканальной записи
      */
     fun isMultiChannelSupported(context: Context): Boolean {
-        return try {
-            // Проверяем доступна ли системная библиотека
-            val nativeRecord = NativeRecord.getInstance()
-            // Если getInstance() не выбросил — библиотека загрузилась
+        return try { // Проверяем доступна ли системная библиотека
+            val nativeRecord =
+                NativeRecord.getInstance() // Если getInstance() не выбросил — библиотека загрузилась
             Log.d(TAG, "NativeRecord4Mic is available")
             true
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.w(TAG, "Multi-channel not supported: ${e.message}")
             false
         }
@@ -89,17 +90,19 @@ object AudioSourceFactory {
             val clazz = Class.forName("com.qinggan.audiorecord.record.RecorderManager")
             val getInstance = clazz.getMethod("getInstance")
             getInstance.invoke(null) != null
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             false
         }
     }
 
     private fun createRecorderManagerSource(context: Context): IAudioSource {
-        val recorderManagerSource = RecorderManagerAudioSource(context)
+            val recorderManagerSource = RecorderManagerAudioSource(context)
         if (recorderManagerSource.initialize()) {
             Log.i(TAG, "✅ Using RecorderManagerAudioSource (system microphone)")
             return recorderManagerSource
-        } else {
+        }
+        else {
             Log.w(TAG, "⚠️ RecorderManager unavailable, falling back to AndroidAudioSource")
             return createAndroidSource(context)
         }
