@@ -1,6 +1,5 @@
 ﻿package ru.voboost.voiceassistant.engine.vosk
 
-import ru.voboost.voiceassistant.config.OfflineSpeechConfig
 import ru.voboost.voiceassistant.speech.IRecognitionEngine
 import ru.voboost.voiceassistant.speech.IStreamFactory
 import org.vosk.Model

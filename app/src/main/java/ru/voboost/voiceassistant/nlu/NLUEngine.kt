@@ -1,6 +1,5 @@
 ﻿package ru.voboost.voiceassistant.nlu
 
-import android.content.Context
 import android.util.Log
 import ru.voboost.voiceassistant.config.CommandConfig
 import ru.voboost.voiceassistant.config.ConfigManager
@@ -105,17 +104,6 @@ class NLUEngine(private val configManager: ConfigManager) {
      * Например: "поставь {temp} градусов" -> ["temp"]
      */
     private fun extractParamNames(pattern: String): List<String> {
-        //        val regex = Pattern.compile("\\{([^}]+)\\}")
-        //        val matcher = regex.matcher(pattern)
-        //        var ff = ""
-        //
-        //        val paramNames = mutableListOf<String>()
-        //        while (matcher.find()) {
-        //            paramNames.add(matcher.group(1))
-        //        }
-        //
-        //        return paramNames
-
         return "\\{([^}]+)\\}".toRegex().findAll(pattern).map { it.groupValues[1] }.toList()
     }
 

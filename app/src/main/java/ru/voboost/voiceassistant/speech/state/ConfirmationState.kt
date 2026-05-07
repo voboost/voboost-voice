@@ -88,7 +88,7 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
     }
 
     override suspend fun cancel() {
-        context.soundEffectManager?.playEndSound()
+        context.soundEffectManager?.playEndSoundAsync()
         kotlinx.coroutines.delay(400)
         val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
         if(!cancelPhrase.isNullOrEmpty())

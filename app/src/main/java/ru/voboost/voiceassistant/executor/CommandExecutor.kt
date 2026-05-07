@@ -6,7 +6,6 @@ import android.util.Log
 import ru.voboost.voiceassistant.config.CommandConfig
 import ru.voboost.voiceassistant.nlu.RecognizedCommand
 import ru.voboost.voiceassistant.config.ConfigManager
-import ru.voboost.voiceassistant.core.ISpeechSynthesis
 import ru.voboost.voiceassistant.ui.OverlayManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async

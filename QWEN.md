@@ -1,7 +1,7 @@
 ﻿# КОНТЕКСТ ПРОЕКТА VOBOOST VOICE ASSISTANT
 
-**Дата последнего обновления:** 2026-04-14
-**Статус:** ВСЕ РАБОТАЕТ -- звонки, кнопка, CAN-bus, распознавание, TTS, визуальный эффект (центр), зона говорящего, температура (прямая + смещение), русские числа
+**Дата последнего обновления:** 2026-04-26
+**Статус:** ✅ ВСЕ РАБОТАЕТ -- State Machine (9 состояний), Sherpa TTS, Vosk STT, CAN-bus, 17 команд, кнопка, TSR, phone calls, температура, русские числа
 
 ---
 
@@ -10,8 +10,8 @@
 **Оффлайн голосовой ассистент для автомобильных ГУ**
 - **Платформа:** Android 11, API 30 (minSdk=26, targetSdk=33)
 - **Package:** `ru.voboost.voiceassistant` (uid: u0_a68, НЕ system)
-- **Build:** Gradle, Kotlin 2.1.0, AGP 8.13.2, compileSdk=36
-- **Язык:** Kotlin 100%
+- **Build:** Gradle, Kotlin 100%, AGP 8.13.2, compileSdk=36
+- **Структура:** 85 Kotlin файлов, паттерн Executor, State Machine (9 состояний)
 - **Распознавание:** Vosk (offline, русский, small model 50MB)
 - **TTS:** Sherpa-ONNX (ru_RU-ruslan-medium) — выбирается из config.json
 - **CAN-шина:** через AIDL `com.qinggan.canbus.ICanBusService`
@@ -19,228 +19,296 @@
 
 ---
 
-## ПОСЛЕДНИЕ КОМИТЫ
+## 🏗️ АРХИТЕКТУРА (2026-04-26)
 
-### fb8ba3c — fix: AirConditionerSetTempHandler uses 'temp' key matching config.json {temp}
-- Исправлен ключ `voiceParams["temperature"]` → `voiceParams["temp"]`
-- Теперь параметр из config.json `{temp}` правильно попадает в handler
+### State Machine (Event-driven)
 
-### 8371386 — fix: installation scripts, overlay centering, phone MAC, temperature x10, russian numbers
-- **VoboostVoiceAssistant-install.bat:** 2-этапная установка (APK+libs → reboot → models+config+perms)
-- **install-update.bat:** упрощён для быстрых обновлений только APK
-- **copy-vosk-to-internal.bat:** динамический UID через `pm list packages -U`
-- **OverlayManager.kt:** центрирование анимации через post-layout measurement (реальный размер View)
-- **PhoneCallContactIntentHandler.kt:** исправление получения Bluetooth MAC через SystemProperties(String, String), отправка пустого MAC
-- **CanBusServiceManager.kt:** температура * 10 для CAN-bus (формат Ivoka: `(int)(10.0f * state)`)
-- **AirConditionerSetTempHandler.kt:** парсинг русских числительных (двадцать четыре → 24)
-- **ConfigManager.kt:** загрузка config.json ТОЛЬКО из `/data/user/0/ru.voboost.voiceassistant/files/` (убран assets fallback)
+```
+StateMachine (202 строк)
+├── StateType.IDLE              → Ожидание активации
+├── StateType.ACTIVATED         → Активирован (проигран звук)
+├── StateType.LISTENING_COMMAND → Слушание команды
+├── StateType.RECOGNIZED_COMMAND → Команда распознана
+├── StateType.EXECUTING_COMMAND → Выполнение команды
+├── StateType.CONFIRMATION      → Подтверждение действия
+├── StateType.COMMAND_ERROR     → Ошибка команды
+├── StateType.KEYWORD_ERROR     → Ошибка ключевого слова
+└── StateType.TIMEOUT           → Таймаут
+```
 
-### bb927fa — fix: исправление конфига и зависимостей, удаление неиспользуемых phone handler
+**Принцип работы:**
+- Все состояния создаются один раз при инициализации
+- Состояния сами вызывают `finish()` или `cancelled()` когда готовы
+- StateMachine переключает по типу состояния
+- `reset()` вызывается перед переходом для сброса внутреннего состояния
+
+### Speech Engine Factory
+
+```
+ru.voboost.voiceassistant/
+├── core/
+│   ├── ISpeechRecognizer.kt        # Интерфейс STT
+│   ├── ISpeechSynthesis.kt         # Интерфейс TTS
+│   └── SpeechEngineFactory.kt      # Фабрика движков
+├── engine/
+│   ├── sherpa/
+│   │   ├── SherpaModelLoader.kt
+│   │   ├── SherpaStream.kt
+│   │   ├── SherpaStreamFactory.kt
+│   │   └── SherpaSpeechSynthesis.kt  # Sherpa TTS
+│   ├── vosk/
+│   │   ├── VoskModelLoader.kt
+│   │   ├── VoskStream.kt
+│   │   ├── VoskStreamFactory.kt
+│   │   └── VoskRecognition.kt        # Vosk STT (обёртка)
+│   └── system/
+│       └── SystemSpeechSynthesis.kt  # Системный TTS
+└── speech/
+    ├── SpeechRecognizer.kt
+    ├── KeywordChecker.kt
+    ├── state/                      # 9 состояний StateMachine
+    └── IRecognitionEngine.kt
+```
+
+**Алгоритм выбора движка:**
+1. Sherpa TTS →SherpaSpeechSynthesis (приоритет)
+2. Vosk STT → VoskRecognition
+3. System TTS → SystemSpeechSynthesis (fallback)
+
+### Executor Pattern для команд
+
+```
+CommandExecutor (основная логика)
+    ↓ использует
+IVehicleCommandExecutor (интерфейс)
+    ↓ реализуют
+├── IntentVehicleCommandExecutor      # Broadcast Intent
+├── ShellVehicleCommandExecutor       # Shell CAN-команды
+└── AutoVehicleCommandExecutor        # Автоматический выбор (Intent → Shell fallback)
+```
+
+### Audio Sources
+
+```
+IAudioSource (интерфейс)
+├── AndroidAudioSource               # Микрофон через Android API
+├── MultiChannelAudioSource          # Мультиканальный аудио (зона говорящего)
+└── RecorderManagerAudioSource       # RecorderManager API
+```
 
 ---
 
-## СТРУКТУРА ДАННЫХ НА УСТРОЙСТВЕ
+## 🔧 ПОСЛЕДНИЕ ИЗМЕНЕНИЯ (git HEAD: 18e67db)
+
+### 18e67db — refactor: архитектура Service и executorPattern
+- Полная рефакторинг архитектуры VoboostVoiceService
+- Паттерн Executor для команд
+- Обновление StateMachine на event-driven версию
+
+### 73bf8f3 — refactoring
+- Оптимизация потоков данных
+- Улучшение обработки ошибок
+
+### 18e0bae — feat: multi-channel audio, new models, cleanup
+- Multi-channel audio source с зоной говорящего
+- Обновление моделей (Sherpa v1.12.34)
+- Удаление неиспользуемого кода
+
+---
+
+## 📊 КОМАНДЫ И ОПОВЕЩЕНИЯ
+
+### Реализованные команды (17 AIDL обработчиков):
+
+| ID | Команда | Действие |
+|----|---------|---------|
+| `charge_port_open` | "Открой лючок зарядки" | OpenChargportHandler |
+| `charge_port_close` | "Закрой лючок зарядки" | OpenChargportHandler |
+| `fuel_tank_open` | "Открой бензобак" | FuelTankOpenHandler |
+| `smart_mode_leisure` | "Включи режим отдыха" | SmartModeLeisureHandler |
+| `smart_mode_child` | "Включи детский режим" | SmartModeChildHandler |
+| `smart_mode_romantic` | "Включи романтику" | SmartModeRomanticHandler |
+| `ac_open` | "Включи кондиционер" | AirConditionerOpenHandler |
+| `ac_close` | "Выключи кондиционер" | AirConditionerCloseHandler |
+| `ac_set_temp` | "Установи 22 градуса" | AirConditionerSetTempHandler |
+| `ac_temp_up` | "Мне холодно" | AirConditionerTempOffsetHandler |
+| `ac_temp_down` | "Мне жарко" | AirConditionerTempOffsetHandler |
+| `phone_call_contact` | "Позвони Сынок" | PhoneCallContactIntentHandler |
+| `phone_call_number` | "Набери 123-45-67" | PhoneCallNumberIntentHandler |
+| `window_open_driver` | "Открой окно водителя" | WindowOpenDriverHandler |
+| `window_close_driver` | "Закрой окно водителя" | WindowCloseDriverHandler |
+| `window_open_all` | "Открой все окна" | WindowOpenAllHandler |
+| `window_close_all` | "Закрой все окна" | WindowCloseAllHandler |
+
+### Возможные оповещения (анализ QGTtsService):
+
+Из декомпилированных APK (`QGTtsService-release-signed/`) выявлены **500+ ACTION_ID**.  
+Наиболее полезные для Voboost:
+
+**Музыка и аудио:**
+- `ACTION_MUSIC_PLAY` — Воспроизведение музыки
+- `ACTION_CMD_PLAY/PAUSE/NEXT/PREV` — Управление треками
+- `ACTION_RADIO_LAUNCH` — Радио
+- `ACTION_NEWS_PLAY` — Новости
+
+**Навигация:**
+- `ACTION_DCS_POI_NAV` — POI навигация
+- `ACTION_DCS_ROUTELINE_NAV` — Маршрут следования
+- `ACTION_DCS_PARKING_NAV` — Парковка
+
+**Такси/Доставка:**
+- `ACTION_VOICE_CALL_TAXI_QUERY` — Запрос такси
+- `ACTION_VOICE_EXPRESS` — Экспресс-доставка
+- `ACTION_VOICE_TAKEOUT_FOOD_*` — Доставка еды
+
+**Системные:**
+- `ACTION_WEATHER_QUERY` — Погода
+- `ACTION_DCS_COMMON_ALARM_QUERY` — Будильник
+- `ACTION_DCS_CAR_SET_BRIGHTNESS` — Яркость
+
+**Полный список:**
+- `TTS_OPPORTUNITIES.md` — Подробный анализ 100+ оповещений
+
+
+### Дополнительные фичи:
+
+| Фича | Описание |
+|--|-|
+| **TSR Speed Limit** | Предупреждения о превышении скорости (через CAN) |
+| **Zone Detection** | Определение зоны говорящего (мультиканальный аудио) |
+| **Temperature Offset** | "мне холодно" / "мне жарко" → текущая +2 / -2°C |
+| **Russian Numbers** | Парсинг "двадцать четыре" → 24 |
+| **Sound Effects** | Двойной сигнал (старт), одиночный (финиш), низкий (отмена) |
+
+---
+
+## 📊 СТРУКТУРА ДАННЫХ НА УСТРОЙСТВЕ
 
 | Что | Путь |
-|-----|------|
+|-----|-|
 | **APK** | `/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk` |
 | **Нативные библиотеки** | `/system/priv-app/VoboostVoiceAssistant/lib/arm64/` |
 | **config.json** | `/data/user/0/ru.voboost.voiceassistant/files/config.json` |
-| **Vosk модель** | `/data/user/0/ru.voboost.voiceassistant/files/models/vosk/vosk-model-small-ru-0.22/` |
-| **Sherpa ASR** | `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/asr-ru-model/` |
-| **Sherpa TTS** | `/data/user/0/ru.voboost.voiceassistant/files/models/sherpa/tts-ru-model/` |
+| **Vosk модель** | `/storage/emulated/0/Android/data/.../files/models/vosk/vosk-model-small-ru-0.22/` |
+| **Sherpa ASR** | `/storage/emulated/0/Android/data/.../files/models/sherpa/asr-ru-model/` |
+| **Sherpa TTS** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/` |
+| **TTS eSpeak-ng-data** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/espeak-ng-data/` ( права: 755) |
 
 ---
 
-## УСТАНОВКА (2 ЭТАПА)
+## ⚙️ КОНФИГУРАЦИЯ (config.json)
 
-### Этап 1: До перезагрузки
-1. Отключение стандартных ассистентов (ivoka, sttservice)
-2. Копирование APK в `/system/priv-app/`
-3. Копирование нативных библиотек в `/system/priv-app/VoboostVoiceAssistant/lib/arm64/`
-4. Перезагрузка устройства
-
-### Этап 2: После перезагрузки (автоматически)
-5. Копирование моделей (Vosk + Sherpa ASR/TTS)
-6. Копирование config.json
-7. Динамическое определение UID через `pm list packages -U`
-8. Установка прав `chown UID:UID` на `/data/user/0/.../files`
-9. Выдача runtime разрешений (RECORD_AUDIO, READ_CONTACTS, SYSTEM_ALERT_WINDOW)
-10. Запуск VoboostVoiceService
-
-### Скрипты:
-- `VoboostVoiceAssistant-install.bat` — полная установка с нуля (2 этапа)
-- `install-update.bat` — быстрое обновление только APK (без reboot)
-- `copy-vosk-to-internal.bat` — копирование Vosk модели (динамический UID)
-
----
-
-## ТЕМПЕРАТУРА КЛИМАТА
-
-### Прямая установка:
-- **Команда:** `"установи температуру {temp} градусов"`, `"поставь {temp} градусов"`
-- **Парсер:** `AirConditionerSetTempHandler.parseTemperature()` поддерживает:
-  - Цифры: `"22"` → 22
-  - Русские числа: `"двадцать четыре"` → 24
-  - Комбинации: `"двадцать" + " четыре"` → 24
-- **CAN-bus:** `temperature * 10` (Ivoka формат: 24°C → 240)
-- **Зона:** учитывается `_zone` из voiceParams
-
-### Смещение:
-- **"мне холодно"** → `ac_temp_up` → текущая +2°C
-- **"мне жарко"** → `ac_temp_down` → текущая -2°C
-- Текущая температура берётся из `airCondition.airLeftTemperature`
-
----
-
-## ВИЗУАЛЬНЫЙ ЭФФЕКТ
-
-- Frame-by-frame анимация из 41 PNG (voice_right000..040), взятых из Ivoka
-- **Позиция:** верхний центр экрана (автоматическое центрирование post-layout)
-- `params.x = (screenWidth - viewWidth) / 2`, `params.y = 0`
-
----
-
-## ТЕЛЕФОННЫЕ ЗВОНКИ
-
-### Архитектура звонков:
-```
-[Голос: "позвони Сынок"] → NLUEngine → phone_call_contact
-                                        │
-                    PhoneCallContactIntentHandler (Intent-based)
-                                        │
-                    getBluetoothMac() → SystemProperties.get("qinggan.bluetooth.mac", "")
-                    Если MAC пустой → ContentProvider без MAC
-                                        │
-                    ContentResolver.query() → BluetoothPhone ContentProvider
-                    URI: content://com.qinggan.bluetoothphone/contactsinfo/{MAC}
-                    columns: name, number
-                                        │
-                    Найти номер: +375445413460
-                                        │
-                    Broadcast Intent:
-                    action="com.qinggan.broadcast.action.ivokaphonecall"
-                    extra "Ivoka_CallInfo"="+375445413460"
-                    extra "screen_int"=0
-                    extra "mac"=""  ← ПУСТАЯ СТРОКА (не "number"!)
-                                        │
-                    BluetoothPhone → HeadSetProfileManager.makeCall(number, "")
-                    Если MAC пустой → mHfp.dial(number) без MAC
-```
-
----
-
-## КОНФИГ (config.json)
-
-### Загрузка:
+### Локация:
 - **Путь:** `/data/user/0/ru.voboost.voiceassistant/files/config.json`
 - **НЕ в assets** — APK облегчённый, конфиг только в data-папке
 - Если не найден → дефолтная конфигурация
 
-### Параметры команд:
+### Параметры:
 - `temp` — температура для кондиционера (число или русское число)
 - `contact` — имя контакта для звонков
 - `number` — номер телефона
+- `zone` — зона говорящего (driver/passenger/.../all)
 
 ---
 
-## РЕШЁННЫЕ ПРОБЛЕМЫ
+## 🎯 АКТИВАЦИЯ
 
-### 9. Температура устанавливалась вместо 24°C → 18.5°C
-- **Причина:** CAN-bus принимает `temperature * 10` (Ivoka формат)
-- **Решение:** `CanBusServiceManager.setTemperatureByZone()` умножает на 10
+### Способы активации:
 
-### 10. Прямая установка температуры не работала
-- **Причина 1:** `voiceParams["temperature"]` не совпадал с `{temp}` из конфига
-- **Причина 2:** Vosk small модель путает числа ("двадцать" → "двадцать два")
-- **Решение:** исправлен ключ на `voiceParams["temp"]`, добавлен `parseTemperature()` для русских числительных
+**1. Кодовая фраза:** "Привет, Вобуст" / "Привет, машина"
 
-### 11. Анимация была слева, не по центру
-- **Причина:** `Gravity.TOP or Gravity.START` с фиксированным offset
-- **Решение:** post-layout measurement → `params.x = (screenWidth - viewWidth) / 2`
-
-### 12. UID приложения разный на разных устройствах
-- **Причина:** хардкод `u0_a69` в скриптах
-- **Решение:** динамическое определение через `pm list packages -U %PKG%`
-
-### 13. Установка скриптов не работала после перезагрузки
-- **Причина:** модели и конфиг копировались ДО перезагрузки, когда `/data/user/0/` ещё не создан
-- **Решение:** 2-этапная установка (APK → reboot → данные)
+**2. Кнопка на руле:** KEYCODE_IVOKA (130) через Frida перехват
+- Frida скрипт: `frida-voice-button.js`
+- Перехват `KeyManager.inputKeyEvent(130)`
+- Отправка Broadcast `ACTION_ACTIVATE` → Voboost
+- Повторное нажатие → `ACTION_CANCEL` (отмена)
 
 ---
 
-## СОСТОЯНИЕ НА ДАННЫЙ МОМЕНТ
+## 🔌 ИНТЕГРАЦИЯ С IVOKA
 
-### РАБОТАЕТ:
-- ✅ TTS Sherpa — русская речь (ru_RU-ruslan-medium)
-- ✅ Vosk STT — распознавание команд
-- ✅ Кнопка на руле — keycode=16 через CAN-шину
-- ✅ State Machine — 9 состояний
-- ✅ CAN-bus — 17 AIDL команд
-- ✅ Звонки по имени контакта (через BluetoothPhone ContentProvider)
-- ✅ Звонки по номеру
-- ✅ Визуальный эффект — по центру вверху экрана
-- ✅ Температура: прямая установка ("поставь двадцать четыре градусов")
-- ✅ Температура: смещение ("мне холодно" / "мне жарко")
-- ✅ Зона говорящего для климата
-- ✅ 2-этапная установка (APK → reboot → данные)
-- ✅ Динамический UID в скриптах
+### Intent Actions (точно совпадают с оригиналом):
+- `pateo.dls.ivoka.vehicle.CONTROL` — Управление машиной
+- `pateo.dls.ivoka.air_control.OPEN/CLOSE/ADJUST` — Климат
+- `pateo.dls.ivoka.telephone.CALL` — Телефон
+- `pateo.dls.ivoka.SET_SMART_MODE` — Режимы
 
-### НЕ РАБОТАЕТ:
-- Vosk small модель иногда путает числа (20 ↔ 22) — ограничение модели
+### Intent Parameters:
+- `voice.param.vehicle.target/classify/command`
+- `voice.param.air.target/classify/command`
+- `voice.param.telephone.target/classify/command`
+- `voice.param.contact` — Имя контакта
 
 ---
 
-**Последнее обновление:** 2026-04-14 23:30
-**Build:** assembleDebug SUCCESS
-**Git коммиты:** 9623e65, fb8ba3c, 8371386, bb927fa, 1f0f072, f970f66, 225f219, cec0ae7, b5a331c, 8428707, d72bdce, 48d2e32, ca46011, a9743fa, 9302162, 1b39bd1
+## 🔧 КОМАНДЫ ДЛЯ ОТЛАДКИ
 
----
+```bash
+# Собрать проект
+cd D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant
+gradlew.bat assembleDebug
 
-## ПОСЛЕДНИЙ КОМИТ
+# Установить
+adb install app/build/outputs/apk/debug/app-debug.apk
 
-### 9623e65 — fix: Sherpa TTS eSpeak-ng permissions + ExternalStoragePaths
-- **Исправление разрешений espeak-ng-data** (chmod 755) для работы TTS
-- **Добавлен ExternalStoragePaths** для путей к внешнему хранилищу
-- **Обновлены скрипты:** `copy-sherpa-models.bat`, `VoboostVoiceAssistant-install.bat`
-- **SherpaSynthesis:** восстановлен `setDataDir()` для eSpeak-ng
-- **Конфигурация TTS** загружается из `/data/user/0/.../files/config.json`
+# Дать разрешения
+adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
 
-**Проблема:** После переезда на внешнее хранилище TTS не работал с ошибкой 
-`Failed to set eSpeak-ng voice`. 
+# Запустить сервис
+adb shell am startservice ru.voboost.voiceassistant/.VoboostVoiceService
 
-**Причина:** Неправильные права на папку `espeak-ng-data` 
-(`drwxr-s--x` вместо `drwxr-xr-x`). Нативная библиотека eSpeak-ng не могла 
-прочитать файлы словарей.
+# Логи состояний
+adb logcat -s StateMachine:* VoboostVoiceService:*
 
-**Решение:** `chmod -R 755` для `espeak-ng-data` после копирования модели.
-
----
-
-## СТРУКТУРА ДАННЫХ НА УСТРОЙСТВЕ (ОБНОВЛЕНО)
-
-| Что | Путь | Примечание |
-|-----|------|------------|
-| **APK** | `/system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant.apk` | |
-| **Нативные библиотеки** | `/system/priv-app/VoboostVoiceAssistant/lib/arm64/` | |
-| **config.json** | `/data/user/0/ru.voboost.voiceassistant/files/config.json` | |
-| **Vosk модель** | `/storage/emulated/0/Android/data/.../files/models/vosk/` | Внешнее хранилище |
-| **Sherpa ASR** | `/storage/emulated/0/Android/data/.../files/models/sherpa/asr-ru-model/` | Внешнее хранилище |
-| **Sherpa TTS** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/` | Внешнее хранилище |
-| **TTS eSpeak-ng-data** | `/storage/emulated/0/Android/data/.../files/models/sherpa/tts-ru-model/espeak-ng-data/` | **Разрешения: 755** |
-
----
-
-## СКРИПТЫ (ОБНОВЛЕНО)
-
-### copy-sherpa-models.bat
-```batch
-[4/4] Исправление разрешений для eSpeak-ng...
-adb shell "chmod -R 755 /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/espeak-ng-data"
+# Логи команд
+adb logcat | grep -i "voboost\|CommandExecutor\|NLUEngine"
 ```
 
-### VoboostVoiceAssistant-install.bat
-```batch
-REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
-adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/espeak-ng-data"
-```
+---
+
+## ⚠️ ИЗВЕСТНЫЕ ПРОБЛЕМЫ
+
+### Vosk small модель иногда путает числа (20 ↔ 22)
+- **Ограничение модели** — ограничение Vosk small model (50MB)
+- **Решение:** Используется `parseTemperature()` для русских числительных
+
+---
+
+## 📈 СТАТУС РАЗРАБОТКИ
+
+- ✅ **State Machine** — Реализована (9 состояний, event-driven)
+- ✅ **Speech Engine Factory** — Реализована (Vosk STT + Sherpa TTS)
+- ✅ **Executor Pattern** — Реализован (Intent/Shell/Auto)
+- ✅ **17 команд** — Из коробки (AIDL обработчики)
+- ✅ **Multi-channel audio** — Реализована (зона говорящего)
+- ✅ **KEYCODE кнопки** — Найден и работает (через Frida)
+- ✅ **Модель Vosk** — Скачана и установлена
+- ✅ **Sherpa-ONNX** — Интегрирована (v1.12.34)
+- ✅ **TSR Speed Limit** — Реализован
+- ✅ **2-этапная установка** — Реализована (APK → reboot → данные)
+
+---
+
+## 🎊 КЛЮЧЕВЫЕ ФАЙЛЫ
+
+**Архитектура:**
+- `ARCHITECTURE_V2.md` — State Machine refactoring (актуальна!)
+- `ARCHITECTURE_SPEECH_ENGINE.md` — Модульные движки
+- `COMPLETE_SOLUTION.md` — Frida интеграция кнопки
+- `COMMAND_EXECUTOR_ARCHITECTURE.md` — Executor паттерн
+
+**Код:**
+- `VoboostVoiceService.kt` — Главный сервис (438 строк)
+- `StateMachine.kt` — 9 состояний (202 строки)
+- `SpeechRecognizer.kt` — Vosk STT
+- `SherpaStream.kt` — Sherpa TTS
+- `CommandExecutor.kt` — Базовая логика выполнения
+- `config.json` — Команды и параметры
+
+---
+
+**Последнее обновление:** 2026-04-26  
+**Git HEAD:** `18e67db` — refactor: архитектура Service и executorPattern  
+**Build:** Gradle 8.13.2, Kotlin 2.1.0, compileSdk=36

@@ -24,7 +24,7 @@ class TimeoutState(private val context: StateContext) : BaseState() {
         Log.w(TAG, "Entering TIMEOUT IState")
 
         try { // Звук окончания
-            context.soundEffectManager?.playEndSound()
+            context.soundEffectManager?.playEndSoundAsync()
             kotlinx.coroutines.delay(200)
 
             // Говорим "Отмена"

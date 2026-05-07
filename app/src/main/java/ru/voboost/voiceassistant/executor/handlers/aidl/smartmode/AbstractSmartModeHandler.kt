@@ -14,6 +14,15 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 abstract class AbstractSmartModeHandler(protected val canBusManager: CanBusServiceManager,
                                         private val modeId: Int) : ICommandHandler {
 
+    companion object {
+        const val TAG = "SmartModeCommand"
+
+        const val CHILD = 22
+        const val LEISURE = 18
+        const val ROMANTIC = 6
+        const val WASH = 33
+    }
+
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
@@ -22,9 +31,5 @@ abstract class AbstractSmartModeHandler(protected val canBusManager: CanBusServi
 
         Log.d(TAG, "SmartMode command: modeId=$modeId")
         return canBusManager.setVehicleSceneMode(modeId)
-    }
-
-    companion object {
-        const val TAG = "SmartModeCommand"
     }
 }

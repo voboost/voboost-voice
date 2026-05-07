@@ -31,7 +31,6 @@ data class StateContext(var speechRecognizer: ISpeechRecognizer? = null,
                         var nluEngine: NLUEngine? = null,
                         var commandExecutor: CommandExecutor? = null,
                         var soundEffectManager: SoundEffectManager? = null,  // Для звуковых эффектов
-
     // Данные состояния
                         var recognizedCommand: RecognizedCommand? = null,
                         var commandText: String? = null,

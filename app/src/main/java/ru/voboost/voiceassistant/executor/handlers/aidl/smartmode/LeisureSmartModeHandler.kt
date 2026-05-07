@@ -11,5 +11,5 @@ import ru.voboost.voiceassistant.canbus.CanBusServiceManager
  *
  * CAN-шина: setVehicleSceneMode(18)
  */
-class SmartModeLeisureHandler(canBusManager: CanBusServiceManager) :
-        AbstractSmartModeHandler(canBusManager, modeId = 18)
+class LeisureSmartModeHandler(canBusManager: CanBusServiceManager) :
+        AbstractSmartModeHandler(canBusManager, modeId = LEISURE)

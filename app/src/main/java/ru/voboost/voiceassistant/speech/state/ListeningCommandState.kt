@@ -85,7 +85,7 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
         Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
 
         try { // Звук отмены
-            context.soundEffectManager?.playEndSound()
+            context.soundEffectManager?.playEndSoundAsync()
             delay(400)
 
             // Говорим "Отмена" с высоким приоритетом

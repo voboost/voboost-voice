@@ -1,7 +1,6 @@
 {
   "version": "1.0",
   "language": "ru",
-  
   "activation": {
     "keyword": "привет воях",
     "alternative_keywords": [
@@ -12,7 +11,6 @@
     ],
     "button_keycode": 16
   },
-  
   "speech": {
     "offline": {
       "enabled": true,
@@ -25,7 +23,6 @@
       "folder_id": ""
     }
   },
-  
   "tts": {
     "offline": {
       "enabled": true,
@@ -41,12 +38,10 @@
       "api_key": ""
     }
   },
-
   "confirmation": {
     "default_timeout_sec": 5,
     "require_confirmation": false
   },
-  
   "phrases": {
     "default": {
       "success": "Выполнено",
@@ -59,7 +54,6 @@
       "cancel": "Отмена"
     }
   },
-  
   "commands": [
     {
       "id": "charge_port_open",
@@ -75,8 +69,18 @@
         "required": false,
         "timeout_sec": 5,
         "question": "Открыть лючок зарядки?",
-        "yes_patterns": ["да", "подтверждаю", "открывай", "ага"],
-        "no_patterns": ["нет", "отмена", "не надо", "не нужно"]
+        "yes_patterns": [
+          "да",
+          "подтверждаю",
+          "открывай",
+          "ага"
+        ],
+        "no_patterns": [
+          "нет",
+          "отмена",
+          "не надо",
+          "не нужно"
+        ]
       },
       "phrases": {
         "success": "Открываю лючок зарядки",
@@ -105,9 +109,28 @@
       }
     },
     {
-      "id": "smart_mode_leisure",
+      "id": "wash_smart_mode",
       "enabled": true,
       "patterns": [
+        "мойка",
+        "включи режим мойки",
+        "активируй режим мойки",
+        "режим мойки",
+        "включи мойки"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Включаю режим мойки",
+        "failure": "Не получилось включить режим мойки"
+      }
+    },
+    {
+      "id": "leisure_smart_mode",
+      "enabled": true,
+      "patterns": [
+        "отдых",
         "включи режим отдыха",
         "активируй режим отдыха",
         "режим отдых",
@@ -122,9 +145,10 @@
       }
     },
     {
-      "id": "smart_mode_child",
+      "id": "child_smart_mode",
       "enabled": true,
       "patterns": [
+        "ребенок",
         "включи детский режим",
         "режим ребенок",
         "детский режим",
@@ -139,7 +163,7 @@
       }
     },
     {
-      "id": "smart_mode_romantic",
+      "id": "romantic_smart_mode",
       "enabled": true,
       "patterns": [
         "включи романтический режим",
@@ -325,6 +349,194 @@
         "success": "Закрываю",
         "failure": "Не получилось закрыть"
       }
+    },
+    {
+      "id": "eco_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "эко",
+        "эко режим",
+        "режим эко",
+        "включи эко",
+        "включи режим эко",
+        "переключи на эко"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим эко",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "comfort_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "комфорт",
+        "комфорт режим",
+        "режим комфорт",
+        "включи комфорт",
+        "включи режим комфорт",
+        "переключи на комфорт"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим комфорт",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "sport_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "спорт",
+        "спорт режим",
+        "режим спорт",
+        "включи спорт",
+        "включи режим спорт",
+        "переключи на спорт"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим спорт",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "off_road_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "бездорожье",
+        "бездорожье режим",
+        "режим бездорожье",
+        "включи бездорожье",
+        "включи режим бездорожье",
+        "переключи на бездорожье"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим бездорожье",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "individual_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "индивидуальный",
+        "личный",
+        "свой",
+        "индивидуальный  режим",
+        "режим индивидуальный ",
+        "включи индивидуальный ",
+        "включи режим индивидуальный ",
+        "переключи на индивидуальный "
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим индивидуальный",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "snow_driving_mode",
+      "enabled": true,
+      "patterns": [
+        "снег",
+        "снег режим",
+        "режим снег",
+        "включи снег",
+        "включи режим снег",
+        "переключи на снег"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим снег",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "electro_soc_mode",
+      "enabled": true,
+      "patterns": [
+        "электро",
+        "электра",
+        "электро режим",
+        "электра режим",
+        "режим электро",
+        "режим электра",
+        "включи электро",
+        "включи электра",
+        "включи режим электро",
+        "включи режим электра",
+        "переключи на электро",
+        "переключи на электра"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим электро",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "hybrid_soc_mode",
+      "enabled": true,
+      "patterns": [
+        "гибрид",
+        "гибрид режим",
+        "режим гибрид",
+        "включи гибрид",
+        "включи режим гибрид",
+        "переключи на гибрид"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим гибрид",
+        "failure": "Не выполнено"
+      }
+    },
+    {
+      "id": "save_soc_mode",
+      "enabled": true,
+      "patterns": [
+        "сохранение",
+        "сохранения",
+        "сохранение режим",
+        "сохранения режим",
+        "режим сохранение",
+        "режим сохранения",
+        "включи сохранение",
+        "включи сохранения",
+        "включи режим сохранение",
+        "включи режим сохранения",
+        "переключи на сохранение",
+        "переключи на сохранения"
+      ],
+      "confirmation": {
+        "required": false
+      },
+      "phrases": {
+        "success": "Режим сохранения",
+        "failure": "Не выполнено"
+      }
     }
+
+
+
   ]
 }

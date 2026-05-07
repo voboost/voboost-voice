@@ -6,13 +6,10 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
-/**
- * Звуковые эффекты голосового помощника
- */
 class SoundEffectManager(private val context: Context) {
 
     companion object {
@@ -20,11 +17,10 @@ class SoundEffectManager(private val context: Context) {
         private const val SOUND_START = 1
         private const val SOUND_END = 2
         private const val SOUND_CANCEL = 3
-        private const val TONE_DURATION_MS = 200
+        private const val TONE_DURATION_MS = 200L
     }
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val handler = Handler(Looper.getMainLooper())
     private var toneGenerator: ToneGenerator? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var hasAudioFocus = false
@@ -38,45 +34,37 @@ class SoundEffectManager(private val context: Context) {
         }
     }
 
-    fun playStartSound() {
-        Log.d(TAG, "Playing start recognition sound")
+    // Теперь методы suspend и возвращают управление только после окончания звука
+    suspend fun playStartSoundAsync() = playToneAsync(SOUND_START)
+    suspend fun playEndSoundAsync() = playToneAsync(SOUND_END)
+    suspend fun playCancelSoundAsync() = playToneAsync(SOUND_CANCEL)
+
+    private suspend fun playToneAsync(type: Int) {
         requestAudioFocus()
-        playTone(SOUND_START)
-    }
-
-    fun playEndSound() {
-        Log.d(TAG, "Playing end recognition sound")
-        playTone(SOUND_END)
-        handler.postDelayed({ abandonAudioFocus() }, 500)
-    }
-
-    fun playCancelSound() {
-        Log.d(TAG, "Playing cancel sound")
-        playTone(SOUND_CANCEL)
-        abandonAudioFocus()
-    }
-
-    private fun playTone(type: Int) {
         try {
-            toneGenerator?.let { tg ->
-                when (type) {
-                    SOUND_START -> {
-                        tg.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS)
-                        handler.postDelayed({
-                            tg.startTone(ToneGenerator.TONE_PROP_BEEP2, TONE_DURATION_MS)
-                        }, TONE_DURATION_MS.toLong())
-                    }
-                    SOUND_END -> {
-                        tg.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS)
-                    }
-                    SOUND_CANCEL -> {
-                        tg.startTone(ToneGenerator.TONE_PROP_NACK, TONE_DURATION_MS)
-                    }
+            when (type) {
+                SOUND_START -> {
+                    toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS.toInt())
+                    delay(TONE_DURATION_MS)
+                    toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, TONE_DURATION_MS.toInt())
+                    delay(TONE_DURATION_MS)
                 }
-                Log.d(TAG, "Tone played: type=$type")
+                SOUND_END -> {
+                    toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS.toInt())
+                    delay(TONE_DURATION_MS + 50) // +50ms буфер на системные задержки
+                }
+                SOUND_CANCEL -> {
+                    toneGenerator?.startTone(ToneGenerator.TONE_PROP_NACK, TONE_DURATION_MS.toInt())
+                    delay(TONE_DURATION_MS + 50)
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to play tone", e)
+        } catch (e: CancellationException) {
+            // Если корутину отменили во время задержки, останавливаем звук
+            toneGenerator?.stopTone()
+            throw e // Обязательно пробрасываем исключение дальше
+        } finally {
+            // Гарантированно освобождаем AudioFocus даже при отмене или ошибке
+            abandonAudioFocus()
         }
     }
 
@@ -124,10 +112,10 @@ class SoundEffectManager(private val context: Context) {
 
     fun release() {
         try {
+            toneGenerator?.stopTone()
             toneGenerator?.release()
             toneGenerator = null
             abandonAudioFocus()
-            handler.removeCallbacksAndMessages(null)
             Log.d(TAG, "SoundEffectManager released")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to release", e)

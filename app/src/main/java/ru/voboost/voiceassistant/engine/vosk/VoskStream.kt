@@ -15,9 +15,7 @@ import org.vosk.Recognizer
  * НЕ управляет состоянием, НЕ работает с IAudioSource
  * Только PCM → Text
  */
-class VoskStream(
-    private val recognizer: Recognizer
-) : IRecognitionEngine {
+class VoskStream(private val recognizer: Recognizer) : IRecognitionEngine {
     companion object {
         const val TAG = "VoskStream"
     }
@@ -37,35 +35,37 @@ class VoskStream(
         if (pcm.isEmpty()) return null
 
         // Синхронизация чтобы избежать race condition с reset()
-        synchronized(recognizerLock) {
-            // Если нужен сброс — выполняем его безопасно
+        synchronized(recognizerLock) { // Если нужен сброс — выполняем его безопасно
             if (needsRecreation) {
                 needsRecreation = false
                 Log.d(TAG, "Resetting recognizer after reset() was called")
                 try {
                     recognizer.reset()
-                } catch (e: Exception) {
+                }
+                catch (e: Exception) {
                     Log.w(TAG, "Reset during acceptWaveform failed (expected): ${e.message}")
                 }
             }
 
             return try {
-                if (recognizer.acceptWaveForm(pcm, pcm.size)) {
-                    // Финальный результат
+                if (recognizer.acceptWaveForm(pcm, pcm.size)) { // Финальный результат
                     val text = extractText(recognizer.result)
                     if (text.isNotEmpty()) {
                         Log.d(TAG, "Final result: $text")
                         RecognitionResult(text = text, isFinal = true)
-                    } else null
-                } else {
-                    // Частичный результат (для логов/UI)
+                    }
+                    else null
+                }
+                else { // Частичный результат (для логов/UI)
                     val partialText = extractText(recognizer.partialResult)
                     if (partialText.isNotEmpty()) {
                         Log.v(TAG, "Partial result: $partialText")
                         RecognitionResult(text = partialText, isPartial = true)
-                    } else null
+                    }
+                    else null
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Error recognizing waveform", e)
                 null
             }
@@ -81,8 +81,10 @@ class VoskStream(
                 val text = extractText(recognizer.finalResult)
                 if (text.isNotEmpty()) {
                     RecognitionResult(text = text, isFinal = true)
-                } else null
-            } catch (e: Exception) {
+                }
+                else null
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Error getting final result", e)
                 null
             }
@@ -92,8 +94,7 @@ class VoskStream(
     /**
      * Сбросить распознавание (начать заново)
      */
-    override fun reset() {
-        // НЕ вызываем reset() на активном декодере — это вызывает race condition в C++ коде Vosk!
+    override fun reset() { // НЕ вызываем reset() на активном декодере — это вызывает race condition в C++ коде Vosk!
         // Просто устанавливаем флаг — сброс произойдёт при следующем acceptWaveform
         synchronized(recognizerLock) {
             Log.d(TAG, "reset() called — will reset on next acceptWaveform")
@@ -108,7 +109,8 @@ class VoskStream(
         synchronized(recognizerLock) {
             try {
                 recognizer.close()
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e(TAG, "Error releasing recognizer", e)
             }
         }
@@ -118,7 +120,8 @@ class VoskStream(
         return try {
             val json = JSONObject(jsonResult)
             json.optString("text", "")
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.w(TAG, "Failed to parse JSON result", e)
             ""
         }

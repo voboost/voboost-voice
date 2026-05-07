@@ -1,7 +1,5 @@
 ﻿package ru.voboost.voiceassistant.speech
 
-import ru.voboost.voiceassistant.config.OfflineSpeechConfig
-
 /**
  * Универсальный интерфейс фабрики потоков распознавания
  * Позволяет использовать любой движок (Vosk, Sherpa, и т.д.)

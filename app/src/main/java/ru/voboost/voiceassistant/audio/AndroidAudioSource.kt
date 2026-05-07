@@ -27,8 +27,7 @@ import kotlin.math.max
  * если они доступны на устройстве.
  */
 class AndroidAudioSource(private val context: Context,
-                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE, // VOICE_RECOGNITION = 6, оптимизирован для распознавания речи (как в MyVoya)
-                         private val audioSource: Int = MediaRecorder.AudioSource.VOICE_RECOGNITION) :
+                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE) :
         IAudioSource {
 
     companion object {

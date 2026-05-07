@@ -15,6 +15,10 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 class AirConditionerCloseHandler(private val canBusManager: CanBusServiceManager) :
         ICommandHandler {
 
+    companion object {
+        const val TAG = "AirConditionerClose"
+    }
+
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
@@ -34,9 +38,5 @@ class AirConditionerCloseHandler(private val canBusManager: CanBusServiceManager
         // Отправляем команду (value=1 — toggle, как с бензобаком)
         Log.d(TAG, "Turning AC OFF with value=1")
         return canBusManager.setAirConditionState(AirConditionState.AC_POWER_SWITCH, 1)
-    }
-
-    companion object {
-        const val TAG = "AirConditionerClose"
     }
 }

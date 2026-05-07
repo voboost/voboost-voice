@@ -45,7 +45,7 @@ class VolumeManager(private val context: Context) {
     
     private var volumeService: IVolume? = null
     private var volumeListener: IVolumeListener.Stub? = null
-    private val listeners = CopyOnWriteArrayList<VolumeListener>()
+    private val listeners = CopyOnWriteArrayList<ru.voboost.voiceassistant.audio.IVolumeListener>()
 
     @Volatile
     private var isConnected = false
@@ -397,7 +397,7 @@ class VolumeManager(private val context: Context) {
     /**
      * Добавить слушатель событий громкости
      */
-    fun addListener(listener: VolumeListener) {
+    fun addListener(listener: ru.voboost.voiceassistant.audio.IVolumeListener) {
         if (!listeners.contains(listener)) {
             listeners.add(listener)
             Log.d(TAG, "Listener added, total: ${listeners.size}")
@@ -407,7 +407,7 @@ class VolumeManager(private val context: Context) {
     /**
      * Удалить слушатель событий громкости
      */
-    fun removeListener(listener: VolumeListener) {
+    fun removeListener(listener: ru.voboost.voiceassistant.audio.IVolumeListener) {
         listeners.remove(listener)
         Log.d(TAG, "Listener removed, total: ${listeners.size}")
     }
@@ -445,57 +445,3 @@ class VolumeManager(private val context: Context) {
     fun isConnected(): Boolean = isConnected
 }
 
-/**
- * Слушатель событий управления громкостью
- */
-interface VolumeListener {
-    /**
-     * Вызывается при подключении к сервису
-     */
-    fun onConnected()
-    
-    /**
-     * Вызывается при отключении от сервиса
-     */
-    fun onDisconnected()
-    
-    /**
-     * Вызывается при изменении громкости музыки
-     */
-    fun onMediaVolumeChanged(volume: Int) {}
-    
-    /**
-     * Вызывается при изменении громкости навигации
-     */
-    fun onNavigationVolumeChanged(volume: Int) {}
-    
-    /**
-     * Вызывается при изменении громкости телефона
-     */
-    fun onPhoneVolumeChanged(volume: Int) {}
-    
-    /**
-     * Вызывается при изменении громкости уведомлений
-     */
-    fun onNotificationVolumeChanged(volume: Int) {}
-    
-    /**
-     * Вызывается при нажатии кнопки увеличения громкости
-     */
-    fun onVolumeUp() {}
-    
-    /**
-     * Вызывается при нажатии кнопки уменьшения громкости
-     */
-    fun onVolumeDown() {}
-    
-    /**
-     * Вызывается при запросе аудио-политики
-     */
-    fun onRequestAudioPolicy(streamType: Int, clientId: String) {}
-    
-    /**
-     * Вызывается при освобождении аудио-политики
-     */
-    fun onAbandonAudioPolicy(clientId: String) {}
-}

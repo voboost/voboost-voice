@@ -14,15 +14,19 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
 abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBusServiceManager) :
         ICommandHandler {
 
+    companion object {
+        const val TAG = "AirConditionerCmd"
+    }
+
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false
         }
 
-        val (IState, value) = getAirConditionStateAndValue(voiceParams)
-        Log.d(TAG, "AC command:, IState=$IState (${IState.ordinal}), value=$value")
-        return canBusManager.setAirConditionState(IState, value)
+        val (state, value) = getAirConditionStateAndValue(voiceParams)
+        Log.d(TAG, "AC command:, IState=$state (${state.ordinal}), value=$value")
+        return canBusManager.setAirConditionState(state, value)
     }
 
     /**
@@ -30,8 +34,4 @@ abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBus
      * Для установки температуры значение берётся из voiceParams["temperature"]
      */
     protected abstract fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int>
-
-    companion object {
-        const val TAG = "AirConditionerCmd"
-    }
 }

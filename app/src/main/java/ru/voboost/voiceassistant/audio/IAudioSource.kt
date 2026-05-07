@@ -15,6 +15,12 @@
  */
 interface IAudioSource {
 
+    companion object {
+        const val SAMPLE_RATE = 16000  // Vosk модель ожидает 16000
+        const val CHANNELS = 1
+        const val BITS_PER_SAMPLE = 16
+    }
+
     /**
      * Слушатель аудио-данных
      * @param data PCM данные (16-bit, mono, 16000 Hz)
@@ -61,10 +67,4 @@ interface IAudioSource {
      * @return true если запись активна
      */
     fun isRecording(): Boolean
-    
-    companion object {
-        const val SAMPLE_RATE = 16000  // Vosk модель ожидает 16000
-        const val CHANNELS = 1
-        const val BITS_PER_SAMPLE = 16
-    }
 }

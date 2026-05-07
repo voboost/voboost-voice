@@ -20,19 +20,19 @@ import ru.voboost.voiceassistant.executor.handlers.ICommandHandler
  */
 class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
 
+    companion object {
+        const val TAG = "ScuttleCommand"
+    }
+
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
             return false
         }
 
-        val IState = VehicleState.IVI_FUEL_PORT_CAP
+        val state = VehicleState.IVI_FUEL_PORT_CAP
         val value = CanBusServiceManager.VALUE_OPEN  // 1 для этого авто
-        Log.d(TAG, "Scuttle command: IState=$IState (ordinal=${IState.ordinal}), value=$value")
-        return canBusManager.setVehicleState(IState, value)
-    }
-
-    companion object {
-        const val TAG = "ScuttleCommand"
+        Log.d(TAG, "Scuttle command: IState=$state (ordinal=${state.ordinal}), value=$value")
+        return canBusManager.setVehicleState(state, value)
     }
 }

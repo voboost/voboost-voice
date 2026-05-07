@@ -28,7 +28,7 @@ class ActivatedState(private val context: StateContext) : BaseState() {
         Log.i(TAG, "Entering ACTIVATED IState")
 
         try { // Звук начала распознавания
-            context.soundEffectManager?.playStartSound()
+            context.soundEffectManager?.playStartSoundAsync()
 
             // Показать анимацию и приглушить музыку
             context.overlayManager?.showAnimation()
@@ -71,7 +71,7 @@ class ActivatedState(private val context: StateContext) : BaseState() {
             Log.i(TAG, "ActivatedState cancelled (button pressed)")
 
             try { // Одинаковый звук отмены с TimeoutState
-                context.soundEffectManager?.playEndSound()
+                context.soundEffectManager?.playEndSoundAsync()
 
                 // Даём звуку закончиться
                 delay(400)

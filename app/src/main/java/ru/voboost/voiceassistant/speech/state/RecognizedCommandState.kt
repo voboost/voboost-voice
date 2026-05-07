@@ -67,7 +67,7 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
     override suspend fun cancel() {
         if (isCancelling.compareAndSet(false, true)) {
             try {
-                context.soundEffectManager?.playEndSound()
+                context.soundEffectManager?.playEndSoundAsync()
                 kotlinx.coroutines.delay(400)
                 val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
                 if(!cancelPhrase.isNullOrEmpty())
