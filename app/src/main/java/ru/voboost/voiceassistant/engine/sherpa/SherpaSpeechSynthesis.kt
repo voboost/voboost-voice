@@ -11,6 +11,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean // Sherpa-ONNX импорты
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import ru.voboost.voiceassistant.core.BaseSpeechSynthesis
 
@@ -22,22 +23,21 @@ import ru.voboost.voiceassistant.core.BaseSpeechSynthesis
  *
  * Поддерживает загрузку моделей с SD-карты (внешнего хранилища)
  */
-class SherpaSpeechSynthesis(private val modelPath: String,
-                            private val speakerId: Int) : BaseSpeechSynthesis() {
+class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId: Int) :
+        BaseSpeechSynthesis() {
 
     companion object {
         const val TAG = "SherpaSynthesis"
         private const val DEFAULT_SAMPLE_RATE = 24000
     }
 
-    @Volatile
-    private var isInitialized = false
-    @Volatile
-    private var rate = 1.0f
-    @Volatile
-    private var pitch = 1.0f
-    @Volatile
-    private var sampleRate = DEFAULT_SAMPLE_RATE
+    @Volatile private var isInitialized = false
+
+    @Volatile private var rate = 1.0f
+
+    @Volatile private var pitch = 1.0f
+
+    @Volatile private var sampleRate = DEFAULT_SAMPLE_RATE
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val isPlaying = AtomicBoolean(false)
     private var currentJob: Job? = null
@@ -53,9 +53,7 @@ class SherpaSpeechSynthesis(private val modelPath: String,
                 val modelFile = File(modelPath)
 
                 if (!modelFile.exists()) {
-                    throw IllegalStateException(
-                        "Sherpa TTS model not found at: ${modelPath}\n" +
-                                "Please copy the model using copy-sherpa-models.bat script")
+                    throw IllegalStateException("Sherpa TTS model not found at: ${modelPath}\n" + "Please copy the model using copy-sherpa-models.bat script")
                 }
 
                 // Инициализация Sherpa-ONNX TTS
@@ -103,7 +101,8 @@ class SherpaSpeechSynthesis(private val modelPath: String,
 
         // Создаём конфигурацию VITS модели для Sherpa-ONNX Piper
         // Передаём data_dir для eSpeak-ng (требуется для phonemization)
-        val vitsModelConfig = OfflineTtsVitsModelConfig.Builder().setModel(modelPathStr)
+        val vitsModelConfig = OfflineTtsVitsModelConfig.Builder()
+            .setModel(modelPathStr)
             .setTokens(if (tokensFile.exists()) tokensFile.absolutePath else "")
             .setDataDir(if (espeakDir.exists()) espeakDir.absolutePath else "")
             .setNoiseScale(0.667f)
@@ -112,18 +111,15 @@ class SherpaSpeechSynthesis(private val modelPath: String,
             .build()
 
         // Создаём обёртку модели
-        val ttsModelConfig =
-            com.k2fsa.sherpa.onnx.OfflineTtsModelConfig.Builder()
-                .setVits(vitsModelConfig)
-                .setNumThreads(2)
-                .setProvider("cpu")  // ← CPU вместо NNAPI для совместимости
-                .setDebug(true)
-                .build()
+        val ttsModelConfig = OfflineTtsModelConfig.Builder()
+            .setVits(vitsModelConfig)
+            .setNumThreads(2)
+            .setProvider("cpu")  // ← CPU вместо NNAPI для совместимости
+            .setDebug(true)
+            .build()
 
         // Создаём основную конфигурацию TTS
-        val ttsConfig = OfflineTtsConfig.Builder()
-            .setModel(ttsModelConfig)
-            .build()
+        val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
 
         return OfflineTts(ttsConfig)
     }
@@ -184,11 +180,8 @@ class SherpaSpeechSynthesis(private val modelPath: String,
     private suspend fun playSpeech(text: String) {
         withContext(Dispatchers.IO) {
             try {
-                val ttsInstance = offlineTts ?: throw IllegalStateException("TTS not initialized")
-
-                Log.d(TAG, "Generating speech for: $text")
-
-                // Сгенерировать аудио через Sherpa-ONNX
+                val ttsInstance = offlineTts
+                                  ?: throw IllegalStateException("TTS not initialized") // Сгенерировать аудио через Sherpa-ONNX
                 // API: generate(text: String, speakerId: Int, speed: Float): GeneratedAudio
                 val audio = ttsInstance.generate(text, speakerId, rate)
 
@@ -210,14 +203,11 @@ class SherpaSpeechSynthesis(private val modelPath: String,
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private suspend fun playAudioData(audio: FloatArray) {
+    @SuppressLint("MissingPermission") private suspend fun playAudioData(audio: FloatArray) {
         withContext(Dispatchers.IO) {
-            val bufferSize = AudioTrack.getMinBufferSize(
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_FLOAT
-            )
+            val bufferSize = AudioTrack.getMinBufferSize(sampleRate,
+                                                         AudioFormat.CHANNEL_OUT_MONO,
+                                                         AudioFormat.ENCODING_PCM_FLOAT)
 
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ASSISTANT)
@@ -230,13 +220,11 @@ class SherpaSpeechSynthesis(private val modelPath: String,
                 .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
                 .build()
 
-            val audioTrack = AudioTrack(
-                audioAttributes,
-                audioFormat,
-                bufferSize,
-                AudioTrack.MODE_STREAM,
-                AudioManager.AUDIO_SESSION_ID_GENERATE
-            )
+            val audioTrack = AudioTrack(audioAttributes,
+                                        audioFormat,
+                                        bufferSize,
+                                        AudioTrack.MODE_STREAM,
+                                        AudioManager.AUDIO_SESSION_ID_GENERATE)
 
             try {
                 audioTrack.play()
@@ -257,7 +245,8 @@ class SherpaSpeechSynthesis(private val modelPath: String,
                 audioTrack.flush()
                 Log.d(TAG, "Audio playback completed")
 
-            } finally {
+            }
+            finally {
                 audioTrack.release()
                 onSpeechFinish()
             }

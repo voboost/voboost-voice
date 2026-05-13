@@ -5,36 +5,35 @@ plugins {
 
 android {
     namespace 'ru.voboost.voiceassistant'
-    compileSdk = 36
+    compileSdk 36
 
     defaultConfig {
         applicationId "ru.voboost.voiceassistant"
-        minSdk = 26
-        targetSdk = 33
-        versionCode = 1
-        versionName = "1.0.0"
-
+        minSdk 28
+        versionCode 1
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled = false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            minifyEnabled = false
-            debuggable = true
+            minifyEnabled false
+            debuggable true
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
     }
 
-    kotlinOptions {
-        jvmTarget = '1.8'
+    kotlin {
+        jvmToolchain(17)
     }
 
     sourceSets {
@@ -43,21 +42,15 @@ android {
             aidl.srcDirs = ['src/main/aidl']
         }
     }
-    
+
     // Исключаем модели и конфиг из APK (они будут на SD-карте)
     aaptOptions {
         ignoreAssetsPattern 'vosk-model-small-ru-0.22:tts-ru-model:asr-ru-model:config.json'
     }
-    
+
     androidResources {
         noCompress += ['wav', 'amr', 'ogg', 'json', 'mdl', 'fst', 'int', 'conf', 'stats', 'mat', 'ie', 'dubm', 'tar.gz']
     }
-
-    // Исключаем нативные библиотеки (загружаются вручную)
-    //packagingOptions {
-    //    exclude '**/libjnidispatch.so'
-    //    exclude '**/libvosk.so'
-    //}
 
     lint {
         checkReleaseBuilds false
@@ -65,33 +58,33 @@ android {
     }
     // Don't compress Vosk model files
     buildFeatures {
-        aidl = true
+        aidl true
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
     }
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // ==================== SPEECH ENGINES ====================
-
-    // Vosk - исключаем нативные библиотеки (загружаем вручную)
-    //implementation('com.alphacephei:vosk-android:0.3.45')
     implementation('com.alphacephei:vosk-android:0.3.45') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
-
     // Sherpa-ONNX (офлайн STT + TTS) - основной движок
-    // Последняя версия: v1.12.34
-    // Скачать: https://sourceforge.net/projects/sherpa-onnx.mirror/files/v1.12.34/
     implementation files('libs/sherpa-onnx-v1.12.34-java8.jar')
-
     // JNA (требуется для Vosk)
-    implementation 'net.java.dev.jna:jna:5.13.0@aar'
+    //implementation 'net.java.dev.jna:jna:5.13.0@aar'
+    //LLM
+    implementation 'com.google.mediapipe:tasks-genai:0.10.35'
+    // ONNX Runtime для Android (CPU-оптимизирован, весит ~15-20 МБ)
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
 
+    implementation 'ai.djl.huggingface:tokenizers:0.28.0'
     // ==================== ANDROIDX ====================
-    
     // Kotlin coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1'
-
     // Core
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -99,21 +92,15 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
 
     // ==================== UI ====================
-    
     // Material Design
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.13.0'
 
     // ==================== UTILS ====================
-    
     // JSON парсинг
     implementation 'com.google.code.gson:gson:2.10.1'
     //QR-code
     implementation 'com.google.zxing:core:3.5.3'
-
-    //implementation 'com.github.tiann:FreeReflection:3.1.0'
-
     // ==================== TESTING ====================
-    
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

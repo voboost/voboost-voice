@@ -5,7 +5,7 @@ import ru.voboost.voiceassistant.config.ConfigManager
 import ru.voboost.voiceassistant.core.ISpeechRecognizer
 import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 import ru.voboost.voiceassistant.executor.CommandExecutor
-import ru.voboost.voiceassistant.nlu.NLUEngine
+import ru.voboost.voiceassistant.nlu.INLUEngine
 import ru.voboost.voiceassistant.nlu.RecognizedCommand
 import ru.voboost.voiceassistant.ui.OverlayManager
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,7 +28,7 @@ data class StateContext(var speechRecognizer: ISpeechRecognizer? = null,
                         var volumeManager: ru.voboost.voiceassistant.audio.VolumeManager? = null,
                         var queueSpeech: QueueSpeechSynthesis? = null,
                         var configManager: ConfigManager? = null,
-                        var nluEngine: NLUEngine? = null,
+                        var nluEngine: INLUEngine? = null,
                         var commandExecutor: CommandExecutor? = null,
                         var soundEffectManager: SoundEffectManager? = null,  // Для звуковых эффектов
     // Данные состояния

@@ -51,7 +51,15 @@ object ExternalStoragePaths {
     // Файл конфигурации
     val configFile: File
         get() = File(baseDir, "config.json")
-    
+
+    // Директория LLM моделей
+    val llmModelDir: File
+        get() = File(modelsDir, "llm")
+
+    // MediaPipe LLM модель (в формате .task)
+    val llmModelFile: File
+        get() = File(llmModelDir, "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task")
+
     /**
      * Проверить существование всех необходимых файлов
      */
@@ -61,7 +69,8 @@ object ExternalStoragePaths {
             "config.json" to configFile.exists(),
             "vosk-model" to voskModelDir.exists(),
             "sherpa-asr" to sherpaAsrModelDir.exists(),
-            "sherpa-tts" to sherpaTtsModelDir.exists()
+            "sherpa-tts" to sherpaTtsModelDir.exists(),
+            "llm-model" to llmModelFile.exists()
         )
     }
     
@@ -74,6 +83,7 @@ object ExternalStoragePaths {
             modelsDir.mkdirs()
             File(modelsDir, "vosk").mkdirs()
             File(modelsDir, "sherpa").mkdirs()
+            llmModelDir.mkdirs()
             true
         } catch (e: Exception) {
             android.util.Log.e("ExternalStoragePaths", "Failed to create directories", e)

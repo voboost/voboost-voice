@@ -4,7 +4,8 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 
-class QueueSpeechSynthesis(private val speechSynthesis: ISpeechSynthesis) : ISpeechSynthesisCallback {
+class QueueSpeechSynthesis(private val speechSynthesis: ISpeechSynthesis)
+    : ISpeechSynthesisCallback {
     companion object {
         const val TAG = "PriorityTtsQueue"
         const val PRIOR_LOW = 1

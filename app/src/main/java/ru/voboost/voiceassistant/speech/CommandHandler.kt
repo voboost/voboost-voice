@@ -2,7 +2,7 @@
 
 import android.util.Log
 import ru.voboost.voiceassistant.executor.CommandExecutor
-import ru.voboost.voiceassistant.nlu.NLUEngine
+import ru.voboost.voiceassistant.nlu.INLUEngine
 
 /**
  * Обработчик команд
@@ -10,10 +10,8 @@ import ru.voboost.voiceassistant.nlu.NLUEngine
  * - Парсинг текста через NLU
  * - Выполнение команд через CommandExecutor
  */
-class CommandHandler(
-    private val nluEngine: NLUEngine,
-    private val commandExecutor: CommandExecutor
-) {
+class CommandHandler(private val nluEngine: INLUEngine,
+                     private val commandExecutor: CommandExecutor) {
     companion object {
         const val TAG = "CommandHandler"
     }
@@ -28,18 +26,19 @@ class CommandHandler(
 
             // Парсим текст через NLU
             val recognizedCommand = nluEngine.parseCommand(text)
-            
+
             if (recognizedCommand != null) {
-                Log.d(TAG, "Parsed command: ${recognizedCommand.id}")
-                // Выполняем команду
+                Log.d(TAG, "Parsed command: ${recognizedCommand.id}") // Выполняем команду
                 commandExecutor.executeCommand(recognizedCommand)
                 Log.i(TAG, "Command executed successfully")
-            } else {
+            }
+            else {
                 Log.w(TAG, "Unrecognized command: '$text'")
                 commandExecutor.handleUnrecognizedCommand(text)
             }
 
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Error executing command: '$text'", e)
             throw e
         }

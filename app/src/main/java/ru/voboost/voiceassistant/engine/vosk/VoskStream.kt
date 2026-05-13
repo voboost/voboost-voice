@@ -31,7 +31,7 @@ class VoskStream(private val recognizer: Recognizer) : IRecognitionEngine {
      * @param pcm PCM данные (16-bit, mono, 16000 Hz)
      * @return Результат распознавания или null если ничего не распознано
      */
-    override fun acceptWaveform(pcm: ByteArray): RecognitionResult? {
+    override fun acceptWaveform(pcm: ByteArray, start: Int, end: Int): RecognitionResult? {
         if (pcm.isEmpty()) return null
 
         // Синхронизация чтобы избежать race condition с reset()
@@ -47,8 +47,10 @@ class VoskStream(private val recognizer: Recognizer) : IRecognitionEngine {
                 }
             }
 
+            val chunkSize = end - start
+            val chunk = pcm.copyOfRange(start, end)
             return try {
-                if (recognizer.acceptWaveForm(pcm, pcm.size)) { // Финальный результат
+                if (recognizer.acceptWaveForm(chunk, chunkSize)) { // Финальный результат
                     val text = extractText(recognizer.result)
                     if (text.isNotEmpty()) {
                         Log.d(TAG, "Final result: $text")

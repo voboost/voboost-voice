@@ -5,11 +5,12 @@ import ru.voboost.voiceassistant.config.CommandConfig
 import ru.voboost.voiceassistant.config.ConfigManager
 import java.util.regex.Pattern
 
+
 /**
  * NLU Engine - парсинг и понимание команд
  * Сопоставляет распознанный текст с шаблонами команд из конфига
  */
-class NLUEngine(private val configManager: ConfigManager) {
+class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
     companion object {
         const val TAG = "NLUEngine"
     }
@@ -18,7 +19,7 @@ class NLUEngine(private val configManager: ConfigManager) {
      * Распарсить команду из текста
      * @return RecognizedCommand или null если команда не найдена
      */
-    fun parseCommand(text: String): RecognizedCommand? {
+    override fun parseCommand(text: String): RecognizedCommand? {
         val normalizedText = text.lowercase().trim()
         Log.d(TAG, "Parsing command: '$text' -> normalized: '$normalizedText'")
 
@@ -32,8 +33,7 @@ class NLUEngine(private val configManager: ConfigManager) {
             for (pattern in commandConfig.patterns) {
                 val matchResult = matchPattern(normalizedText, pattern)
 
-                if (matchResult != null) {
-                    Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
+                if (matchResult != null) { // Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
                     return RecognizedCommand(id = commandConfig.id,
                                              config = commandConfig,
                                              matchedPattern = pattern,
@@ -44,6 +44,57 @@ class NLUEngine(private val configManager: ConfigManager) {
 
         Log.w(TAG, "No matching command found for: '$text'")
         return null
+    }
+
+    /**
+     * Проверить, является ли текст подтверждением "Да"
+     */
+    override fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean {
+        val normalizedText = text.lowercase().trim()
+
+        // Проверяем паттерны из конфига команды
+        commandConfig.confirmation.yesPatterns?.forEach { pattern ->
+            if (normalizedText == pattern.lowercase().trim()) {
+                return true
+            }
+        }
+        return INLUEngine.DEFAULT_YES.any { normalizedText == it }
+    }
+
+    /**
+     * Проверить, является ли текст отменой "Нет"
+     */
+    override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
+        val normalizedText = text.lowercase().trim()
+
+        // Проверяем паттерны из конфига команды
+        commandConfig.confirmation.noPatterns?.forEach { pattern ->
+            if (normalizedText == pattern.lowercase().trim()) {
+                return true
+            }
+        }
+        return INLUEngine.DEFAULT_NO.any { normalizedText == it }
+    }
+
+    /**
+     * Проверить, требует ли команда подтверждения
+     */
+    override fun requiresConfirmation(commandConfig: CommandConfig): Boolean {
+        return commandConfig.confirmation.required
+    }
+
+    /**
+     * Получить вопрос для подтверждения
+     */
+    override fun getConfirmationQuestion(commandConfig: CommandConfig): String {
+        return commandConfig.confirmation.question ?: "Подтверждаете выполнение команды?"
+    }
+
+    /**
+     * Получить таймаут подтверждения
+     */
+    override fun getConfirmationTimeout(commandConfig: CommandConfig): Int {
+        return commandConfig.confirmation.timeoutSec ?: 5
     }
 
     /**
@@ -63,8 +114,6 @@ class NLUEngine(private val configManager: ConfigManager) {
 
         if (matcher.matches()) {
             val params = mutableMapOf<String, String>()
-
-            // Извлекаем параметры из шаблона
             val paramNames = extractParamNames(pattern)
 
             for ((index, paramName) in paramNames.withIndex()) {
@@ -78,10 +127,8 @@ class NLUEngine(private val configManager: ConfigManager) {
                     Log.w(TAG, "Failed to extract parameter '$paramName'", e)
                 }
             }
-
             return params
         }
-
         return null
     }
 
@@ -105,81 +152,5 @@ class NLUEngine(private val configManager: ConfigManager) {
      */
     private fun extractParamNames(pattern: String): List<String> {
         return "\\{([^}]+)\\}".toRegex().findAll(pattern).map { it.groupValues[1] }.toList()
-    }
-
-    /**
-     * Проверить, является ли текст подтверждением "Да"
-     */
-    fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean {
-        val normalizedText = text.lowercase().trim()
-
-        // Проверяем паттерны из конфига команды
-        commandConfig.confirmation.yesPatterns?.forEach { pattern ->
-            if (normalizedText == pattern.lowercase().trim()) {
-                return true
-            }
-        }
-
-        // Паттерны по умолчанию
-        val defaultYesPatterns = listOf("да",
-                                        "ага",
-                                        "угу",
-                                        "подтверждаю",
-                                        "ок",
-                                        "открывай",
-                                        "давай",
-                                        "конечно",
-                                        "ага да",
-                                        "yes",
-                                        "yeah")
-        return defaultYesPatterns.any { normalizedText == it }
-    }
-
-    /**
-     * Проверить, является ли текст отменой "Нет"
-     */
-    fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
-        val normalizedText = text.lowercase().trim()
-
-        // Проверяем паттерны из конфига команды
-        commandConfig.confirmation.noPatterns?.forEach { pattern ->
-            if (normalizedText == pattern.lowercase().trim()) {
-                return true
-            }
-        }
-
-        // Паттерны по умолчанию
-        val defaultNoPatterns = listOf("нет",
-                                       "не надо",
-                                       "не нужно",
-                                       "отмена",
-                                       "отмени",
-                                       "не",
-                                       "отбой",
-                                       "стоп",
-                                       "no",
-                                       "nah")
-        return defaultNoPatterns.any { normalizedText == it }
-    }
-
-    /**
-     * Проверить, требует ли команда подтверждения
-     */
-    fun requiresConfirmation(commandConfig: CommandConfig): Boolean {
-        return commandConfig.confirmation.required
-    }
-
-    /**
-     * Получить вопрос для подтверждения
-     */
-    fun getConfirmationQuestion(commandConfig: CommandConfig): String {
-        return commandConfig.confirmation.question ?: "Подтверждаете выполнение команды?"
-    }
-
-    /**
-     * Получить таймаут подтверждения
-     */
-    fun getConfirmationTimeout(commandConfig: CommandConfig): Int {
-        return commandConfig.confirmation.timeoutSec ?: 5
     }
 }

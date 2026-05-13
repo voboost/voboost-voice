@@ -2,8 +2,10 @@
 
 import android.content.Context
 import android.util.Log
+import ru.voboost.voiceassistant.VoboostVoiceService
 import ru.voboost.voiceassistant.audio.IAudioSource
 import ru.voboost.voiceassistant.config.ConfigManager
+import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.engine.sherpa.SherpaModelLoader
 import ru.voboost.voiceassistant.engine.sherpa.SherpaStreamFactory
 import ru.voboost.voiceassistant.engine.sherpa.SherpaSpeechSynthesis
@@ -18,11 +20,13 @@ object SpeechEngineFactory {
     const val TAG = "SpeechEngineFactory"
 
     enum class RecognitionEngine {
-        VOSK, SHERPA,
+        VOSK,
+        SHERPA,
     }
 
     enum class SynthesisEngine {
-        SYSTEM, SHERPA,
+        SYSTEM,
+        SHERPA,
     }
 
     /**
@@ -67,9 +71,22 @@ object SpeechEngineFactory {
      * @param speakerId ID спикера для Sherpa (0-4)
      */
     fun createSynthesisEngine(context: Context,
-                              engine: SynthesisEngine,
-                              modelPath: String,
-                              speakerId: Int): ISpeechSynthesis {
+                              configManager: ConfigManager): ISpeechSynthesis {
+
+        val speechConfig = configManager.getConfig().tts
+        val engine = when (speechConfig.offline.engine.lowercase()) {
+            "sherpa" -> {
+                Log.i(VoboostVoiceService.Companion.TAG, "TTS engine from config: Sherpa-ONNX")
+                SynthesisEngine.SHERPA
+            }
+            else -> {
+                Log.i(VoboostVoiceService.Companion.TAG, "TTS engine from config: System TTS")
+                SynthesisEngine.SYSTEM
+            }
+        }
+        val speakerId = speechConfig.offline.speaker
+        val modelPath = ExternalStoragePaths.sherpaTtsModelDir.absolutePath
+
         return when (engine) {
             SynthesisEngine.SYSTEM -> {
                 Log.i(TAG, "Creating System TTS engine")
@@ -80,42 +97,6 @@ object SpeechEngineFactory {
                 Log.i(TAG, "Creating Sherpa TTS engine")
                 SherpaSpeechSynthesis(modelPath, speakerId)
             }
-        }
-    }
-
-    /**
-     * Рекомендованная конфигурация для текущего устройства
-     */
-    fun getRecommendedConfig(context: Context): Pair<RecognitionEngine, SynthesisEngine> {
-
-        val systemTtsAvailable = isSystemTtsRussianAvailable(context)
-
-        return when {
-            systemTtsAvailable -> {
-                Log.i(TAG, "Recommended: Vosk ASR + System TTS")
-                Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)
-            }
-
-            else -> {
-                Log.i(TAG, "Recommended: Vosk ASR only (no TTS available)")
-                Pair(RecognitionEngine.VOSK, SynthesisEngine.SYSTEM)
-            }
-        }
-    }
-
-    /**
-     * Проверить поддержку русского языка системным TTS
-     */
-    private fun isSystemTtsRussianAvailable(context: Context): Boolean {
-        return try {
-            val tts = android.speech.tts.TextToSpeech(context) { /* dummy */ }
-            val result = tts.isLanguageAvailable(java.util.Locale.forLanguageTag("ru-RU"))
-            tts.shutdown()
-            result != android.speech.tts.TextToSpeech.LANG_MISSING_DATA && result != android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
-        }
-        catch (e: Exception) {
-            Log.w(TAG, "Failed to check system TTS", e)
-            false
         }
     }
 }
