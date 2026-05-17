@@ -1,265 +1,127 @@
 # VoboostVoiceAssistant
 
+[![Documentation](https://img.shields.io/badge/Docs-ru-green.svg)](./docs/README.md)
+
 Голосовой помощник для автомобилей с поддержкой русского языка.
+
+> 📖 **Внимание:** Данный README содержит устаревшую информацию.  
+> Для актуальной документации перейдите к [docs/README.md](./docs/README.md)
 
 ## Возможности
 
 - ✅ Голосовое управление автомобилем (лючки, режимы, климат)
-- ✅ Управление телефоном (звонки)
-- ✅ Офлайн распознавание речи (Vosk)
+- ✅ Управление телефоном (звонки по контактам и номерам)
+- ✅ Офлайн распознавание речи (Vosk + Sherpa-ONNX)
 - ✅ Онлайн распознавание (Yandex SpeechKit - опционально)
 - ✅ Активация по кнопке на руле или кодовой фразе
-- ✅ Визуальные эффекты (анимация как в оригинале)
-- ✅ TTS ответы (RhVoice/системный)
+- ✅ Визуальные эффекты (анимация микрофона)
+- ✅ TTS ответы (Sherpa-ONNX + системный)
+- ✅ 26 команд из коробки
 - ✅ Расширяемая система команд (JSON конфиг)
 
-## Структура проекта
+## 📚 Документация
+
+| Документ | Описание |
+|----------|----------|
+| [docs/README.md](./docs/README.md) | **Основная документация** (установка, настройка, примеры) |
+| [docs/ARCHITECTURE/OVERVIEW.md](./docs/ARCHITECTURE/OVERVIEW.md) | Архитектура системы |
+| [docs/FEATURES/TSR.md](./docs/FEATURES/TSR.md) | Система предупреждения о скорости (TSR) |
+
+---
+
+## ⚠️ Устаревшая информация
+
+Этот README содержит базовую информацию и ссылки на актуальную документацию.  
+Для установки и настройки используйте [docs/README.md](./docs/README.md).
+
+### Структура проекта (устаревшая)
 
 ```
-app/src/main/
-├── java/com/voboost/voiceassistant/
-│   ├── VoboostVoiceService.kt       # Главный сервис
-│   ├── VoiceActivationService.kt    # Accessibility для кнопки
-│   ├── VoiceCommandReceiver.kt      # Broadcast receiver
-│   │
-│   ├── config/
-│   │   ├── AppConfig.kt             # Data классы конфига
-│   │   ├── CommandConfig.kt         # Конфиг команд
-│   │   ├── ApiKeys.kt               # API ключи (не коммить!)
-│   │   └── ConfigManager.kt         # Загрузка конфига
-│   │
-│   ├── speech/
-│   │   └── SpeechRecognitionModule.kt  # Vosk распознавание
-│   │
-│   ├── nlu/
-│   │   ├── NLUEngine.kt             # Парсинг команд
-│   │   └── Command.kt               # Data классы команд
-│   │
-│   ├── executor/
-│   │   └── CommandExecutor.kt       # Выполнение команд
-│   │
-│   ├── tts/
-│   │   └── TTSEngine.kt             # Синтез речи
-│   │
-│   └── ui/
-│       ├── OverlayManager.kt        # Оверлеи
-│       └── VoiceClickView.kt        # Анимация
+app/src/main/java/ru/voboost/voiceassistant/
+├── VoboostVoiceService.kt       # Главный сервис
+├── VoiceActivationService.kt    # Accessibility для кнопки
+├── VoiceCommandReceiver.kt      # Broadcast receiver
+├── BootActivity.kt              # Для автозапуска
+├── BootReceiver.kt              # Обработчик BOOT_COMPLETED
 │
-├── assets/
-│   ├── config.json                  # Главный конфиг
-│   └── vosk/
-│       └── model-ru/                # Модель Vosk (скачать отдельно)
-│
-└── res/
-    ├── layout/
-    │   └── toast_voice.xml
-    ├── drawable/
-    │   ├── ic_voice.xml
-    │   └── toast_background.xml
-    └── xml/
-        └── accessibility_service_config.xml
+├── audio/                       # Источники аудио (8+ файлов)
+├── canbus/                      # CAN Bus интеграция (5+ файлов)
+├── config/                      # Конфигурация (6 файлов)
+├── core/                        # Ядро системы (7+ файлов)
+├── engine/                      # Движки STT/TTS (10+ файлов)
+├── executor/                    # Обработчики команд (45+ файлов)
+├── nlu/                         # Natural Language Understanding (6+ файлов)
+├── speech/                      # Модули распознавания (10+ файлов)
+└── ui/                          # UI компоненты
 ```
 
-## Установка
-
-### 1. Сборка приложения
+### Установка
 
 ```bash
-# Открыть проект в Android Studio
-# Или собрать через командную строку:
+# Собрать APK
+cd VoboostVoiceAssistant
 ./gradlew assembleDebug
+
+# Использовать скрипт установки (рекомендуется)
+scripts/install/VoboostVoiceAssistant-install.bat
 ```
 
-### 2. Скачать модель Vosk
+Для подробной инструкции см. [docs/SETUP/INSTALLATION.md](./docs/SETUP/INSTALLATION.md)
 
-1. Скачать модель: https://alphacephei.com/vosk/models
-   - **Рекомендуемая:** `vosk-model-small-ru-0.22` (50MB)
-   
-2. Распаковать и поместить в:
-   ```
-   app/src/main/assets/vosk/vosk-model-small-ru-0.22/
-   ```
-
-### 3. Установка на устройство
-
-```bash
-# Подключить устройство по USB
-adb install app/build/outputs/apk/debug/app-debug.apk
-
-# Или через Android Studio: Run → Run 'app'
-```
-
-### 4. Настройка разрешений
-
-После установки:
-
-1. **Разрешить микрофон:**
-   - Настройки → Приложения → Voboost Voice → Разрешения → Микрофон
-
-2. **Включить Accessibility Service:**
-   - Настройки → Спе. возможности → Voboost Voice Button → ВКЛ
-
-3. **Разрешить поверх других окон:**
-   - Настройки → Приложения → Voboost Voice → Поверх других окон → РАЗРЕШИТЬ
-
-## Настройка
-
-### API ключи Yandex (опционально)
-
-Для онлайн режима нужны ключи Yandex Cloud:
-
-1. Зарегистрироваться: https://cloud.yandex.ru
-2. Создать платежный аккаунт (есть бесплатный лимит)
-3. Получить API ключ и Folder ID
-4. Вставить в `app/src/main/java/com/voboost/voiceassistant/config/ApiKeys.kt`:
-
-```kotlin
-const val YANDEX_SPEECH_API_KEY = "your_api_key"
-const val YANDEX_FOLDER_ID = "your_folder_id"
-```
-
-**Важно:** Не коммитьте файл с ключами в git!
+---
 
 ### Конфигурация команд
 
-Команды настраиваются в `app/src/main/assets/config.json`:
+Команды настраиваются в `app/src/main/assets/config.json` или `/data/user/0/ru.voboost.voiceassistant/files/config.json`.
 
-```json
-{
-  "commands": [
-    {
-      "id": "charge_port_open",
-      "enabled": true,
-      "patterns": [
-        "открой лючок зарядки",
-        "открой порт зарядки"
-      ],
-      "action": {
-        "target": "Chargport",
-        "classify": 35,
-        "command": 1
-      },
-      "confirmation": {
-        "required": false
-      },
-      "phrases": {
-        "success": "Открываю лючок зарядки"
-      }
-    }
-  ]
-}
-```
+**26 команд из коробки:**
+- Управление автомобилем (лючки, бензобак)
+- Режимы умной системы (отдых, детский, романтика, мойка)
+- Климат (вкл/выкл, температура)
+- Телефон (звонки по имени и номеру)
+- Окна (открыть/закрыть)
+- Режимы вождения (эко, комфорт, спорт, бездорожье и др.)
+- Режимы источника питания (электро, гибрид, сохранение)
 
-## Использование
+Список всех команд см. в [docs/SETUP/CONFIGURATION.md](./docs/SETUP/CONFIGURATION.md)
+
+---
 
 ### Активация
 
-1. **Кодовая фраза:** "Привет, Вобуст" (или "Привет, машина")
-2. **Кнопка на руле:** (требует настройки keycode)
+1. **Кодовая фраза:** "Привет, Вобуст" / "привет воях" (или "привет машина")
+2. **Кнопка на руле:** KEYCODE=16 (настраивается в config.json)
 
-### Примеры команд
-
-#### Управление автомобилем:
-- "Открой лючок зарядки"
-- "Закрой бензобак"
-- "Включи режим отдыха"
-- "Включи детский режим"
-- "Включи кондиционер"
-- "Установи 22 градуса"
-
-#### Телефон:
-- "Позвони маме"
-- "Набери 123-45-67"
-
-#### Окна:
-- "Открой окно"
-- "Закрой все окна"
+---
 
 ## Добавление новых команд
 
-1. Открыть `app/src/main/assets/config.json`
-2. Добавить новую команду:
+См. инструкцию: [docs/SETUP/CONFIGURATION.md](./docs/SETUP/CONFIGURATION.md#%D0%B4%D0%BE%D0%B1%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BD%D0%BE%D0%B2%D0%BE%D0%B9-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B)
 
-```json
-{
-  "id": "my_custom_command",
-  "enabled": true,
-  "patterns": [
-    "моя команда",
-    "выполни действие"
-  ],
-  "action": {
-    "target": "Target",
-    "classify": 35,
-    "command": 1,
-    "intent_action": "pateo.dls.ivoka.vehicle.CONTROL",
-    "params": {}
-  },
-  "confirmation": {
-    "required": false
-  },
-  "phrases": {
-    "success": "Выполняю команду",
-    "failure": "Не получилось"
-  }
-}
-```
-
-3. Пересобрать и установить приложение
-
-## Поиск keycode кнопки на руле
-
-Для активации кнопкой нужно найти правильный keycode:
-
-```bash
-# Подключить устройство
-adb logcat | grep -i "key\|button\|voice"
-
-# Нажать кнопку на руле
-# Смотреть вывод logcat
-
-# Или использовать:
-adb shell getevent -l
-```
-
-Найденный keycode вставить в `VoiceActivationService.kt`:
-```kotlin
-private val VOICE_BUTTON_KEYCODES = intArrayOf(
-    219, // Заменить на найденный
-)
-```
+---
 
 ## Архитектура
 
-```
-Пользователь говорит команду
-        ↓
-Vosk распознавание (офлайн)
-        ↓
-NLUEngine парсит команду
-        ↓
-Проверка подтверждения (если нужно)
-        ↓
-CommandExecutor отправляет Intent
-        ↓
-Система выполняет (QGSpeechService)
-        ↓
-TTS говорит результат + Overlay
-```
+См. [docs/ARCHITECTURE/OVERVIEW.md](./docs/ARCHITECTURE/OVERVIEW.md) для подробного описания:
+- State Machine (9 состояний)
+- Speech Engine Factory (Vosk/Sherpa/System)
+- Executor Pattern
+- Audio Sources
+
+---
 
 ## Статус
 
 - ✅ Базовая функциональность
-- ✅ Офлайн распознавание (Vosk)
-- ✅ 13 команд из коробки
-- ⚠️ Кнопка на руле (TODO - найти keycode)
-- ⚠️ Онлайн режим (TODO - добавить ключи)
-- ⚠️ Подтверждение команд (TODO - диалог)
+- ✅ Офлайн распознавание (Vosk + Sherpa-ONNX)
+- ✅ 26 команд из коробки
+- ✅ Кнопка на руле (KEYCODE=16 в config.json)
+- ⚠️ Онлайн режим (требуются API ключи Yandex)
 
-## Лицензия
+---
 
-MIT License
+## 📞 Поддержка
 
-## Авторы
-
-Voboost Team
+**Author:** Voboost Team  
+**License:** MIT License  
+**Документация:** [docs/README.md](./docs/README.md)
