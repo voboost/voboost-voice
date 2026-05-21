@@ -83,23 +83,23 @@ class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
         if (vehicle == VehicleState.RIGHT_VERTICAL_POSITION) return
         if (vehicle == VehicleState.BMS_REMAIN_CHARGE_TIME) return
 
-        Log.d(TAG, "⚠️ VehicleStateChanged: $vehicle val: $state")
+        Log.d(TAG, "вљ пёЏ VehicleStateChanged: $vehicle val: $state")
     }
 
     private fun handleVehicleSceneModeChanged(mode: Int) {
-        Log.d(TAG, "⚠️ VehicleSceneModeChanged: $mode")
+        Log.d(TAG, "вљ пёЏ VehicleSceneModeChanged: $mode")
     }
 
     private fun handleAlarmDataChanged(state: Int) {
-        Log.d(TAG, "⚠️ AlarmDataChanged: $state")
+        Log.d(TAG, "вљ пёЏ AlarmDataChanged: $state")
     }
 
     private fun handleRealityWarningInfoChange(realityWarningInfo: RealityWarningInfo) {
-        Log.d(TAG, "⚠️ RealityWarningInfo: $realityWarningInfo")
+        Log.d(TAG, "вљ пёЏ RealityWarningInfo: $realityWarningInfo")
     }
 
     private fun handleRealityWarningInfoChanged(key: Int, value: Int) {
-        Log.d(TAG, "⚠️ RealityWarningInfoChanged: $key -> $value")
+        Log.d(TAG, "вљ пёЏ RealityWarningInfoChanged: $key -> $value")
     }
 
 
@@ -115,11 +115,11 @@ class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
 
         val hexPayload = payload.joinToString(" ") { "%02X".format(it and 0xFF) }
 
-        Log.d(TAG, "⚠️ CanRawDataChanged: $canID -> $hexPayload")
+        Log.d(TAG, "вљ пёЏ CanRawDataChanged: $canID -> $hexPayload")
     }
 
     private fun handleHEVSystemModelChanged(hevMode: Int) {
-        Log.d(TAG, "⚠️ HEVSystemModelChanged: $hevMode")
+        Log.d(TAG, "вљ пёЏ HEVSystemModelChanged: $hevMode")
     }
 
     override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {

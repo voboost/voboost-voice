@@ -14,8 +14,8 @@ import ru.voboost.voice.R
 import ru.voboost.voice.config.ConfigManager
 
 /**
- * Менеджер UI оверлеев
- * Показывает анимацию и уведомления поверх других приложений
+ * РњРµРЅРµРґР¶РµСЂ UI РѕРІРµСЂР»РµРµРІ
+ * РџРѕРєР°Р·С‹РІР°РµС‚ Р°РЅРёРјР°С†РёСЋ Рё СѓРІРµРґРѕРјР»РµРЅРёСЏ РїРѕРІРµСЂС… РґСЂСѓРіРёС… РїСЂРёР»РѕР¶РµРЅРёР№
  */
 class OverlayManager(private val context: Context,
                      private val configManager: ConfigManager) {
@@ -36,9 +36,9 @@ class OverlayManager(private val context: Context,
     private var isAnimationShowing = false
 
     /**
-     * Показать анимацию голосового помощника
-     * Анимация крутится бесконечно пока ассистент активен.
-     * Вызвать hideAnimation() для остановки.
+     * РџРѕРєР°Р·Р°С‚СЊ Р°РЅРёРјР°С†РёСЋ РіРѕР»РѕСЃРѕРІРѕРіРѕ РїРѕРјРѕС‰РЅРёРєР°
+     * РђРЅРёРјР°С†РёСЏ РєСЂСѓС‚РёС‚СЃСЏ Р±РµСЃРєРѕРЅРµС‡РЅРѕ РїРѕРєР° Р°СЃСЃРёСЃС‚РµРЅС‚ Р°РєС‚РёРІРµРЅ.
+     * Р’С‹Р·РІР°С‚СЊ hideAnimation() РґР»СЏ РѕСЃС‚Р°РЅРѕРІРєРё.
      */
     fun showAnimation() {
         if (isAnimationShowing) {
@@ -55,27 +55,27 @@ class OverlayManager(private val context: Context,
                     return@post
                 }
 
-                // Создаем VoiceClickView с frame-by-frame анимацией
+                // РЎРѕР·РґР°РµРј VoiceClickView СЃ frame-by-frame Р°РЅРёРјР°С†РёРµР№
                 voiceClickView = VoiceClickView(context)
 
-                // Параметры окна
+                // РџР°СЂР°РјРµС‚СЂС‹ РѕРєРЅР°
                 val params = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
                                                         WindowManager.LayoutParams.WRAP_CONTENT,
                                                         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                                                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                                                         PixelFormat.TRANSLUCENT)
 
-                // Позиция: верх, X=0 (центрируем после layout)
+                // РџРѕР·РёС†РёСЏ: РІРµСЂС…, X=0 (С†РµРЅС‚СЂРёСЂСѓРµРј РїРѕСЃР»Рµ layout)
                 params.gravity = Gravity.TOP or Gravity.START
                 params.x = 0
                 params.y = 0
 
-                // Добавляем view
+                // Р”РѕР±Р°РІР»СЏРµРј view
                 windowManager.addView(voiceClickView, params)
                 (voiceClickView as? VoiceClickView)?.startAnimation()
                 isAnimationShowing = true
 
-                // Центрируем после того как View измерен
+                // Р¦РµРЅС‚СЂРёСЂСѓРµРј РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє View РёР·РјРµСЂРµРЅ
                 voiceClickView?.post {
                     val viewWidth = voiceClickView?.width ?: 0
                     val screenWidth = context.resources.displayMetrics.widthPixels
@@ -97,7 +97,7 @@ class OverlayManager(private val context: Context,
     }
 
     /**
-     * Скрыть анимацию (останавливает цикл и удаляет View)
+     * РЎРєСЂС‹С‚СЊ Р°РЅРёРјР°С†РёСЋ (РѕСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ С†РёРєР» Рё СѓРґР°Р»СЏРµС‚ View)
      */
     fun hideAnimation() {
         handler.post {
@@ -117,7 +117,7 @@ class OverlayManager(private val context: Context,
     }
 
     /**
-     * Показать Toast уведомление
+     * РџРѕРєР°Р·Р°С‚СЊ Toast СѓРІРµРґРѕРјР»РµРЅРёРµ
      */
     @Suppress("DEPRECATION")
     fun showToast(message: String) {
@@ -125,7 +125,7 @@ class OverlayManager(private val context: Context,
             try {
                 val config = configManager.getConfig()
 
-                // Создаем кастомный Toast
+                // РЎРѕР·РґР°РµРј РєР°СЃС‚РѕРјРЅС‹Р№ Toast
                 val inflater = LayoutInflater.from(context)
                 val view = inflater.inflate(R.layout.toast_voice, null)
 
@@ -147,24 +147,24 @@ class OverlayManager(private val context: Context,
             catch (e: Exception) {
                 Log.e(TAG, "Failed to show toast", e)
 
-                // Fallback к стандартному Toast
+                // Fallback Рє СЃС‚Р°РЅРґР°СЂС‚РЅРѕРјСѓ Toast
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     /**
-     * Показать уведомление о выполнении команды
+     * РџРѕРєР°Р·Р°С‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ Рѕ РІС‹РїРѕР»РЅРµРЅРёРё РєРѕРјР°РЅРґС‹
      */
     fun showCommandResult(message: String) {
         showToast(message)
 
-        // Анимация уже показана во время распознавания
-        // Здесь только текст
+        // РђРЅРёРјР°С†РёСЏ СѓР¶Рµ РїРѕРєР°Р·Р°РЅР° РІРѕ РІСЂРµРјСЏ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ
+        // Р—РґРµСЃСЊ С‚РѕР»СЊРєРѕ С‚РµРєСЃС‚
     }
 
     /**
-     * Очистить все оверлеи
+     * РћС‡РёСЃС‚РёС‚СЊ РІСЃРµ РѕРІРµСЂР»РµРё
      */
     fun clearAll() {
         hideAnimation()

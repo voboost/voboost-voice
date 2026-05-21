@@ -1,9 +1,9 @@
 package ru.voboost.voice.speech.state
 
 /**
- * Базовый класс состояния с поддержкой колбэков.
- * StateMachine подписывается на completionCallback и cancellationCallback.
- * Состояние вызывает finish() или cancelled() когда готово перейти дальше.
+ * Р‘Р°Р·РѕРІС‹Р№ РєР»Р°СЃСЃ СЃРѕСЃС‚РѕСЏРЅРёСЏ СЃ РїРѕРґРґРµСЂР¶РєРѕР№ РєРѕР»Р±СЌРєРѕРІ.
+ * StateMachine РїРѕРґРїРёСЃС‹РІР°РµС‚СЃСЏ РЅР° completionCallback Рё cancellationCallback.
+ * РЎРѕСЃС‚РѕСЏРЅРёРµ РІС‹Р·С‹РІР°РµС‚ finish() РёР»Рё cancelled() РєРѕРіРґР° РіРѕС‚РѕРІРѕ РїРµСЂРµР№С‚Рё РґР°Р»СЊС€Рµ.
  */
 abstract class BaseState : IState {
     private var completionCallback: ((StateResult) -> Unit)? = null
@@ -18,7 +18,7 @@ abstract class BaseState : IState {
     }
 
     /**
-     * Вызывается когда состояние завершилось нормально.
+     * Р’С‹Р·С‹РІР°РµС‚СЃСЏ РєРѕРіРґР° СЃРѕСЃС‚РѕСЏРЅРёРµ Р·Р°РІРµСЂС€РёР»РѕСЃСЊ РЅРѕСЂРјР°Р»СЊРЅРѕ.
      */
     protected fun finish(result: StateResult) {
         completionCallback?.invoke(result) ?: run {
@@ -27,7 +27,7 @@ abstract class BaseState : IState {
     }
 
     /**
-     * Вызывается когда состояние отменено (пользователь/таймаут/ошибка).
+     * Р’С‹Р·С‹РІР°РµС‚СЃСЏ РєРѕРіРґР° СЃРѕСЃС‚РѕСЏРЅРёРµ РѕС‚РјРµРЅРµРЅРѕ (РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ/С‚Р°Р№РјР°СѓС‚/РѕС€РёР±РєР°).
      */
     protected fun cancelled(reason: String = "User cancelled") {
         cancellationCallback?.invoke(reason) ?: run {
@@ -36,8 +36,8 @@ abstract class BaseState : IState {
     }
 
     /**
-     * Сбросить состояние по умолчанию — ничего не делает.
-     * Переопределите если нужно сбросить внутренние поля.
+     * РЎР±СЂРѕСЃРёС‚СЊ СЃРѕСЃС‚РѕСЏРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ вЂ” РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµС‚.
+     * РџРµСЂРµРѕРїСЂРµРґРµР»РёС‚Рµ РµСЃР»Рё РЅСѓР¶РЅРѕ СЃР±СЂРѕСЃРёС‚СЊ РІРЅСѓС‚СЂРµРЅРЅРёРµ РїРѕР»СЏ.
      */
     override fun reset() { }
 }

@@ -3,7 +3,7 @@ package ru.voboost.voice.nlu
 import ru.voboost.voice.config.CommandConfig
 
 /**
- * Распознанная команда
+ * Р Р°СЃРїРѕР·РЅР°РЅРЅР°СЏ РєРѕРјР°РЅРґР°
  */
 data class RecognizedCommand(
     val id: String,
@@ -14,13 +14,13 @@ data class RecognizedCommand(
 )
 
 /**
- * Результат подтверждения пользователем
+ * Р РµР·СѓР»СЊС‚Р°С‚ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
  */
 enum class ConfirmationResult {
-    CONFIRMED,      // Пользователь подтвердил
-    CANCELLED,      // Пользователь отменил
-    TIMEOUT,        // Истекло время ожидания
-    NOT_REQUIRED    // Подтверждение не требуется
+    CONFIRMED,      // РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РїРѕРґС‚РІРµСЂРґРёР»
+    CANCELLED,      // РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕС‚РјРµРЅРёР»
+    TIMEOUT,        // РСЃС‚РµРєР»Рѕ РІСЂРµРјСЏ РѕР¶РёРґР°РЅРёСЏ
+    NOT_REQUIRED    // РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РЅРµ С‚СЂРµР±СѓРµС‚СЃСЏ
 }
 
 

@@ -4,13 +4,13 @@ import com.qinggan.canbus.VehicleState
 import ru.voboost.voice.canbus.CanBusServiceManager
 
 /**
- * Открыть все окна
+ * РћС‚РєСЂС‹С‚СЊ РІСЃРµ РѕРєРЅР°
  *
  * config.json:
  *   id: "window_all_open"
  *   target: "Window", classify: 3, command: 0
  *
- * CAN-шина:
+ * CAN-С€РёРЅР°:
  *   VehicleState.ALL_WINDOW_CONTROL
  *   value: VALUE_WINDOW_ALL_OPEN (3)
  */

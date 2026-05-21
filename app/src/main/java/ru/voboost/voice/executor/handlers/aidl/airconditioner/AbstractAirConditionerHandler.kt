@@ -6,10 +6,10 @@ import ru.voboost.voice.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 /**
- * Базовый абстрактный обработчик команд кондиционера
+ * Р‘Р°Р·РѕРІС‹Р№ Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РѕР±СЂР°Р±РѕС‚С‡РёРє РєРѕРјР°РЅРґ РєРѕРЅРґРёС†РёРѕРЅРµСЂР°
  *
- * @param commandId Уникальный ID команды (совпадает с config.json)
- * @param canBusManager Менеджер CAN-шины
+ * @param commandId РЈРЅРёРєР°Р»СЊРЅС‹Р№ ID РєРѕРјР°РЅРґС‹ (СЃРѕРІРїР°РґР°РµС‚ СЃ config.json)
+ * @param canBusManager РњРµРЅРµРґР¶РµСЂ CAN-С€РёРЅС‹
  */
 abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBusServiceManager) :
         ICommandHandler {
@@ -30,8 +30,8 @@ abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBus
     }
 
     /**
-     * Возвращает пару (AirConditionState, значение) для отправки в CAN-шину
-     * Для установки температуры значение берётся из voiceParams["temperature"]
+     * Р’РѕР·РІСЂР°С‰Р°РµС‚ РїР°СЂСѓ (AirConditionState, Р·РЅР°С‡РµРЅРёРµ) РґР»СЏ РѕС‚РїСЂР°РІРєРё РІ CAN-С€РёРЅСѓ
+     * Р”Р»СЏ СѓСЃС‚Р°РЅРѕРІРєРё С‚РµРјРїРµСЂР°С‚СѓСЂС‹ Р·РЅР°С‡РµРЅРёРµ Р±РµСЂС‘С‚СЃСЏ РёР· voiceParams["temperature"]
      */
     protected abstract fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int>
 }

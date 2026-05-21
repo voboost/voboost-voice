@@ -22,7 +22,7 @@ class SystemSpeechSynthesis(private val context: Context) : BaseSpeechSynthesis(
     @Volatile
     private var isSpeaking = false
 
-    init { // Инициализация системного TTS
+    init { // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃРёСЃС‚РµРјРЅРѕРіРѕ TTS
         tts = TextToSpeech(context, this)
     }
 
@@ -45,9 +45,9 @@ class SystemSpeechSynthesis(private val context: Context) : BaseSpeechSynthesis(
         }
     }
 
-    override suspend fun initialize() { // Ждём пока onInit будет вызван
+    override suspend fun initialize() { // Р–РґС‘Рј РїРѕРєР° onInit Р±СѓРґРµС‚ РІС‹Р·РІР°РЅ
         var waitCount = 0
-        while (!isInitialized && waitCount < 50) {  // Ждём до 5 секунд
+        while (!isInitialized && waitCount < 50) {  // Р–РґС‘Рј РґРѕ 5 СЃРµРєСѓРЅРґ
             kotlinx.coroutines.delay(100)
             waitCount++
         }
@@ -72,7 +72,7 @@ class SystemSpeechSynthesis(private val context: Context) : BaseSpeechSynthesis(
 
         Log.d(TAG, "Speaking: $text")
 
-        // Запустить воспроизведение если не играет
+        // Р—Р°РїСѓСЃС‚РёС‚СЊ РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёРµ РµСЃР»Рё РЅРµ РёРіСЂР°РµС‚
         if (!isSpeaking) {
             playSpeech(text)
         }
@@ -109,7 +109,7 @@ class SystemSpeechSynthesis(private val context: Context) : BaseSpeechSynthesis(
         try {
             val utteranceId = UUID.randomUUID().toString()
 
-            // Установить listener для отслеживания завершения
+            // РЈСЃС‚Р°РЅРѕРІРёС‚СЊ listener РґР»СЏ РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ Р·Р°РІРµСЂС€РµРЅРёСЏ
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     Log.d(TAG, "Speech started: $utteranceId")
@@ -118,18 +118,18 @@ class SystemSpeechSynthesis(private val context: Context) : BaseSpeechSynthesis(
 
                 override fun onDone(utteranceId: String?) {
                     Log.d(TAG, "Speech completed: $utteranceId")
-                    isSpeaking = false // Вызываем обратные вызовы
+                    isSpeaking = false // Р’С‹Р·С‹РІР°РµРј РѕР±СЂР°С‚РЅС‹Рµ РІС‹Р·РѕРІС‹
                     onSpeechFinish()
                 }
 
                 override fun onError(utteranceId: String?) {
                     Log.e(TAG, "Speech error: $utteranceId")
-                    isSpeaking = false // Вызываем обратные вызовы при ошибке
+                    isSpeaking = false // Р’С‹Р·С‹РІР°РµРј РѕР±СЂР°С‚РЅС‹Рµ РІС‹Р·РѕРІС‹ РїСЂРё РѕС€РёР±РєРµ
                     onSpeechFinish()
                 }
             })
 
-            // Воспроизвести текст
+            // Р’РѕСЃРїСЂРѕРёР·РІРµСЃС‚Рё С‚РµРєСЃС‚
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
 
         }

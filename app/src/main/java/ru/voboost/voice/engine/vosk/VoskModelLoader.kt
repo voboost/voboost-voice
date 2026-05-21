@@ -13,9 +13,9 @@ public class VoskModelLoader() : IModelLoader {
     }
 
     /**
-     * Загрузить модель Vosk из указанного пути
-     * @param modelPath Путь к директории модели
-     * @return Model объект Vosk
+     * Р—Р°РіСЂСѓР·РёС‚СЊ РјРѕРґРµР»СЊ Vosk РёР· СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїСѓС‚Рё
+     * @param modelPath РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё РјРѕРґРµР»Рё
+     * @return Model РѕР±СЉРµРєС‚ Vosk
      */
     override fun loadModel(): Any {
         val modelPath = getModelPath()
@@ -24,8 +24,8 @@ public class VoskModelLoader() : IModelLoader {
     }
 
     /**
-     * Получить путь к модели Vosk из внешнего хранилища
-     * @return Путь к директории модели
+     * РџРѕР»СѓС‡РёС‚СЊ РїСѓС‚СЊ Рє РјРѕРґРµР»Рё Vosk РёР· РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°
+     * @return РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё РјРѕРґРµР»Рё
      */
     private fun getModelPath(): String {
         val externalModelDir = ExternalStoragePaths.voskModelDir

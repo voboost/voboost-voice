@@ -7,11 +7,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /**
- * Ñîñòîÿíèå: Îæèäàíèå êëþ÷åâîãî ñëîâà
+ * Ð¡Ð¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ: ÐžÐ¶Ð¸Ð´Ð°Ð½Ð¸Ðµ ÐºÐ»ÑŽÑ‡ÐµÐ²Ð¾Ð³Ð¾ ÑÐ»Ð¾Ð²Ð°
  *
- * Ëîãèêà:
- * 1. Ñêðûòü àíèìàöèþ, âîññòàíîâèòü ãðîìêîñòü
- * 2. Æä¸ì KeywordDetected èç SpeechRecognizer
+ * Ð›Ð¾Ð³Ð¸ÐºÐ°:
+ * 1. Ð¡ÐºÑ€Ñ‹Ñ‚ÑŒ Ð°Ð½Ð¸Ð¼Ð°Ñ†Ð¸ÑŽ, Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð³Ñ€Ð¾Ð¼ÐºÐ¾ÑÑ‚ÑŒ
+ * 2. Ð–Ð´Ñ‘Ð¼ KeywordDetected Ð¸Ð· SpeechRecognizer
  * 3. > finish(StateResult.Next(StateType.ACTIVATED))
  */
 class IdleState(private val context: StateContext) : BaseState() {
@@ -26,7 +26,7 @@ class IdleState(private val context: StateContext) : BaseState() {
             context.overlayManager?.hideAnimation()
             context.volumeManager?.restoreMedia()
 
-            // Æä¸ì êëþ÷åâîå ñëîâî èç SharedFlow
+            // Ð–Ð´Ñ‘Ð¼ ÐºÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ ÑÐ»Ð¾Ð²Ð¾ Ð¸Ð· SharedFlow
             val result =
                 context.speechRecognizer?.results?.first { it is SpeechResult.KeywordDetected }
             val keywordText = (result as SpeechResult.KeywordDetected).text
@@ -34,7 +34,7 @@ class IdleState(private val context: StateContext) : BaseState() {
             Log.i(TAG, "?? Keyword detected: '$keywordText' (zone=$zone)")
             context.zone = zone
 
-            // Êëþ÷åâîå ñëîâî ïîëó÷åíî > ACTIVATED
+            // ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ ÑÐ»Ð¾Ð²Ð¾ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ > ACTIVATED
             finish(StateResult.Next(StateType.ACTIVATED))
 
         }

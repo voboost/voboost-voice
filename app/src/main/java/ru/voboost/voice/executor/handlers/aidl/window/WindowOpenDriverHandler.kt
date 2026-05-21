@@ -4,13 +4,13 @@ import com.qinggan.canbus.VehicleState
 import ru.voboost.voice.canbus.CanBusServiceManager
 
 /**
- * Открыть окно водителя
+ * РћС‚РєСЂС‹С‚СЊ РѕРєРЅРѕ РІРѕРґРёС‚РµР»СЏ
  *
  * config.json:
  *   id: "window_open"
  *   target: "Window", classify: 2, command: 0
  *
- * CAN-шина:
+ * CAN-С€РёРЅР°:
  *   VehicleState.DRIVER_WINDOW_CONTROL
  *   value: VALUE_WINDOW_DRIVER_OPEN (97)
  */

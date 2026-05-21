@@ -7,9 +7,9 @@ import android.widget.ImageView
 import ru.voboost.voice.R
 
 /**
- * VoiceClickView - анимация голосового помощника
- * Использует оригинальные кадры из Ivoka (voice_right000..040)
- * Зацикленная frame-by-frame анимация
+ * VoiceClickView - Р°РЅРёРјР°С†РёСЏ РіРѕР»РѕСЃРѕРІРѕРіРѕ РїРѕРјРѕС‰РЅРёРєР°
+ * РСЃРїРѕР»СЊР·СѓРµС‚ РѕСЂРёРіРёРЅР°Р»СЊРЅС‹Рµ РєР°РґСЂС‹ РёР· Ivoka (voice_right000..040)
+ * Р—Р°С†РёРєР»РµРЅРЅР°СЏ frame-by-frame Р°РЅРёРјР°С†РёСЏ
  */
 class VoiceClickView @JvmOverloads constructor(
     context: Context,
@@ -20,13 +20,13 @@ class VoiceClickView @JvmOverloads constructor(
     private var animationDrawable: AnimationDrawable? = null
 
     init {
-        // Устанавливаем ресурс анимации
+        // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЂРµСЃСѓСЂСЃ Р°РЅРёРјР°С†РёРё
         setBackgroundResource(R.drawable.anim_voice_effect)
         animationDrawable = background as? AnimationDrawable
     }
 
     /**
-     * Запустить анимацию (зацикленную)
+     * Р—Р°РїСѓСЃС‚РёС‚СЊ Р°РЅРёРјР°С†РёСЋ (Р·Р°С†РёРєР»РµРЅРЅСѓСЋ)
      */
     fun startAnimation() {
         animationDrawable?.stop()
@@ -34,7 +34,7 @@ class VoiceClickView @JvmOverloads constructor(
     }
 
     /**
-     * Остановить анимацию
+     * РћСЃС‚Р°РЅРѕРІРёС‚СЊ Р°РЅРёРјР°С†РёСЋ
      */
     fun stopAnimation() {
         animationDrawable?.stop()

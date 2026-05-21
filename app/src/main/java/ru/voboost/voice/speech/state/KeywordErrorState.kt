@@ -7,10 +7,10 @@ import kotlinx.coroutines.CancellationException
 import ru.voboost.voice.core.QueueSpeechSynthesis
 
 /**
- * Ñîñòîÿíèå: Îøèáêà êëþ÷åâîãî ñëîâà
+ * Ð¡Ð¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ: ÐžÑˆÐ¸Ð±ÐºÐ° ÐºÐ»ÑŽÑ‡ÐµÐ²Ð¾Ð³Ð¾ ÑÐ»Ð¾Ð²Ð°
  *
- * Ëîãèêà:
- * 1. Ñêàçàòü "Íå ïîíÿë"
+ * Ð›Ð¾Ð³Ð¸ÐºÐ°:
+ * 1. Ð¡ÐºÐ°Ð·Ð°Ñ‚ÑŒ "ÐÐµ Ð¿Ð¾Ð½ÑÐ»"
  * 2. > finish(StateResult.Next(StateType.IDLE))
  */
 class KeywordErrorState(private val context: StateContext) : BaseState() {

@@ -31,11 +31,11 @@ import ru.voboost.voice.executor.handlers.intent.phone.PhoneCallContactIntentHan
 import ru.voboost.voice.executor.handlers.intent.phone.PhoneCallNumberIntentHandler
 
 /**
- * Универсальный исполнитель команд через реестр handlers
- * Может работать с любым набором handlers (AIDL, Intent, Shell, микс)
+ * РЈРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РёСЃРїРѕР»РЅРёС‚РµР»СЊ РєРѕРјР°РЅРґ С‡РµСЂРµР· СЂРµРµСЃС‚СЂ handlers
+ * РњРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ СЃ Р»СЋР±С‹Рј РЅР°Р±РѕСЂРѕРј handlers (AIDL, Intent, Shell, РјРёРєСЃ)
  *
- * @param handlers Реестр команд: commandId > ICommandHandler
- * @param isConnectedChecker Функция проверки подключения
+ * @param handlers Р РµРµСЃС‚СЂ РєРѕРјР°РЅРґ: commandId > ICommandHandler
+ * @param isConnectedChecker Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРєР»СЋС‡РµРЅРёСЏ
  */
 class VehicleCommandExecutor(
     private val context: Context,
@@ -73,7 +73,7 @@ class VehicleCommandExecutor(
         "hybrid_soc_mode" to HybridSOCModeHandler(canBusManager),
         "save_soc_mode" to SaveSOCModeHandler(canBusManager),
 
-        //TODO: эти сценарии не работают
+        //TODO: СЌС‚Рё СЃС†РµРЅР°СЂРёРё РЅРµ СЂР°Р±РѕС‚Р°СЋС‚
         "wash_smart_mode" to WashSmartModeHandler(canBusManager),
         "leisure_smart_mode" to LeisureSmartModeHandler(canBusManager),
         "child_smart_mode" to ChildSmartModeHandler(canBusManager),

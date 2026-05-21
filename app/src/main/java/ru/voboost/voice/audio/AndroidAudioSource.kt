@@ -20,18 +20,18 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.max
 
 /**
- * IAudioSource на основе стандартного Android AudioRecord
+ * IAudioSource РЅР° РѕСЃРЅРѕРІРµ СЃС‚Р°РЅРґР°СЂС‚РЅРѕРіРѕ Android AudioRecord
  *
- * Используется как fallback если системный RecorderManager недоступен.
- * Применяет аудио-эффекты (шумоподавление, эхокомпенсация, авто-гейн)
- * если они доступны на устройстве.
+ * РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РєР°Рє fallback РµСЃР»Рё СЃРёСЃС‚РµРјРЅС‹Р№ RecorderManager РЅРµРґРѕСЃС‚СѓРїРµРЅ.
+ * РџСЂРёРјРµРЅСЏРµС‚ Р°СѓРґРёРѕ-СЌС„С„РµРєС‚С‹ (С€СѓРјРѕРїРѕРґР°РІР»РµРЅРёРµ, СЌС…РѕРєРѕРјРїРµРЅСЃР°С†РёСЏ, Р°РІС‚Рѕ-РіРµР№РЅ)
+ * РµСЃР»Рё РѕРЅРё РґРѕСЃС‚СѓРїРЅС‹ РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ.
  */
 class AndroidAudioSource(private val context: Context,
                          private val sampleRate: Int = IAudioSource.SAMPLE_RATE) : IAudioSource {
 
     companion object {
         const val TAG = "AndroidAudioSource"
-        private const val BUFFER_SIZE_MS = 20 // размер буфера в миллисекундах
+        private const val BUFFER_SIZE_MS = 20 // СЂР°Р·РјРµСЂ Р±СѓС„РµСЂР° РІ РјРёР»Р»РёСЃРµРєСѓРЅРґР°С…
     }
 
     private val listeners = CopyOnWriteArrayList<IAudioSource.Listener>()
@@ -52,7 +52,7 @@ class AndroidAudioSource(private val context: Context,
             return true
         }
 
-        return try { // Создаём AudioRecord с retry
+        return try { // РЎРѕР·РґР°С‘Рј AudioRecord СЃ retry
             audioRecord = tryCreateAudioRecordWithRetry()
 
             if (audioRecord == null) {
@@ -62,7 +62,7 @@ class AndroidAudioSource(private val context: Context,
 
             Log.i(TAG, "? AudioRecord state=${audioRecord?.state}")
 
-            // Применяем аудио-эффекты (как в MyVoya)
+            // РџСЂРёРјРµРЅСЏРµРј Р°СѓРґРёРѕ-СЌС„С„РµРєС‚С‹ (РєР°Рє РІ MyVoya)
             applyAudioEffects()
 
             isInitialized = true
@@ -77,13 +77,13 @@ class AndroidAudioSource(private val context: Context,
     }
 
     /**
-     * Создать AudioRecord с retry каждые 1 сек
-     * Пробуем БЕСКОНЕЧНО, чтобы сервис не упал, пока микрофон занят
+     * РЎРѕР·РґР°С‚СЊ AudioRecord СЃ retry РєР°Р¶РґС‹Рµ 1 СЃРµРє
+     * РџСЂРѕР±СѓРµРј Р‘Р•РЎРљРћРќР•Р§РќРћ, С‡С‚РѕР±С‹ СЃРµСЂРІРёСЃ РЅРµ СѓРїР°Р», РїРѕРєР° РјРёРєСЂРѕС„РѕРЅ Р·Р°РЅСЏС‚
      */
     private fun tryCreateAudioRecordWithRetry(): AudioRecord? {
         var attempts = 1
 
-        while (true) { // Бесконечный цикл
+        while (true) { // Р‘РµСЃРєРѕРЅРµС‡РЅС‹Р№ С†РёРєР»
 
             Log.d(TAG, "Attempt #$attempts: creating AudioRecord...")
 
@@ -108,7 +108,7 @@ class AndroidAudioSource(private val context: Context,
     }
 
     /**
-     * Безопасно создать AudioRecord с конкретным источником (через Builder)
+     * Р‘РµР·РѕРїР°СЃРЅРѕ СЃРѕР·РґР°С‚СЊ AudioRecord СЃ РєРѕРЅРєСЂРµС‚РЅС‹Рј РёСЃС‚РѕС‡РЅРёРєРѕРј (С‡РµСЂРµР· Builder)
      */
     @SuppressLint("MissingPermission") private fun tryCreateAudioRecord(): AudioRecord? {
         try {
@@ -119,7 +119,7 @@ class AndroidAudioSource(private val context: Context,
             if (bufferSize <= 0) {
                 return null
             }
-            // Используем минимум 2x от системного минимума для стабильности
+            // РСЃРїРѕР»СЊР·СѓРµРј РјРёРЅРёРјСѓРј 2x РѕС‚ СЃРёСЃС‚РµРјРЅРѕРіРѕ РјРёРЅРёРјСѓРјР° РґР»СЏ СЃС‚Р°Р±РёР»СЊРЅРѕСЃС‚Рё
             bufferSize = max(bufferSize * 2, sampleRate * 2 * BUFFER_SIZE_MS / 1000)
             Log.d(TAG,
                   "Creating AudioRecord via Builder: source=${MediaRecorder.AudioSource.VOICE_RECOGNITION}, sampleRate=$sampleRate, bufferSize=$bufferSize")
@@ -165,15 +165,15 @@ class AndroidAudioSource(private val context: Context,
     }
 
     /**
-     * Применяет аудио-эффекты для улучшения качества записи
-     * (как в MyVoya RealOverlayActivity)
+     * РџСЂРёРјРµРЅСЏРµС‚ Р°СѓРґРёРѕ-СЌС„С„РµРєС‚С‹ РґР»СЏ СѓР»СѓС‡С€РµРЅРёСЏ РєР°С‡РµСЃС‚РІР° Р·Р°РїРёСЃРё
+     * (РєР°Рє РІ MyVoya RealOverlayActivity)
      */
     private fun applyAudioEffects() {
         val sessionId = audioRecord?.audioSessionId ?: return
         
         Log.i(TAG, "?? Applying audio effects to session=$sessionId")
 
-        // ? 1. NoiseSuppressor - подавление шума
+        // ? 1. NoiseSuppressor - РїРѕРґР°РІР»РµРЅРёРµ С€СѓРјР°
         if (NoiseSuppressor.isAvailable()) {
             noiseSuppressor = NoiseSuppressor.create(sessionId)
             if (noiseSuppressor != null) {
@@ -188,7 +188,7 @@ class AndroidAudioSource(private val context: Context,
             Log.d(TAG, "NoiseSuppressor not available")
         }
 
-        // ? 2. AcousticEchoCanceler - подавление эха (КРИТИЧНО!)
+        // ? 2. AcousticEchoCanceler - РїРѕРґР°РІР»РµРЅРёРµ СЌС…Р° (РљР РРўРР§РќРћ!)
         if (AcousticEchoCanceler.isAvailable()) {
             aec = AcousticEchoCanceler.create(sessionId)
             if (aec != null) {
@@ -204,7 +204,7 @@ class AndroidAudioSource(private val context: Context,
             Log.d(TAG, "AcousticEchoCanceler not available")
         }
 
-        // ? 3. AutomaticGainControl - авто-гейн
+        // ? 3. AutomaticGainControl - Р°РІС‚Рѕ-РіРµР№РЅ
         if (AutomaticGainControl.isAvailable()) {
             agc = AutomaticGainControl.create(sessionId)
             if (agc != null) {
@@ -246,7 +246,7 @@ class AndroidAudioSource(private val context: Context,
 
             isRecording = true
 
-            // Запускаем поток чтения аудио
+            // Р—Р°РїСѓСЃРєР°РµРј РїРѕС‚РѕРє С‡С‚РµРЅРёСЏ Р°СѓРґРёРѕ
             recordThread = Thread(AudioRecordRunnable(recorder), "AudioRecord-Thread").apply {
                 priority = Thread.MAX_PRIORITY
                 start()
@@ -270,7 +270,7 @@ class AndroidAudioSource(private val context: Context,
         isRecording = false
 
         try {
-            recordThread?.join(1000) // Ждём завершения потока
+            recordThread?.join(1000) // Р–РґС‘Рј Р·Р°РІРµСЂС€РµРЅРёСЏ РїРѕС‚РѕРєР°
             recordThread = null
 
             audioRecord?.stop()
@@ -311,7 +311,7 @@ class AndroidAudioSource(private val context: Context,
 
     override fun isRecording(): Boolean = isRecording
 
-    // Runnable для чтения аудио-данных в отдельном потоке
+    // Runnable РґР»СЏ С‡С‚РµРЅРёСЏ Р°СѓРґРёРѕ-РґР°РЅРЅС‹С… РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕС‚РѕРєРµ
     private inner class AudioRecordRunnable(initialRecorder: AudioRecord) : Runnable {
 
         @Volatile private var recorder: AudioRecord = initialRecorder
@@ -330,7 +330,7 @@ class AndroidAudioSource(private val context: Context,
                         val dataCopy = buffer.copyOf(bytesRead)
                         for (listener in listeners) {
                             try {
-                                CoroutineScope(Dispatchers.IO).launch { // AndroidAudioSource всегда возвращает front_left (водитель)
+                                CoroutineScope(Dispatchers.IO).launch { // AndroidAudioSource РІСЃРµРіРґР° РІРѕР·РІСЂР°С‰Р°РµС‚ front_left (РІРѕРґРёС‚РµР»СЊ)
                                     listener.onAudioData(dataCopy, bytesRead, "front_left")
                                 }
                             }

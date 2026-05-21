@@ -15,10 +15,10 @@ import kotlinx.coroutines.launch
 import ru.voboost.voice.core.QueueSpeechSynthesis
 
 /**
- * Выполнение команд
- * Использует VehicleCommandExecutor для отправки команд автомобилю
+ * Р’С‹РїРѕР»РЅРµРЅРёРµ РєРѕРјР°РЅРґ
+ * РСЃРїРѕР»СЊР·СѓРµС‚ VehicleCommandExecutor РґР»СЏ РѕС‚РїСЂР°РІРєРё РєРѕРјР°РЅРґ Р°РІС‚РѕРјРѕР±РёР»СЋ
  *
- * @param vehicleCommandExecutor Реализация выполнения команд (Intent или Shell)
+ * @param vehicleCommandExecutor Р РµР°Р»РёР·Р°С†РёСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РєРѕРјР°РЅРґ (Intent РёР»Рё Shell)
  */
 class CommandExecutor(private val context: Context,
                       private val queueSpeech: QueueSpeechSynthesis,
@@ -32,7 +32,7 @@ class CommandExecutor(private val context: Context,
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-    // Сохраняем уровень громкости до приглушения
+    // РЎРѕС…СЂР°РЅСЏРµРј СѓСЂРѕРІРµРЅСЊ РіСЂРѕРјРєРѕСЃС‚Рё РґРѕ РїСЂРёРіР»СѓС€РµРЅРёСЏ
     private var originalVolume = -1
 
     init {
@@ -40,7 +40,7 @@ class CommandExecutor(private val context: Context,
     }
 
     /**
-     * Выполнить команду
+     * Р’С‹РїРѕР»РЅРёС‚СЊ РєРѕРјР°РЅРґСѓ
      */
     suspend fun executeCommand(recognizedCommand: RecognizedCommand) {
         val commandConfig = recognizedCommand.config
@@ -48,14 +48,14 @@ class CommandExecutor(private val context: Context,
 
         Log.i(TAG, "Executing command: ${commandConfig.id} (zone=$zone)")
 
-        // Приглушить звук (Audio Ducking)
+        // РџСЂРёРіР»СѓС€РёС‚СЊ Р·РІСѓРє (Audio Ducking)
         duckAudio(true)
 
-        try { // Добавляем зону в voiceParams для команд климата
+        try { // Р”РѕР±Р°РІР»СЏРµРј Р·РѕРЅСѓ РІ voiceParams РґР»СЏ РєРѕРјР°РЅРґ РєР»РёРјР°С‚Р°
             val voiceParamsWithZone =
                 recognizedCommand.extractedParams + ("_zone" to (zone ?: "center"))
 
-            // Выполнение действия
+            // Р’С‹РїРѕР»РЅРµРЅРёРµ РґРµР№СЃС‚РІРёСЏ
             val success = executeAction(commandConfig, voiceParamsWithZone)
 
             if (success) {
@@ -63,10 +63,10 @@ class CommandExecutor(private val context: Context,
                 val successPhrase = commandConfig.phrases?.success
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.SUCCESS)
 
-                // Подстановка параметров в фразу
+                // РџРѕРґСЃС‚Р°РЅРѕРІРєР° РїР°СЂР°РјРµС‚СЂРѕРІ РІ С„СЂР°Р·Сѓ
                 val finalPhrase = substituteParams(successPhrase, recognizedCommand.extractedParams)
 
-                // Голос + Overlay (всегда!)
+                // Р“РѕР»РѕСЃ + Overlay (РІСЃРµРіРґР°!)
                 if (!finalPhrase.isNullOrEmpty()) {
                     val queueSpeechJob = coroutineScope.async {
                         queueSpeech.enqueueAsync(finalPhrase)
@@ -81,7 +81,7 @@ class CommandExecutor(private val context: Context,
                 val failurePhrase = commandConfig.phrases?.failure
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
 
-                // Голос + Overlay (всегда!)
+                // Р“РѕР»РѕСЃ + Overlay (РІСЃРµРіРґР°!)
                 if (!failurePhrase.isNullOrEmpty()) {
                     val queueSpeechJob = coroutineScope.async {
                         queueSpeech.enqueueAsync(failurePhrase)
@@ -104,27 +104,27 @@ class CommandExecutor(private val context: Context,
             }
 
         }
-        finally { // Восстановить громкость
+        finally { // Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ
             duckAudio(false)
         }
     }
 
     /**
-     * Приглушить/восстановить звук (Audio Ducking)
+     * РџСЂРёРіР»СѓС€РёС‚СЊ/РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ Р·РІСѓРє (Audio Ducking)
      */
     private fun duckAudio(duck: Boolean) {
         try {
-            if (duck) { // Сохраняем текущую громкость
+            if (duck) { // РЎРѕС…СЂР°РЅСЏРµРј С‚РµРєСѓС‰СѓСЋ РіСЂРѕРјРєРѕСЃС‚СЊ
                 originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
-                // Уменьшаем громкость на 50%
+                // РЈРјРµРЅСЊС€Р°РµРј РіСЂРѕРјРєРѕСЃС‚СЊ РЅР° 50%
                 val duckedVolume = (originalVolume * 0.5).toInt()
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
                                              duckedVolume.coerceAtLeast(0),
                                              0)
                 Log.d(TAG, "Audio ducked: $originalVolume -> $duckedVolume")
             }
-            else { // Восстанавливаем громкость через 1 секунду (чтобы TTS закончил)
+            else { // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РіСЂРѕРјРєРѕСЃС‚СЊ С‡РµСЂРµР· 1 СЃРµРєСѓРЅРґСѓ (С‡С‚РѕР±С‹ TTS Р·Р°РєРѕРЅС‡РёР»)
                 coroutineScope.launch {
                     delay(1000)
                     if (originalVolume >= 0 && isActive) {
@@ -141,8 +141,8 @@ class CommandExecutor(private val context: Context,
     }
 
     /**
-     * Выполнить действие команды
-     * @return true если успешно
+     * Р’С‹РїРѕР»РЅРёС‚СЊ РґРµР№СЃС‚РІРёРµ РєРѕРјР°РЅРґС‹
+     * @return true РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
      */
     private fun executeAction(commandConfig: CommandConfig,
                               voiceParams: Map<String, Any>): Boolean {
@@ -170,7 +170,7 @@ class CommandExecutor(private val context: Context,
     }
 
     /**
-     * Подставить параметры в фразу
+     * РџРѕРґСЃС‚Р°РІРёС‚СЊ РїР°СЂР°РјРµС‚СЂС‹ РІ С„СЂР°Р·Сѓ
      */
     private fun substituteParams(phrase: String, params: Map<String, String>): String {
         var result = phrase
@@ -183,7 +183,7 @@ class CommandExecutor(private val context: Context,
     }
 
     /**
-     * Обработать нераспознанную команду
+     * РћР±СЂР°Р±РѕС‚Р°С‚СЊ РЅРµСЂР°СЃРїРѕР·РЅР°РЅРЅСѓСЋ РєРѕРјР°РЅРґСѓ
      */
     suspend fun handleUnrecognizedCommand(text: String) {
         Log.w(TAG, "Command not recognized: $text")
@@ -200,14 +200,14 @@ class CommandExecutor(private val context: Context,
         }
         else {
             Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
-            overlayManager.showToast("Команда не распознана")
+            overlayManager.showToast("РљРѕРјР°РЅРґР° РЅРµ СЂР°СЃРїРѕР·РЅР°РЅР°")
         }
     }
 
     /**
-     * Очистить ресурсы
+     * РћС‡РёСЃС‚РёС‚СЊ СЂРµСЃСѓСЂСЃС‹
      */
-    fun cleanup() { // coroutineScope.cancel() // Не отменяем - scope принадлежит сервису
+    fun cleanup() { // coroutineScope.cancel() // РќРµ РѕС‚РјРµРЅСЏРµРј - scope РїСЂРёРЅР°РґР»РµР¶РёС‚ СЃРµСЂРІРёСЃСѓ
     }
 }
 

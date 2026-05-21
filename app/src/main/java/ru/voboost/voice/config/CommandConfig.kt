@@ -3,7 +3,7 @@ package ru.voboost.voice.config
 import com.google.gson.annotations.SerializedName
 
 /**
- * Конфигурация отдельной команды
+ * РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ РѕС‚РґРµР»СЊРЅРѕР№ РєРѕРјР°РЅРґС‹
  */
 data class CommandConfig(
     @SerializedName("id") val id: String,
@@ -14,7 +14,7 @@ data class CommandConfig(
 )
 
 /**
- * Конфигурация подтверждения для команды
+ * РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РґР»СЏ РєРѕРјР°РЅРґС‹
  */
 data class ConfirmationCommandConfig(
     @SerializedName("required") val required: Boolean,
@@ -25,7 +25,7 @@ data class ConfirmationCommandConfig(
 )
 
 /**
- * Фразы для команды
+ * Р¤СЂР°Р·С‹ РґР»СЏ РєРѕРјР°РЅРґС‹
  */
 data class CommandPhrases(
     @SerializedName("success") val success: String,

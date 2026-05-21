@@ -4,13 +4,13 @@ import com.qinggan.canbus.VehicleState
 import ru.voboost.voice.canbus.CanBusServiceManager
 
 /**
- * Закрыть окно водителя
+ * Р—Р°РєСЂС‹С‚СЊ РѕРєРЅРѕ РІРѕРґРёС‚РµР»СЏ
  *
  * config.json:
  *   id: "window_close"
  *   target: "Window", classify: 2, command: 1
  *
- * CAN-шина:
+ * CAN-С€РёРЅР°:
  *   VehicleState.DRIVER_WINDOW_CONTROL
  *   value: VALUE_WINDOW_DRIVER_CLOSE (51)
  */

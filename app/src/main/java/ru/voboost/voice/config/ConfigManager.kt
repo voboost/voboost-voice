@@ -6,12 +6,12 @@ import android.util.Log
 import com.google.gson.Gson
 
 /**
- * Менеджер конфигурации
- * Загружает и кэширует конфигурацию из:
- * /storage/emulated/0/voboost/config.json (внешнее хранилище)
- * Если не найден — создаёт конфигурацию по умолчанию.
+ * РњРµРЅРµРґР¶РµСЂ РєРѕРЅС„РёРіСѓСЂР°С†РёРё
+ * Р—Р°РіСЂСѓР¶Р°РµС‚ Рё РєСЌС€РёСЂСѓРµС‚ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РёР·:
+ * /storage/emulated/0/voboost/config.json (РІРЅРµС€РЅРµРµ С…СЂР°РЅРёР»РёС‰Рµ)
+ * Р•СЃР»Рё РЅРµ РЅР°Р№РґРµРЅ вЂ” СЃРѕР·РґР°С‘С‚ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
  *
- * Данные на внешнем хранилище не удаляются при перезагрузке или очистке данных приложения.
+ * Р”Р°РЅРЅС‹Рµ РЅР° РІРЅРµС€РЅРµРј С…СЂР°РЅРёР»РёС‰Рµ РЅРµ СѓРґР°Р»СЏСЋС‚СЃСЏ РїСЂРё РїРµСЂРµР·Р°РіСЂСѓР·РєРµ РёР»Рё РѕС‡РёСЃС‚РєРµ РґР°РЅРЅС‹С… РїСЂРёР»РѕР¶РµРЅРёСЏ.
  */
 class ConfigManager private constructor(private val context: Context) {
     private var config: AppConfig? = null
@@ -34,27 +34,27 @@ class ConfigManager private constructor(private val context: Context) {
     }
 
     /**
-     * Загрузить конфигурацию
-     * Путь: /storage/emulated/0/voboost/config.json (внешнее хранилище)
-     * Если не найден — конфигурация по умолчанию.
+     * Р—Р°РіСЂСѓР·РёС‚СЊ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ
+     * РџСѓС‚СЊ: /storage/emulated/0/voboost/config.json (РІРЅРµС€РЅРµРµ С…СЂР°РЅРёР»РёС‰Рµ)
+     * Р•СЃР»Рё РЅРµ РЅР°Р№РґРµРЅ вЂ” РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
      */
     fun loadConfig(): AppConfig {
         config?.let { return it }
 
-        // Пробуем загрузить конфиг из внешнего хранилища
+        // РџСЂРѕР±СѓРµРј Р·Р°РіСЂСѓР·РёС‚СЊ РєРѕРЅС„РёРі РёР· РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°
         val loadedConfig = loadConfigFile()
         if (loadedConfig != null) {
             config = loadedConfig
             return loadedConfig
         }
 
-        // Не найден — используем дефолтный
+        // РќРµ РЅР°Р№РґРµРЅ вЂ” РёСЃРїРѕР»СЊР·СѓРµРј РґРµС„РѕР»С‚РЅС‹Р№
         return createDefaultConfig()
     }
 
     /**
-     * Загрузить config.json из внешнего хранилища
-     * @return AppConfig или null если файл не найден
+     * Р—Р°РіСЂСѓР·РёС‚СЊ config.json РёР· РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°
+     * @return AppConfig РёР»Рё null РµСЃР»Рё С„Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ
      */
     private fun loadConfigFile(): AppConfig? {
         try {
@@ -80,15 +80,15 @@ class ConfigManager private constructor(private val context: Context) {
     }
 
     /**
-     * Создать конфигурацию по умолчанию (если config.json не найден)
+     * РЎРѕР·РґР°С‚СЊ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ (РµСЃР»Рё config.json РЅРµ РЅР°Р№РґРµРЅ)
      */
     private fun createDefaultConfig(): AppConfig {
         Log.w(TAG, "Using default configuration")
         return AppConfig(version = "1.0",
                          language = "ru-RU",
                          activation = ActivationConfig(
-                             keyword = "привет машина",
-                             alternativeKeywords = listOf("окей вобуст", "привет вобуст"),
+                             keyword = "РїСЂРёРІРµС‚ РјР°С€РёРЅР°",
+                             alternativeKeywords = listOf("РѕРєРµР№ РІРѕР±СѓСЃС‚", "РїСЂРёРІРµС‚ РІРѕР±СѓСЃС‚"),
                              buttonKeycode = 16,
                          ),
                          speech = SpeechConfig(offline = OfflineSpeechConfig(enabled = true,
@@ -106,44 +106,44 @@ class ConfigManager private constructor(private val context: Context) {
                                                                   engine = "yandex",
                                                                   apiKey = "")),
                          confirmation = ConfirmationConfig(),
-                         phrases = DefaultPhrases(listening = "Слушаю вас",
-                                                  success = "Выполнено",
-                                                  failure = "Произошла ошибка",
-                                                  notUnderstood = "Не понял команду",
-                                                  confirmQuestion = "Вы уверены?",
-                                                  confirmYes = "Да",
-                                                  confirmNo = "Нет"),
+                         phrases = DefaultPhrases(listening = "РЎР»СѓС€Р°СЋ РІР°СЃ",
+                                                  success = "Р’С‹РїРѕР»РЅРµРЅРѕ",
+                                                  failure = "РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°",
+                                                  notUnderstood = "РќРµ РїРѕРЅСЏР» РєРѕРјР°РЅРґСѓ",
+                                                  confirmQuestion = "Р’С‹ СѓРІРµСЂРµРЅС‹?",
+                                                  confirmYes = "Р”Р°",
+                                                  confirmNo = "РќРµС‚"),
                          commands = emptyList())
     }
 
     /**
-     * Получить конфигурацию (кэшированную)
+     * РџРѕР»СѓС‡РёС‚СЊ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ (РєСЌС€РёСЂРѕРІР°РЅРЅСѓСЋ)
      */
     fun getConfig(): AppConfig {
         return config ?: loadConfig()
     }
 
     /**
-     * Получить команду по ID
+     * РџРѕР»СѓС‡РёС‚СЊ РєРѕРјР°РЅРґСѓ РїРѕ ID
      */
     fun getCommandById(id: String): CommandConfig? {
         return getConfig().commands.find { it.id == id }
     }
 
     /**
-     * Проверить, является ли текст кодовой фразой
+     * РџСЂРѕРІРµСЂРёС‚СЊ, СЏРІР»СЏРµС‚СЃСЏ Р»Рё С‚РµРєСЃС‚ РєРѕРґРѕРІРѕР№ С„СЂР°Р·РѕР№
      */
     fun isActivationKeyword(text: String): Boolean {
         try {
             val config = getConfig()
             val normalizedText = text.lowercase().trim()
 
-            // Проверка основной фразы
+            // РџСЂРѕРІРµСЂРєР° РѕСЃРЅРѕРІРЅРѕР№ С„СЂР°Р·С‹
             if (normalizedText == config.activation.keyword.lowercase()) {
                 return true
             }
 
-            // Проверка альтернативных фраз
+            // РџСЂРѕРІРµСЂРєР° Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹С… С„СЂР°Р·
             return config.activation.alternativeKeywords.any {
                 normalizedText == it.lowercase()
             }
@@ -155,8 +155,8 @@ class ConfigManager private constructor(private val context: Context) {
     }
 
     /**
-     * Получить фразу по умолчанию
-     * ВСЕГДА возвращает строку (никогда null)
+     * РџРѕР»СѓС‡РёС‚СЊ С„СЂР°Р·Сѓ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+     * Р’РЎР•Р“Р”Рђ РІРѕР·РІСЂР°С‰Р°РµС‚ СЃС‚СЂРѕРєСѓ (РЅРёРєРѕРіРґР° null)
      */
     fun getDefaultPhrase(type: PhraseType): String {
         return try {
@@ -165,34 +165,34 @@ class ConfigManager private constructor(private val context: Context) {
 
             when (type) {
                 PhraseType.SUCCESS -> phrases.success.takeUnless { it.isNullOrEmpty() }
-                    ?: "Выполнено"
+                    ?: "Р’С‹РїРѕР»РЅРµРЅРѕ"
 
                 PhraseType.FAILURE -> phrases.failure.takeUnless { it.isNullOrEmpty() }
-                    ?: "Произошла ошибка"
+                    ?: "РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°"
 
                 PhraseType.NOT_UNDERSTOOD -> phrases.notUnderstood.takeUnless { it.isNullOrEmpty() }
-                    ?: "Не понял"
+                    ?: "РќРµ РїРѕРЅСЏР»"
 
                 PhraseType.CONFIRM_QUESTION -> phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() }
-                    ?: "Вы уверены?"
+                    ?: "Р’С‹ СѓРІРµСЂРµРЅС‹?"
 
                 PhraseType.LISTENING -> phrases.listening.takeUnless { it.isNullOrEmpty() }
-                    ?: "Слушаю"
+                    ?: "РЎР»СѓС€Р°СЋ"
 
-                PhraseType.CANCEL -> phrases.cancel.takeUnless { it.isNullOrEmpty() } ?: "Отмена"
+                PhraseType.CANCEL -> phrases.cancel.takeUnless { it.isNullOrEmpty() } ?: "РћС‚РјРµРЅР°"
             }
         }
         catch (e: Exception) {
             Log.e(TAG,
                   "Error getting default phrase for $type",
-                  e) // Возвращаем значение по умолчанию при любой ошибке
+                  e) // Р’РѕР·РІСЂР°С‰Р°РµРј Р·РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РїСЂРё Р»СЋР±РѕР№ РѕС€РёР±РєРµ
             when (type) {
-                PhraseType.SUCCESS -> "Выполнено"
-                PhraseType.FAILURE -> "Произошла ошибка"
-                PhraseType.NOT_UNDERSTOOD -> "Не понял"
-                PhraseType.CONFIRM_QUESTION -> "Вы уверены?"
-                PhraseType.LISTENING -> "Слушаю"
-                PhraseType.CANCEL -> "Отмена"
+                PhraseType.SUCCESS -> "Р’С‹РїРѕР»РЅРµРЅРѕ"
+                PhraseType.FAILURE -> "РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°"
+                PhraseType.NOT_UNDERSTOOD -> "РќРµ РїРѕРЅСЏР»"
+                PhraseType.CONFIRM_QUESTION -> "Р’С‹ СѓРІРµСЂРµРЅС‹?"
+                PhraseType.LISTENING -> "РЎР»СѓС€Р°СЋ"
+                PhraseType.CANCEL -> "РћС‚РјРµРЅР°"
             }
         }
     }

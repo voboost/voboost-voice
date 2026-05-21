@@ -1,4 +1,4 @@
-// 📁 File: src/main/java/com/qinggan/audiorecord/record/NativeRecord.java
+// рџ“Ѓ File: src/main/java/com/qinggan/audiorecord/record/NativeRecord.java
 package com.qinggan.audiorecord.record;
 
 import android.util.Log;
@@ -9,7 +9,7 @@ public class NativeRecord extends IRecord {
 
     private static final String TAG = "NativeRecord";
 
-    // ===== Static native methods (как в оригинале) =====
+    // ===== Static native methods (РєР°Рє РІ РѕСЂРёРіРёРЅР°Р»Рµ) =====
     private static native int registerRecordListener(IRecordListener listener);
     private static native int setChannelNum(int channels);
     private static native int startAudioRecord();
@@ -38,9 +38,9 @@ public class NativeRecord extends IRecord {
     static {
         try {
             //System.loadLibrary("SpeechRecord4Mic");
-            Log.i(TAG, "✅ libSpeechRecord4Mic.so loaded successfully");
+            Log.i(TAG, "вњ… libSpeechRecord4Mic.so loaded successfully");
         } catch (UnsatisfiedLinkError e) {
-            Log.e(TAG, "❌ Failed to load libSpeechRecord4Mic.so: " + e.getMessage(), e);
+            Log.e(TAG, "вќЊ Failed to load libSpeechRecord4Mic.so: " + e.getMessage(), e);
             throw e;
         }
     }

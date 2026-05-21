@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 
 /**
- * Прием широковещательных команд активации
+ * РџСЂРёРµРј С€РёСЂРѕРєРѕРІРµС‰Р°С‚РµР»СЊРЅС‹С… РєРѕРјР°РЅРґ Р°РєС‚РёРІР°С†РёРё
  */
 class VoiceCommandReceiver : BroadcastReceiver() {
     
@@ -21,7 +21,7 @@ class VoiceCommandReceiver : BroadcastReceiver() {
             "ru.voboost.voice.ACTIVATE" -> {
                 Log.i(TAG, "Activation request received")
                 
-                // Запускаем сервис если еще не запущен
+                // Р—Р°РїСѓСЃРєР°РµРј СЃРµСЂРІРёСЃ РµСЃР»Рё РµС‰Рµ РЅРµ Р·Р°РїСѓС‰РµРЅ
                 val serviceIntent = Intent(context, VoboostVoiceService::class.java)
                 
                 try {

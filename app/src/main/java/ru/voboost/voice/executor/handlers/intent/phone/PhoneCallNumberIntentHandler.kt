@@ -6,13 +6,13 @@ import android.util.Log
 import ru.voboost.voice.executor.handlers.intent.AbstractIntentHandler
 
 /**
- * Звонок по номеру через Broadcast Intent
+ * Р—РІРѕРЅРѕРє РїРѕ РЅРѕРјРµСЂСѓ С‡РµСЂРµР· Broadcast Intent
  *
- * Отправляет broadcast на action "com.qinggan.broadcast.action.ivokaphonecall"
- * с параметрами, которые ожидает BluetoothPhone:
- *   - Ivoka_CallInfo: номер телефона (String)
- *   - screen_int: текущий экран (int, по умолчанию 0)
- *   - mac: MAC-адрес Bluetooth (пустая строка)
+ * РћС‚РїСЂР°РІР»СЏРµС‚ broadcast РЅР° action "com.qinggan.broadcast.action.ivokaphonecall"
+ * СЃ РїР°СЂР°РјРµС‚СЂР°РјРё, РєРѕС‚РѕСЂС‹Рµ РѕР¶РёРґР°РµС‚ BluetoothPhone:
+ *   - Ivoka_CallInfo: РЅРѕРјРµСЂ С‚РµР»РµС„РѕРЅР° (String)
+ *   - screen_int: С‚РµРєСѓС‰РёР№ СЌРєСЂР°РЅ (int, РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 0)
+ *   - mac: MAC-Р°РґСЂРµСЃ Bluetooth (РїСѓСЃС‚Р°СЏ СЃС‚СЂРѕРєР°)
  */
 class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler(context) {
 

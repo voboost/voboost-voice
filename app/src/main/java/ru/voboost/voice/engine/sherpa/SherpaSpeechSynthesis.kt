@@ -8,7 +8,7 @@ import android.media.AudioTrack
 import android.util.Log
 import kotlinx.coroutines.*
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean // Sherpa-ONNX импорты
+import java.util.concurrent.atomic.AtomicBoolean // Sherpa-ONNX РёРјРїРѕСЂС‚С‹
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
@@ -16,12 +16,12 @@ import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import ru.voboost.voice.core.BaseSpeechSynthesis
 
 /**
- * Реализация синтеза речи через Sherpa-ONNX TTS
- * Поддерживает офлайн-синтез с моделями VITS, Piper, Kokoro
+ * Р РµР°Р»РёР·Р°С†РёСЏ СЃРёРЅС‚РµР·Р° СЂРµС‡Рё С‡РµСЂРµР· Sherpa-ONNX TTS
+ * РџРѕРґРґРµСЂР¶РёРІР°РµС‚ РѕС„Р»Р°Р№РЅ-СЃРёРЅС‚РµР· СЃ РјРѕРґРµР»СЏРјРё VITS, Piper, Kokoro
  *
- * Документация: https://k2-fsa.github.io/sherpa/onnx/tts/
+ * Р”РѕРєСѓРјРµРЅС‚Р°С†РёСЏ: https://k2-fsa.github.io/sherpa/onnx/tts/
  *
- * Поддерживает загрузку моделей с SD-карты (внешнего хранилища)
+ * РџРѕРґРґРµСЂР¶РёРІР°РµС‚ Р·Р°РіСЂСѓР·РєСѓ РјРѕРґРµР»РµР№ СЃ SD-РєР°СЂС‚С‹ (РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°)
  */
 class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId: Int) :
         BaseSpeechSynthesis() {
@@ -56,7 +56,7 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
                     throw IllegalStateException("Sherpa TTS model not found at: ${modelPath}\n" + "Please copy the model using copy-sherpa-models.bat script")
                 }
 
-                // Инициализация Sherpa-ONNX TTS
+                // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Sherpa-ONNX TTS
                 offlineTts = createTts(modelPath)
                 sampleRate = offlineTts?.sampleRate ?: DEFAULT_SAMPLE_RATE
 
@@ -73,23 +73,23 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
     }
 
     /**
-     * Создать конфигурацию для OfflineTts
+     * РЎРѕР·РґР°С‚СЊ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РґР»СЏ OfflineTts
      */
     private fun createTts(modelPath: String): OfflineTts {
         val modelFile = File(modelPath)
 
-        // Если это файл .onnx
+        // Р•СЃР»Рё СЌС‚Рѕ С„Р°Р№Р» .onnx
         val modelPathStr = if (modelFile.isFile && modelFile.extension == "onnx") {
             modelFile.absolutePath
         }
-        else { // Если это директория, ищем модель
+        else { // Р•СЃР»Рё СЌС‚Рѕ РґРёСЂРµРєС‚РѕСЂРёСЏ, РёС‰РµРј РјРѕРґРµР»СЊ
             val onnxFile = modelFile.listFiles { f -> f.extension == "onnx" }?.firstOrNull()
             onnxFile?.absolutePath ?: modelFile.absolutePath
         }
 
         Log.d(TAG, "TTS model path: $modelPathStr")
 
-        // Для Sherpa-ONNX Piper моделей (ru_RU-ruslan-medium) используем tokens.txt + espeak
+        // Р”Р»СЏ Sherpa-ONNX Piper РјРѕРґРµР»РµР№ (ru_RU-ruslan-medium) РёСЃРїРѕР»СЊР·СѓРµРј tokens.txt + espeak
         // modelPath = /data/.../sherpa/tts-ru-model
         val modelDir = File(modelPath)
         val tokensFile = File(modelDir, "tokens.txt")
@@ -99,8 +99,8 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
         Log.d(TAG, "Tokens file: ${tokensFile.absolutePath}, exists: ${tokensFile.exists()}")
         Log.d(TAG, "eSpeak dir: ${espeakDir.absolutePath}, exists: ${espeakDir.exists()}")
 
-        // Создаём конфигурацию VITS модели для Sherpa-ONNX Piper
-        // Передаём data_dir для eSpeak-ng (требуется для phonemization)
+        // РЎРѕР·РґР°С‘Рј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ VITS РјРѕРґРµР»Рё РґР»СЏ Sherpa-ONNX Piper
+        // РџРµСЂРµРґР°С‘Рј data_dir РґР»СЏ eSpeak-ng (С‚СЂРµР±СѓРµС‚СЃСЏ РґР»СЏ phonemization)
         val vitsModelConfig = OfflineTtsVitsModelConfig.Builder()
             .setModel(modelPathStr)
             .setTokens(if (tokensFile.exists()) tokensFile.absolutePath else "")
@@ -110,15 +110,15 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
             .setLengthScale(1.0f)
             .build()
 
-        // Создаём обёртку модели
+        // РЎРѕР·РґР°С‘Рј РѕР±С‘СЂС‚РєСѓ РјРѕРґРµР»Рё
         val ttsModelConfig = OfflineTtsModelConfig.Builder()
             .setVits(vitsModelConfig)
             .setNumThreads(2)
-            .setProvider("cpu")  // < CPU вместо NNAPI для совместимости
+            .setProvider("cpu")  // < CPU РІРјРµСЃС‚Рѕ NNAPI РґР»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё
             .setDebug(true)
             .build()
 
-        // Создаём основную конфигурацию TTS
+        // РЎРѕР·РґР°С‘Рј РѕСЃРЅРѕРІРЅСѓСЋ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ TTS
         val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
 
         return OfflineTts(ttsConfig)
@@ -141,7 +141,7 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
 
         Log.d(TAG, "Speaking: $text")
 
-        // Запустить воспроизведение если не играет
+        // Р—Р°РїСѓСЃС‚РёС‚СЊ РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёРµ РµСЃР»Рё РЅРµ РёРіСЂР°РµС‚
         if (!isPlaying.get()) {
             currentJob = scope.launch {
                 playSpeech(text)
@@ -181,7 +181,7 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
         withContext(Dispatchers.IO) {
             try {
                 val ttsInstance = offlineTts
-                                  ?: throw IllegalStateException("TTS not initialized") // Сгенерировать аудио через Sherpa-ONNX
+                                  ?: throw IllegalStateException("TTS not initialized") // РЎРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ Р°СѓРґРёРѕ С‡РµСЂРµР· Sherpa-ONNX
                 // API: generate(text: String, speakerId: Int, speed: Float): GeneratedAudio
                 val audio = ttsInstance.generate(text, speakerId, rate)
 
@@ -229,10 +229,10 @@ class SherpaSpeechSynthesis(private val modelPath: String, private val speakerId
             try {
                 audioTrack.play()
 
-                val chunkSize = bufferSize / 4  // Float = 4 байта
+                val chunkSize = bufferSize / 4  // Float = 4 Р±Р°Р№С‚Р°
                 var offset = 0
 
-                // ? Используем coroutineContext.isActive для проверки отмены
+                // ? РСЃРїРѕР»СЊР·СѓРµРј coroutineContext.isActive РґР»СЏ РїСЂРѕРІРµСЂРєРё РѕС‚РјРµРЅС‹
                 while (offset < audio.size && coroutineContext.isActive) {
                     val remaining = audio.size - offset
                     val size = minOf(chunkSize, remaining)

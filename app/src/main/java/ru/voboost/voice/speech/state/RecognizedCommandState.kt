@@ -6,14 +6,14 @@ import ru.voboost.voice.core.QueueSpeechSynthesis
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Состояние: Распознанная команда
+ * РЎРѕСЃС‚РѕСЏРЅРёРµ: Р Р°СЃРїРѕР·РЅР°РЅРЅР°СЏ РєРѕРјР°РЅРґР°
  *
- * Логика:
- * 1. Парсим текст через NLU
- * 2. Если найдена > проверяем подтверждение
- *    - требуется > CONFIRMATION
- *    - не требуется > EXECUTING_COMMAND
- * 3. Не найдена > COMMAND_ERROR
+ * Р›РѕРіРёРєР°:
+ * 1. РџР°СЂСЃРёРј С‚РµРєСЃС‚ С‡РµСЂРµР· NLU
+ * 2. Р•СЃР»Рё РЅР°Р№РґРµРЅР° > РїСЂРѕРІРµСЂСЏРµРј РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ
+ *    - С‚СЂРµР±СѓРµС‚СЃСЏ > CONFIRMATION
+ *    - РЅРµ С‚СЂРµР±СѓРµС‚СЃСЏ > EXECUTING_COMMAND
+ * 3. РќРµ РЅР°Р№РґРµРЅР° > COMMAND_ERROR
  */
 class RecognizedCommandState(private val context: StateContext) : BaseState() {
     companion object {
@@ -32,21 +32,21 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
 
         Log.i(TAG, "Processing command: '$text'")
 
-        try { // Парсим текст через NLU
+        try { // РџР°СЂСЃРёРј С‚РµРєСЃС‚ С‡РµСЂРµР· NLU
             val recognizedCommand = context.nluEngine?.parseCommand(text)
 
             if (recognizedCommand != null) {
                 Log.d(TAG,
-                      "Command parsed: ${recognizedCommand.id} (zone=${context.zone})") // Добавляем зону в команду
+                      "Command parsed: ${recognizedCommand.id} (zone=${context.zone})") // Р”РѕР±Р°РІР»СЏРµРј Р·РѕРЅСѓ РІ РєРѕРјР°РЅРґСѓ
                 val commandWithZone = recognizedCommand.copy(zone = context.zone)
                 context.recognizedCommand = commandWithZone
 
-                // Проверяем нужно ли подтверждение
+                // РџСЂРѕРІРµСЂСЏРµРј РЅСѓР¶РЅРѕ Р»Рё РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
                     finish(StateResult.Next(StateType.CONFIRMATION))
                 }
-                else { // Выполняем команду без подтверждения
+                else { // Р’С‹РїРѕР»РЅСЏРµРј РєРѕРјР°РЅРґСѓ Р±РµР· РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ
                     Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
                     finish(StateResult.Next(StateType.EXECUTING_COMMAND))
                 }

@@ -5,11 +5,11 @@ import ru.voboost.voice.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 /**
- * Базовый абстрактный обработчик команд умных режимов
+ * Р‘Р°Р·РѕРІС‹Р№ Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РѕР±СЂР°Р±РѕС‚С‡РёРє РєРѕРјР°РЅРґ СѓРјРЅС‹С… СЂРµР¶РёРјРѕРІ
  *
- * @param commandId Уникальный ID команды (совпадает с config.json)
- * @param canBusManager Менеджер CAN-шины
- * @param modeId ID режима для отправки в CAN-шину
+ * @param commandId РЈРЅРёРєР°Р»СЊРЅС‹Р№ ID РєРѕРјР°РЅРґС‹ (СЃРѕРІРїР°РґР°РµС‚ СЃ config.json)
+ * @param canBusManager РњРµРЅРµРґР¶РµСЂ CAN-С€РёРЅС‹
+ * @param modeId ID СЂРµР¶РёРјР° РґР»СЏ РѕС‚РїСЂР°РІРєРё РІ CAN-С€РёРЅСѓ
  */
 abstract class AbstractSmartModeHandler(protected val canBusManager: CanBusServiceManager,
                                         private val modeId: Int) : ICommandHandler {

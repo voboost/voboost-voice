@@ -9,13 +9,13 @@ import ru.voboost.voice.core.QueueSpeechSynthesis
 
 
 /**
- * Обработчик предупреждений TSR (Traffic Sign Recognition)
+ * РћР±СЂР°Р±РѕС‚С‡РёРє РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёР№ TSR (Traffic Sign Recognition)
  *
- * Слушает события от камеры, считывающей дорожные знаки
- * и предупреждает о превышении скорости
+ * РЎР»СѓС€Р°РµС‚ СЃРѕР±С‹С‚РёСЏ РѕС‚ РєР°РјРµСЂС‹, СЃС‡РёС‚С‹РІР°СЋС‰РµР№ РґРѕСЂРѕР¶РЅС‹Рµ Р·РЅР°РєРё
+ * Рё РїСЂРµРґСѓРїСЂРµР¶РґР°РµС‚ Рѕ РїСЂРµРІС‹С€РµРЅРёРё СЃРєРѕСЂРѕСЃС‚Рё
  *
- * @param canBusManager Менеджер CanBusService для регистрации callback
- * @param ttsCallback Callback для воспроизведения TTS предупреждений
+ * @param canBusManager РњРµРЅРµРґР¶РµСЂ CanBusService РґР»СЏ СЂРµРіРёСЃС‚СЂР°С†РёРё callback
+ * @param ttsCallback Callback РґР»СЏ РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёСЏ TTS РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёР№
  */
 class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
         ICanBusServiceConnectionCallback {
@@ -41,25 +41,25 @@ class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
 
     private fun handleVehicleStateChanged(vehicle: VehicleState, state: Int) {
            when (vehicle) {
-            VehicleState.ISA_ISLC_STATUS -> { // Приняли статус — теперь запросим детали
+            VehicleState.ISA_ISLC_STATUS -> { // РџСЂРёРЅСЏР»Рё СЃС‚Р°С‚СѓСЃ вЂ” С‚РµРїРµСЂСЊ Р·Р°РїСЂРѕСЃРёРј РґРµС‚Р°Р»Рё
                 if (state == 7) {
-                    if (isaWarningEnabled) { // Факт превышения скорости
-                        queueSpeech.enqueue("Превышение скорости",
+                    if (isaWarningEnabled) { // Р¤Р°РєС‚ РїСЂРµРІС‹С€РµРЅРёСЏ СЃРєРѕСЂРѕСЃС‚Рё
+                        queueSpeech.enqueue("РџСЂРµРІС‹С€РµРЅРёРµ СЃРєРѕСЂРѕСЃС‚Рё",
                                             QueueSpeechSynthesis.Companion.PRIOR_CRITICAL)
                     }
                 }
             }
-            // Переключатель предупреждения ISA (Intelligent Speed Assistance)
+            // РџРµСЂРµРєР»СЋС‡Р°С‚РµР»СЊ РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёСЏ ISA (Intelligent Speed Assistance)
             VehicleState.ISA_ISLC_OVER_SPEED_WARNING_SWITCH -> {
-                Log.d(TAG, "🔧 ISA_OVER_SPEED_WARNING_SWITCH: $state")
+                Log.d(TAG, "рџ”§ ISA_OVER_SPEED_WARNING_SWITCH: $state")
                 isaWarningEnabled = (state == 2)
             }
             else -> {}
         }
     }
 
-    private fun handleVehicleSpeedChanged(speed: Int) { // Log.w(TAG, "⚠️ Speed: ${speed}")
-        currentSpeed = speed // Log.d(TAG, "🚗 Скорость: $speed км/ч")
+    private fun handleVehicleSpeedChanged(speed: Int) { // Log.w(TAG, "вљ пёЏ Speed: ${speed}")
+        currentSpeed = speed // Log.d(TAG, "рџљ— РЎРєРѕСЂРѕСЃС‚СЊ: $speed РєРј/С‡")
     }
 
     override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
@@ -79,7 +79,7 @@ class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
     }
 
     /**
-     * Зарегистрировать callback
+     * Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ callback
      */
     private fun register(): Boolean {
         if (isCallbackRegistered) return true
@@ -89,13 +89,13 @@ class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
             val isaWarningState =
                 canBusManager?.getVehicleState(VehicleState.ISA_ISLC_OVER_SPEED_WARNING_SWITCH)
             isaWarningEnabled = (isaWarningState == 2)
-            Log.d(TAG, "🔧 start get ISA_OVER_SPEED_WARNING_SWITCH: $isaWarningState")
+            Log.d(TAG, "рџ”§ start get ISA_OVER_SPEED_WARNING_SWITCH: $isaWarningState")
         }
         return success == true
     }
 
     /**
-     * Отписаться от callback
+     * РћС‚РїРёСЃР°С‚СЊСЃСЏ РѕС‚ callback
      */
     private fun unregister(): Boolean {
         if (!isCallbackRegistered) return true
@@ -113,12 +113,12 @@ class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
     }
 
     /**
-     * Получить текущую скорость
+     * РџРѕР»СѓС‡РёС‚СЊ С‚РµРєСѓС‰СѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ
      */
     fun getCurrentSpeed(): Int = currentSpeed
 
     /**
-     * Проверить активно ли предупреждение ISA
+     * РџСЂРѕРІРµСЂРёС‚СЊ Р°РєС‚РёРІРЅРѕ Р»Рё РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ ISA
      */
     fun isISAWarningEnabled(): Boolean = isaWarningEnabled
 }

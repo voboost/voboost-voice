@@ -34,7 +34,7 @@ class SoundEffectManager(private val context: Context) {
         }
     }
 
-    // Теперь методы suspend и возвращают управление только после окончания звука
+    // РўРµРїРµСЂСЊ РјРµС‚РѕРґС‹ suspend Рё РІРѕР·РІСЂР°С‰Р°СЋС‚ СѓРїСЂР°РІР»РµРЅРёРµ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РѕРєРѕРЅС‡Р°РЅРёСЏ Р·РІСѓРєР°
     suspend fun playStartSoundAsync() = playToneAsync(SOUND_START)
     suspend fun playEndSoundAsync() = playToneAsync(SOUND_END)
     suspend fun playCancelSoundAsync() = playToneAsync(SOUND_CANCEL)
@@ -51,7 +51,7 @@ class SoundEffectManager(private val context: Context) {
                 }
                 SOUND_END -> {
                     toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS.toInt())
-                    delay(TONE_DURATION_MS + 50) // +50ms буфер на системные задержки
+                    delay(TONE_DURATION_MS + 50) // +50ms Р±СѓС„РµСЂ РЅР° СЃРёСЃС‚РµРјРЅС‹Рµ Р·Р°РґРµСЂР¶РєРё
                 }
                 SOUND_CANCEL -> {
                     toneGenerator?.startTone(ToneGenerator.TONE_PROP_NACK, TONE_DURATION_MS.toInt())
@@ -59,11 +59,11 @@ class SoundEffectManager(private val context: Context) {
                 }
             }
         } catch (e: CancellationException) {
-            // Если корутину отменили во время задержки, останавливаем звук
+            // Р•СЃР»Рё РєРѕСЂСѓС‚РёРЅСѓ РѕС‚РјРµРЅРёР»Рё РІРѕ РІСЂРµРјСЏ Р·Р°РґРµСЂР¶РєРё, РѕСЃС‚Р°РЅР°РІР»РёРІР°РµРј Р·РІСѓРє
             toneGenerator?.stopTone()
-            throw e // Обязательно пробрасываем исключение дальше
+            throw e // РћР±СЏР·Р°С‚РµР»СЊРЅРѕ РїСЂРѕР±СЂР°СЃС‹РІР°РµРј РёСЃРєР»СЋС‡РµРЅРёРµ РґР°Р»СЊС€Рµ
         } finally {
-            // Гарантированно освобождаем AudioFocus даже при отмене или ошибке
+            // Р“Р°СЂР°РЅС‚РёСЂРѕРІР°РЅРЅРѕ РѕСЃРІРѕР±РѕР¶РґР°РµРј AudioFocus РґР°Р¶Рµ РїСЂРё РѕС‚РјРµРЅРµ РёР»Рё РѕС€РёР±РєРµ
             abandonAudioFocus()
         }
     }

@@ -10,11 +10,11 @@ import kotlinx.coroutines.flow.first
 import ru.voboost.voice.config.ConfigManager.PhraseType
 
 /**
- * Состояние: Слушание команды
+ * РЎРѕСЃС‚РѕСЏРЅРёРµ: РЎР»СѓС€Р°РЅРёРµ РєРѕРјР°РЅРґС‹
  *
- * Логика:
- * 1. Ждём CommandReceived/Timeout/Error
- * 2. Команда > RECOGNIZED_COMMAND, Timeout > TIMEOUT, Error > COMMAND_ERROR
+ * Р›РѕРіРёРєР°:
+ * 1. Р–РґС‘Рј CommandReceived/Timeout/Error
+ * 2. РљРѕРјР°РЅРґР° > RECOGNIZED_COMMAND, Timeout > TIMEOUT, Error > COMMAND_ERROR
  */
 class ListeningCommandState(private val context: StateContext) : BaseState() {
     companion object {
@@ -29,7 +29,7 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
         try {
             context.speechRecognizer?.setMode(SpeechRecognizer.Mode.COMMAND)
 
-            // Ждём результат
+            // Р–РґС‘Рј СЂРµР·СѓР»СЊС‚Р°С‚
             val result = context.speechRecognizer?.results?.first {
                 it is SpeechResult.CommandReceived || it is SpeechResult.Timeout || it is SpeechResult.Error
             }
@@ -84,11 +84,11 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
     override suspend fun cancel() {
         Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
 
-        try { // Звук отмены
+        try { // Р—РІСѓРє РѕС‚РјРµРЅС‹
             context.soundEffectManager?.playEndSoundAsync()
             delay(400)
 
-            // Говорим "Отмена" с высоким приоритетом
+            // Р“РѕРІРѕСЂРёРј "РћС‚РјРµРЅР°" СЃ РІС‹СЃРѕРєРёРј РїСЂРёРѕСЂРёС‚РµС‚РѕРј
             val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
             if(!cancelPhrase.isNullOrEmpty())
             {

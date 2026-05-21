@@ -8,10 +8,10 @@ import java.io.File
 import kotlin.math.min
 
 /**
- * Поток распознавания речи Sherpa-ONNX
- * Реализует универсальный интерфейс IRecognitionEngine
+ * РџРѕС‚РѕРє СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ СЂРµС‡Рё Sherpa-ONNX
+ * Р РµР°Р»РёР·СѓРµС‚ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ IRecognitionEngine
  *
- * Использует Zipformer модель для распознавания
+ * РСЃРїРѕР»СЊР·СѓРµС‚ Zipformer РјРѕРґРµР»СЊ РґР»СЏ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ
  */
 class SherpaStream private constructor(private val recognizer: OfflineRecognizer,
                                        private val reusableBuffer: FloatArray) : IRecognitionEngine {
@@ -22,7 +22,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
         const val MAX_CHUNK_SAMPLES = 3200
 
         /**
-         * Создать SherpaStream из пути к модели
+         * РЎРѕР·РґР°С‚СЊ SherpaStream РёР· РїСѓС‚Рё Рє РјРѕРґРµР»Рё
          */
         fun create(modelPath: String): SherpaStream {
             Log.i(TAG, "Creating SherpaStream from: $modelPath")
@@ -37,14 +37,14 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
             Log.d(TAG, "Joiner: $joinerPath")
             Log.d(TAG, "Tokens: $tokensPath")
 
-            // Создаём конфигурацию транседера
+            // РЎРѕР·РґР°С‘Рј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ С‚СЂР°РЅСЃРµРґРµСЂР°
             val transducerConfig = OfflineTransducerModelConfig.Builder()
                 .setEncoder(encoderPath)
                 .setDecoder(decoderPath)
                 .setJoiner(joinerPath)
                 .build()
 
-            // Создаём конфигурацию модели
+            // РЎРѕР·РґР°С‘Рј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РјРѕРґРµР»Рё
             val modelConfig = OfflineModelConfig.Builder()
                 .setTransducer(transducerConfig)
                 .setTokens(tokensPath)
@@ -53,13 +53,13 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
                 .setDebug(true)
                 .build()
 
-            // Создаём конфигурацию фичей
+            // РЎРѕР·РґР°С‘Рј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ С„РёС‡РµР№
             val featureConfig = FeatureConfig.Builder()
                 .setSampleRate(SAMPLE_RATE)
                 .setFeatureDim(80)
                 .build()
 
-            // Создаём основную конфигурацию распознавания
+            // РЎРѕР·РґР°С‘Рј РѕСЃРЅРѕРІРЅСѓСЋ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ
             val recognizerConfig = OfflineRecognizerConfig.Builder()
                 .setFeatureConfig(featureConfig)
                 .setOfflineModelConfig(modelConfig)
@@ -67,7 +67,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
                 .build()
 
             val recognizer = OfflineRecognizer(recognizerConfig)
-            val reusableBuffer = FloatArray(MAX_CHUNK_SAMPLES) // запас на большие чанки
+            val reusableBuffer = FloatArray(MAX_CHUNK_SAMPLES) // Р·Р°РїР°СЃ РЅР° Р±РѕР»СЊС€РёРµ С‡Р°РЅРєРё
 
             return SherpaStream(recognizer, reusableBuffer)
         }
@@ -76,7 +76,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     private var currentStream: OfflineStream? = null
 
     /**
-     * Создать новый поток для распознавания
+     * РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РїРѕС‚РѕРє РґР»СЏ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ
      */
     fun createStream() {
         currentStream = recognizer.createStream()
@@ -84,9 +84,9 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     }
 
     /**
-     * Принять порцию PCM данных и распознать
-     * @param pcm PCM данные (16-bit, mono, 16000 Hz)
-     * @return Результат распознавания или null
+     * РџСЂРёРЅСЏС‚СЊ РїРѕСЂС†РёСЋ PCM РґР°РЅРЅС‹С… Рё СЂР°СЃРїРѕР·РЅР°С‚СЊ
+     * @param pcm PCM РґР°РЅРЅС‹Рµ (16-bit, mono, 16000 Hz)
+     * @return Р РµР·СѓР»СЊС‚Р°С‚ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ РёР»Рё null
      */
     override fun acceptWaveform(pcm: ByteArray, start: Int, end: Int): RecognitionResult? {
 
@@ -107,10 +107,10 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
             val chunk = reusableBuffer.copyOf(samplesCount)
             stream.acceptWaveform(chunk,  SAMPLE_RATE)
 
-            // Распознать
+            // Р Р°СЃРїРѕР·РЅР°С‚СЊ
             recognizer.decode(stream)
 
-            // Получить результат
+            // РџРѕР»СѓС‡РёС‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚
             val result = recognizer.getResult(stream)
             val text = result.text.trim()
 
@@ -128,7 +128,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     }
 
     /**
-     * Получить финальный результат
+     * РџРѕР»СѓС‡РёС‚СЊ С„РёРЅР°Р»СЊРЅС‹Р№ СЂРµР·СѓР»СЊС‚Р°С‚
      */
     override fun getFinalResult(): RecognitionResult? {
         return try {
@@ -148,7 +148,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     }
 
     /**
-     * Сбросить распознавание
+     * РЎР±СЂРѕСЃРёС‚СЊ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёРµ
      */
     override fun reset() {
         createStream()
@@ -156,7 +156,7 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     }
 
     /**
-     * Освободить ресурсы
+     * РћСЃРІРѕР±РѕРґРёС‚СЊ СЂРµСЃСѓСЂСЃС‹
      */
     override fun release() {
         currentStream = null
@@ -164,32 +164,32 @@ class SherpaStream private constructor(private val recognizer: OfflineRecognizer
     }
 
     /**
-     * Конвертировать PCM bytes > FloatArray [-1.0, 1.0] БЕЗ аллокаций
+     * РљРѕРЅРІРµСЂС‚РёСЂРѕРІР°С‚СЊ PCM bytes > FloatArray [-1.0, 1.0] Р‘Р•Р— Р°Р»Р»РѕРєР°С†РёР№
      *
-     * @param src исходный байтовый массив
-     * @param srcStart начальный индекс в src (включительно)
-     * @param srcEnd конечный индекс в src (исключительно)
-     * @param dst буфер для результата (должен быть достаточно большим)
-     * @return количество записанных сэмплов
+     * @param src РёСЃС…РѕРґРЅС‹Р№ Р±Р°Р№С‚РѕРІС‹Р№ РјР°СЃСЃРёРІ
+     * @param srcStart РЅР°С‡Р°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ РІ src (РІРєР»СЋС‡РёС‚РµР»СЊРЅРѕ)
+     * @param srcEnd РєРѕРЅРµС‡РЅС‹Р№ РёРЅРґРµРєСЃ РІ src (РёСЃРєР»СЋС‡РёС‚РµР»СЊРЅРѕ)
+     * @param dst Р±СѓС„РµСЂ РґР»СЏ СЂРµР·СѓР»СЊС‚Р°С‚Р° (РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р±РѕР»СЊС€РёРј)
+     * @return РєРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїРёСЃР°РЅРЅС‹С… СЃСЌРјРїР»РѕРІ
      */
     private fun pcmToFloats(src: ByteArray, srcStart: Int, srcEnd: Int, dst: FloatArray): Int {
         val bytesCount = srcEnd - srcStart
-        val samplesCount = bytesCount / 2 // 2 байта на 16-bit sample
+        val samplesCount = bytesCount / 2 // 2 Р±Р°Р№С‚Р° РЅР° 16-bit sample
 
         if (samplesCount > dst.size) {
             Log.w(TAG, "Buffer too small: need $samplesCount, have ${dst.size}. Truncating.")
-            // Обработаем только то, что влезает
+            // РћР±СЂР°Р±РѕС‚Р°РµРј С‚РѕР»СЊРєРѕ С‚Рѕ, С‡С‚Рѕ РІР»РµР·Р°РµС‚
             return pcmToFloats(src, srcStart, srcStart + dst.size * 2, dst)
         }
 
         var srcIdx = srcStart
         var dstIdx = 0
 
-        // ?? Little-endian: младший байт первый
+        // ?? Little-endian: РјР»Р°РґС€РёР№ Р±Р°Р№С‚ РїРµСЂРІС‹Р№
         while (dstIdx < samplesCount) {
             val low = src[srcIdx].toInt() and 0xFF
             val high = src[srcIdx + 1].toInt()
-            val sample = (low or (high shl 8)).toShort() // Нормализация в диапазон [-1.0, 1.0]
+            val sample = (low or (high shl 8)).toShort() // РќРѕСЂРјР°Р»РёР·Р°С†РёСЏ РІ РґРёР°РїР°Р·РѕРЅ [-1.0, 1.0]
             dst[dstIdx] = sample.toFloat() / Short.MAX_VALUE
             srcIdx += 2
             dstIdx++

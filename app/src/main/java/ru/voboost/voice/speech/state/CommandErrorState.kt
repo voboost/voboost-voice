@@ -7,10 +7,10 @@ import ru.voboost.voice.speech.SpeechRecognizer
 import kotlinx.coroutines.CancellationException
 
 /**
- * Состояние: Ошибка команды
+ * РЎРѕСЃС‚РѕСЏРЅРёРµ: РћС€РёР±РєР° РєРѕРјР°РЅРґС‹
  *
- * Логика:
- * 1. Сказать "Не понял" (высокий приоритет, чтобы перебить если что)
+ * Р›РѕРіРёРєР°:
+ * 1. РЎРєР°Р·Р°С‚СЊ "РќРµ РїРѕРЅСЏР»" (РІС‹СЃРѕРєРёР№ РїСЂРёРѕСЂРёС‚РµС‚, С‡С‚РѕР±С‹ РїРµСЂРµР±РёС‚СЊ РµСЃР»Рё С‡С‚Рѕ)
  * 2. > finish(StateResult.Next(StateType.IDLE))
  */
 class CommandErrorState(private val context: StateContext) : BaseState() {
@@ -26,7 +26,7 @@ class CommandErrorState(private val context: StateContext) : BaseState() {
                   context.configManager?.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
               }")
 
-        try { // Отключаем микрофон, чтобы не перехватывать команду
+        try { // РћС‚РєР»СЋС‡Р°РµРј РјРёРєСЂРѕС„РѕРЅ, С‡С‚РѕР±С‹ РЅРµ РїРµСЂРµС…РІР°С‚С‹РІР°С‚СЊ РєРѕРјР°РЅРґСѓ
             context.speechRecognizer?.setMode(SpeechRecognizer.Mode.MUTED)
 
             val notUnderstoodPhrase =
@@ -36,8 +36,8 @@ class CommandErrorState(private val context: StateContext) : BaseState() {
                 context.queueSpeech?.enqueueAsync(notUnderstoodPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
             }
 
-            // Сразу переключаемся в режим ожидания ключевого слова
-            // Не ждем окончания TTS!
+            // РЎСЂР°Р·Сѓ РїРµСЂРµРєР»СЋС‡Р°РµРјСЃСЏ РІ СЂРµР¶РёРј РѕР¶РёРґР°РЅРёСЏ РєР»СЋС‡РµРІРѕРіРѕ СЃР»РѕРІР°
+            // РќРµ Р¶РґРµРј РѕРєРѕРЅС‡Р°РЅРёСЏ TTS!
             context.speechRecognizer?.setMode(SpeechRecognizer.Mode.KEYWORD)
             finish(StateResult.Next(StateType.IDLE))
 

@@ -30,12 +30,12 @@ object SpeechEngineFactory {
     }
 
     /**
-     * Создать распознаватель речи (утилита без состояний)
-     * @param context Контекст приложения
-     * @param engine Тип движка (по умолчанию Vosk как стабильный)
-     * @param IAudioSource Источник аудио (создаётся через AudioSourceFactory)
-     * @param defaultZone Зона по умолчанию (опционально, зона теперь определяется в AudioSource callback)
-     * @return SpeechRecognizer для управления распознаванием
+     * РЎРѕР·РґР°С‚СЊ СЂР°СЃРїРѕР·РЅР°РІР°С‚РµР»СЊ СЂРµС‡Рё (СѓС‚РёР»РёС‚Р° Р±РµР· СЃРѕСЃС‚РѕСЏРЅРёР№)
+     * @param context РљРѕРЅС‚РµРєСЃС‚ РїСЂРёР»РѕР¶РµРЅРёСЏ
+     * @param engine РўРёРї РґРІРёР¶РєР° (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ Vosk РєР°Рє СЃС‚Р°Р±РёР»СЊРЅС‹Р№)
+     * @param IAudioSource РСЃС‚РѕС‡РЅРёРє Р°СѓРґРёРѕ (СЃРѕР·РґР°С‘С‚СЃСЏ С‡РµСЂРµР· AudioSourceFactory)
+     * @param defaultZone Р—РѕРЅР° РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, Р·РѕРЅР° С‚РµРїРµСЂСЊ РѕРїСЂРµРґРµР»СЏРµС‚СЃСЏ РІ AudioSource callback)
+     * @return SpeechRecognizer РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёРµРј
      */
     fun createSpeechRecognizer(engine: RecognitionEngine,
                                audioSource: IAudioSource,
@@ -64,11 +64,11 @@ object SpeechEngineFactory {
     }
 
     /**
-     * Создать модуль синтеза речи
-     * @param context Контекст приложения
-     * @param engine Тип движка (по умолчанию System как доступный)
-     * @param modelPath Путь к модели (опционально)
-     * @param speakerId ID спикера для Sherpa (0-4)
+     * РЎРѕР·РґР°С‚СЊ РјРѕРґСѓР»СЊ СЃРёРЅС‚РµР·Р° СЂРµС‡Рё
+     * @param context РљРѕРЅС‚РµРєСЃС‚ РїСЂРёР»РѕР¶РµРЅРёСЏ
+     * @param engine РўРёРї РґРІРёР¶РєР° (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ System РєР°Рє РґРѕСЃС‚СѓРїРЅС‹Р№)
+     * @param modelPath РџСѓС‚СЊ Рє РјРѕРґРµР»Рё (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
+     * @param speakerId ID СЃРїРёРєРµСЂР° РґР»СЏ Sherpa (0-4)
      */
     fun createSynthesisEngine(context: Context,
                               configManager: ConfigManager): ISpeechSynthesis {

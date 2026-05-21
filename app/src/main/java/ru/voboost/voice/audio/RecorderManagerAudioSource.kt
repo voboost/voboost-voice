@@ -5,17 +5,17 @@ import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * IAudioSource через RecorderManager (системный микрофон QGSpeechService)
+ * IAudioSource С‡РµСЂРµР· RecorderManager (СЃРёСЃС‚РµРјРЅС‹Р№ РјРёРєСЂРѕС„РѕРЅ QGSpeechService)
  * 
- * Использует тот же механизм что и внутренние компоненты QGSpeechService:
+ * РСЃРїРѕР»СЊР·СѓРµС‚ С‚РѕС‚ Р¶Рµ РјРµС…Р°РЅРёР·Рј С‡С‚Рѕ Рё РІРЅСѓС‚СЂРµРЅРЅРёРµ РєРѕРјРїРѕРЅРµРЅС‚С‹ QGSpeechService:
  * - SpeechPcmSource
  * - IflytekPcmSource  
  * - ArklitePcmRecorder
  * 
- * Преимущества:
- * - ? Системный доступ к микрофону с шумоподавлением
- * - ? Нет конфликтов с QGSpeechService
- * - ? PCM данные уже обработаны (AEC, NS, AGC)
+ * РџСЂРµРёРјСѓС‰РµСЃС‚РІР°:
+ * - ? РЎРёСЃС‚РµРјРЅС‹Р№ РґРѕСЃС‚СѓРї Рє РјРёРєСЂРѕС„РѕРЅСѓ СЃ С€СѓРјРѕРїРѕРґР°РІР»РµРЅРёРµРј
+ * - ? РќРµС‚ РєРѕРЅС„Р»РёРєС‚РѕРІ СЃ QGSpeechService
+ * - ? PCM РґР°РЅРЅС‹Рµ СѓР¶Рµ РѕР±СЂР°Р±РѕС‚Р°РЅС‹ (AEC, NS, AGC)
  */
 class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
 
@@ -30,7 +30,7 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
     private var isRecording = false
     private var isInitialized = false
 
-    // JNI методы RecorderManager
+    // JNI РјРµС‚РѕРґС‹ RecorderManager
     private var recorderManagerInstance: Any? = null
 
     override fun initialize(): Boolean {
@@ -42,7 +42,7 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
         return try {
             Log.d(TAG, "Initializing RecorderManagerAudioSource...")
 
-            // Загружаем класс RecorderManager из QGSpeechService
+            // Р—Р°РіСЂСѓР¶Р°РµРј РєР»Р°СЃСЃ RecorderManager РёР· QGSpeechService
             val recorderManagerClass = Class.forName("com.qinggan.audiorecord.record.RecorderManager")
             val getInstanceMethod = recorderManagerClass.getMethod("getInstance")
             recorderManagerInstance = getInstanceMethod.invoke(null)
@@ -52,7 +52,7 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
                 return false
             }
 
-            // Инициализируем RecorderManager
+            // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј RecorderManager
             val initMethod = recorderManagerClass.getMethod("init", Context::class.java, String::class.java)
             initMethod.invoke(recorderManagerInstance, context, RECORD_TYPE_AOSP)
             Log.d(TAG, "? RecorderManager initialized with type: $RECORD_TYPE_AOSP")
@@ -83,7 +83,7 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
 
             val recorderManagerClass = Class.forName("com.qinggan.audiorecord.record.RecorderManager")
             
-            // Создаём IDataListener
+            // РЎРѕР·РґР°С‘Рј IDataListener
             val dataListenerClass = Class.forName("com.qinggan.audiorecord.output.IDataListener")
             val dataListener = java.lang.reflect.Proxy.newProxyInstance(
                 dataListenerClass.classLoader,
@@ -96,8 +96,8 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
                             val length = args[1] as Int
 
                             if (length > 0) {
-                                // RecorderManager возвращает данные с 1-2 микрофонов
-                                // Зону определить не может, возвращаем front_left по умолчанию
+                                // RecorderManager РІРѕР·РІСЂР°С‰Р°РµС‚ РґР°РЅРЅС‹Рµ СЃ 1-2 РјРёРєСЂРѕС„РѕРЅРѕРІ
+                                // Р—РѕРЅСѓ РѕРїСЂРµРґРµР»РёС‚СЊ РЅРµ РјРѕР¶РµС‚, РІРѕР·РІСЂР°С‰Р°РµРј front_left РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
                                 for (listener in listeners) {
                                     try {
                                         listener.onAudioData(pcmData, length, "front_left")
@@ -120,12 +120,12 @@ class RecorderManagerAudioSource(private val context: Context) : IAudioSource {
                 }
             )
 
-            // Добавляем listener
+            // Р”РѕР±Р°РІР»СЏРµРј listener
             val addListenerMethod = recorderManagerClass.getMethod("addListener", dataListenerClass)
             addListenerMethod.invoke(recorderManagerInstance, dataListener)
             Log.d(TAG, "? Data listener added")
 
-            // Запускаем запись
+            // Р—Р°РїСѓСЃРєР°РµРј Р·Р°РїРёСЃСЊ
             val startRecordMethod = recorderManagerClass.getMethod("startRecord")
             startRecordMethod.invoke(recorderManagerInstance)
             Log.i(TAG, "? Recording started via RecorderManager")

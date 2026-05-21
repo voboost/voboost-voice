@@ -4,15 +4,15 @@ import ru.voboost.voice.speech.IRecognitionEngine
 import ru.voboost.voice.speech.IStreamFactory
 
 /**
- * Фабрика потоков распознавания Sherpa-ONNX
- * Реализует универсальный интерфейс IStreamFactory
+ * Р¤Р°Р±СЂРёРєР° РїРѕС‚РѕРєРѕРІ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ Sherpa-ONNX
+ * Р РµР°Р»РёР·СѓРµС‚ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ IStreamFactory
  */
 class SherpaStreamFactory : IStreamFactory {
     
     /**
-     * Создать поток распознавания Sherpa-ONNX
-     * @param model Путь к директории модели (String)
-     * @return SherpaStream который реализует IRecognitionEngine
+     * РЎРѕР·РґР°С‚СЊ РїРѕС‚РѕРє СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ Sherpa-ONNX
+     * @param model РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё РјРѕРґРµР»Рё (String)
+     * @return SherpaStream РєРѕС‚РѕСЂС‹Р№ СЂРµР°Р»РёР·СѓРµС‚ IRecognitionEngine
      */
     override fun create(model: Any): IRecognitionEngine {
         if (model !is String) {

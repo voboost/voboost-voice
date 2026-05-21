@@ -13,16 +13,16 @@ import com.qinggan.qinglink.api.hu.IVolumeListener
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Менеджер для управления громкостью
+ * РњРµРЅРµРґР¶РµСЂ РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ РіСЂРѕРјРєРѕСЃС‚СЊСЋ
  *
- * Приоритет:
- * 1. Volume сервис через QGSpeechService (com.qinggan.qinglink.hu.VOLUME)
+ * РџСЂРёРѕСЂРёС‚РµС‚:
+ * 1. Volume СЃРµСЂРІРёСЃ С‡РµСЂРµР· QGSpeechService (com.qinggan.qinglink.hu.VOLUME)
  * 2. Android AudioManager (fallback)
  *
- * Позволяет:
- * - Приглушать музыку при активации голосового помощника
- * - Восстанавливать громкость после завершения
- * - Управлять громкостью навигации, уведомлений и т.д.
+ * РџРѕР·РІРѕР»СЏРµС‚:
+ * - РџСЂРёРіР»СѓС€Р°С‚СЊ РјСѓР·С‹РєСѓ РїСЂРё Р°РєС‚РёРІР°С†РёРё РіРѕР»РѕСЃРѕРІРѕРіРѕ РїРѕРјРѕС‰РЅРёРєР°
+ * - Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°С‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ РїРѕСЃР»Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ
+ * - РЈРїСЂР°РІР»СЏС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊСЋ РЅР°РІРёРіР°С†РёРё, СѓРІРµРґРѕРјР»РµРЅРёР№ Рё С‚.Рґ.
  */
 class VolumeManager(private val context: Context) {
 
@@ -50,16 +50,16 @@ class VolumeManager(private val context: Context) {
     @Volatile
     private var isConnected = false
 
-    // Fallback на Android AudioManager
+    // Fallback РЅР° Android AudioManager
     private var audioManager: AudioManager? = null
     private var useAudioManagerFallback = false
 
-    // Сохраняем предыдущую громкость для восстановления
+    // РЎРѕС…СЂР°РЅСЏРµРј РїСЂРµРґС‹РґСѓС‰СѓСЋ РіСЂРѕРјРєРѕСЃС‚СЊ РґР»СЏ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ
     private var previousMediaVolume: Int = -1
 
     /**
-     * Подключиться к сервису управления громкостью
-     * Пробует Volume сервис, если недоступен - использует AudioManager
+     * РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє СЃРµСЂРІРёСЃСѓ СѓРїСЂР°РІР»РµРЅРёСЏ РіСЂРѕРјРєРѕСЃС‚СЊСЋ
+     * РџСЂРѕР±СѓРµС‚ Volume СЃРµСЂРІРёСЃ, РµСЃР»Рё РЅРµРґРѕСЃС‚СѓРїРµРЅ - РёСЃРїРѕР»СЊР·СѓРµС‚ AudioManager
      */
     fun connect() {
         Log.d(TAG, "Connecting to Volume service...")
@@ -96,7 +96,7 @@ class VolumeManager(private val context: Context) {
     }
 
     /**
-     * Использовать Android AudioManager как fallback
+     * РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ Android AudioManager РєР°Рє fallback
      */
     private fun useAudioManagerFallback() {
         try {
@@ -113,7 +113,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Зарегистрировать слушатель событий громкости
+     * Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ СЃР»СѓС€Р°С‚РµР»СЊ СЃРѕР±С‹С‚РёР№ РіСЂРѕРјРєРѕСЃС‚Рё
      */
     private fun registerVolumeListener() {
         if (volumeService == null) {
@@ -133,7 +133,7 @@ class VolumeManager(private val context: Context) {
             
             @Throws(RemoteException::class)
             override fun onGetCurrentMediaVolume() {
-                // Запрос текущей громкости музыки
+                // Р—Р°РїСЂРѕСЃ С‚РµРєСѓС‰РµР№ РіСЂРѕРјРєРѕСЃС‚Рё РјСѓР·С‹РєРё
             }
             
             @Throws(RemoteException::class)
@@ -144,7 +144,7 @@ class VolumeManager(private val context: Context) {
             
             @Throws(RemoteException::class)
             override fun onGetCurrentNavigationVolume() {
-                // Запрос текущей громкости навигации
+                // Р—Р°РїСЂРѕСЃ С‚РµРєСѓС‰РµР№ РіСЂРѕРјРєРѕСЃС‚Рё РЅР°РІРёРіР°С†РёРё
             }
             
             @Throws(RemoteException::class)
@@ -155,7 +155,7 @@ class VolumeManager(private val context: Context) {
             
             @Throws(RemoteException::class)
             override fun onGetCurrentPhoneVolume() {
-                // Запрос текущей громкости телефона
+                // Р—Р°РїСЂРѕСЃ С‚РµРєСѓС‰РµР№ РіСЂРѕРјРєРѕСЃС‚Рё С‚РµР»РµС„РѕРЅР°
             }
             
             @Throws(RemoteException::class)
@@ -166,7 +166,7 @@ class VolumeManager(private val context: Context) {
             
             @Throws(RemoteException::class)
             override fun onGetCurrentNotificationVolume() {
-                // Запрос текущей громкости уведомлений
+                // Р—Р°РїСЂРѕСЃ С‚РµРєСѓС‰РµР№ РіСЂРѕРјРєРѕСЃС‚Рё СѓРІРµРґРѕРјР»РµРЅРёР№
             }
             
             @Throws(RemoteException::class)
@@ -197,7 +197,7 @@ class VolumeManager(private val context: Context) {
                 listeners.forEach { it.onAbandonAudioPolicy(clientId) }
             }
             
-            // Остальные методы можно добавить по необходимости
+            // РћСЃС‚Р°Р»СЊРЅС‹Рµ РјРµС‚РѕРґС‹ РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РїРѕ РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё
             @Throws(RemoteException::class)
             override fun onGetCurrentA2DPVolume() {}
             
@@ -253,25 +253,25 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Приглушить музыку (для активации голосового помощника)
+     * РџСЂРёРіР»СѓС€РёС‚СЊ РјСѓР·С‹РєСѓ (РґР»СЏ Р°РєС‚РёРІР°С†РёРё РіРѕР»РѕСЃРѕРІРѕРіРѕ РїРѕРјРѕС‰РЅРёРєР°)
      *
-     * @param targetVolume Целевая громкость (по умолчанию 1 - минимальная)
-     * @return true если успешно
+     * @param targetVolume Р¦РµР»РµРІР°СЏ РіСЂРѕРјРєРѕСЃС‚СЊ (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 1 - РјРёРЅРёРјР°Р»СЊРЅР°СЏ)
+     * @return true РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
      */
     fun duckMedia(targetVolume: Int = DUCK_VOLUME): Boolean {
-        // Попытка через Volume сервис
+        // РџРѕРїС‹С‚РєР° С‡РµСЂРµР· Volume СЃРµСЂРІРёСЃ
         if (volumeService != null) {
             return try {
-                // Сначала запрашиваем текущую громкость через Volume сервис
-                // Используем AudioTrack.getCurrentVolume или запоминаем из предыдущих операций
-                // Т.к. Volume сервис не даёт getCurrentVolume, используем fallback
+                // РЎРЅР°С‡Р°Р»Р° Р·Р°РїСЂР°С€РёРІР°РµРј С‚РµРєСѓС‰СѓСЋ РіСЂРѕРјРєРѕСЃС‚СЊ С‡РµСЂРµР· Volume СЃРµСЂРІРёСЃ
+                // РСЃРїРѕР»СЊР·СѓРµРј AudioTrack.getCurrentVolume РёР»Рё Р·Р°РїРѕРјРёРЅР°РµРј РёР· РїСЂРµРґС‹РґСѓС‰РёС… РѕРїРµСЂР°С†РёР№
+                // Рў.Рє. Volume СЃРµСЂРІРёСЃ РЅРµ РґР°С‘С‚ getCurrentVolume, РёСЃРїРѕР»СЊР·СѓРµРј fallback
                 if (previousMediaVolume == -1) {
-                    // Первая попытка duck — пробуем получить через AudioManager
+                    // РџРµСЂРІР°СЏ РїРѕРїС‹С‚РєР° duck вЂ” РїСЂРѕР±СѓРµРј РїРѕР»СѓС‡РёС‚СЊ С‡РµСЂРµР· AudioManager
                     try {
                         val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                         previousMediaVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC)
                     } catch (e: Exception) {
-                        previousMediaVolume = 5 // Дефолтное значение
+                        previousMediaVolume = 5 // Р”РµС„РѕР»С‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ
                     }
                 }
                 volumeService?.sendSetMDVolume(STREAM_MEDIA, targetVolume)
@@ -283,7 +283,7 @@ class VolumeManager(private val context: Context) {
             }
         }
 
-        // Fallback на AudioManager
+        // Fallback РЅР° AudioManager
         if (useAudioManagerFallback && audioManager != null) {
             return try {
                 val currentVolume = audioManager!!.getStreamVolume(AudioManager.STREAM_MUSIC)
@@ -303,12 +303,12 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Восстановить громкость музыки после приглушения
+     * Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ РјСѓР·С‹РєРё РїРѕСЃР»Рµ РїСЂРёРіР»СѓС€РµРЅРёСЏ
      *
-     * @return true если успешно
+     * @return true РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
      */
     fun restoreMedia(): Boolean {
-        // Попытка через Volume сервис
+        // РџРѕРїС‹С‚РєР° С‡РµСЂРµР· Volume СЃРµСЂРІРёСЃ
         if (volumeService != null) {
             if (previousMediaVolume <= 0) {
                 Log.w(TAG, "No previous volume to restore")
@@ -325,7 +325,7 @@ class VolumeManager(private val context: Context) {
             }
         }
 
-        // Fallback на AudioManager
+        // Fallback РЅР° AudioManager
         if (useAudioManagerFallback && audioManager != null) {
             if (previousMediaVolume <= 0) {
                 Log.w(TAG, "No previous volume to restore")
@@ -347,7 +347,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Установить громкость медиа
+     * РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ РјРµРґРёР°
      */
     fun setMediaVolume(volume: Int): Boolean {
         return try {
@@ -359,7 +359,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Установить громкость навигации
+     * РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ РЅР°РІРёРіР°С†РёРё
      */
     fun setNavigationVolume(volume: Int): Boolean {
         return try {
@@ -371,7 +371,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Увеличить громкость
+     * РЈРІРµР»РёС‡РёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ
      */
     fun volumeUp(): Boolean {
         return try {
@@ -383,7 +383,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Уменьшить громкость
+     * РЈРјРµРЅСЊС€РёС‚СЊ РіСЂРѕРјРєРѕСЃС‚СЊ
      */
     fun volumeDown(): Boolean {
         return try {
@@ -395,7 +395,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Добавить слушатель событий громкости
+     * Р”РѕР±Р°РІРёС‚СЊ СЃР»СѓС€Р°С‚РµР»СЊ СЃРѕР±С‹С‚РёР№ РіСЂРѕРјРєРѕСЃС‚Рё
      */
     fun addListener(listener: ru.voboost.voice.audio.IVolumeListener) {
         if (!listeners.contains(listener)) {
@@ -405,7 +405,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Удалить слушатель событий громкости
+     * РЈРґР°Р»РёС‚СЊ СЃР»СѓС€Р°С‚РµР»СЊ СЃРѕР±С‹С‚РёР№ РіСЂРѕРјРєРѕСЃС‚Рё
      */
     fun removeListener(listener: ru.voboost.voice.audio.IVolumeListener) {
         listeners.remove(listener)
@@ -413,7 +413,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Отключиться от сервиса
+     * РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ СЃРµСЂРІРёСЃР°
      */
     fun disconnect() {
         Log.i(TAG, "Disconnecting from Volume service...")
@@ -421,7 +421,7 @@ class VolumeManager(private val context: Context) {
         try {
             volumeListener?.let { listener ->
                 volumeService?.let { service ->
-                    // unregisterListener не существует в IVolume, просто очищаем
+                    // unregisterListener РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РІ IVolume, РїСЂРѕСЃС‚Рѕ РѕС‡РёС‰Р°РµРј
                 }
             }
         } catch (e: Exception) {
@@ -440,7 +440,7 @@ class VolumeManager(private val context: Context) {
     }
     
     /**
-     * Проверка состояния
+     * РџСЂРѕРІРµСЂРєР° СЃРѕСЃС‚РѕСЏРЅРёСЏ
      */
     fun isConnected(): Boolean = isConnected
 }

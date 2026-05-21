@@ -6,16 +6,16 @@ import android.util.Log
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 /**
- * Базовый обработчик для Broadcast Intent команд
+ * Р‘Р°Р·РѕРІС‹Р№ РѕР±СЂР°Р±РѕС‚С‡РёРє РґР»СЏ Broadcast Intent РєРѕРјР°РЅРґ
  */
 abstract class AbstractIntentHandler(protected val context: Context) : ICommandHandler {
     companion object {
         const val TAG = "IntentHandler"
 
-        // Action для звонков через BluetoothPhone (тот же что использует Ivoka)
+        // Action РґР»СЏ Р·РІРѕРЅРєРѕРІ С‡РµСЂРµР· BluetoothPhone (С‚РѕС‚ Р¶Рµ С‡С‚Рѕ РёСЃРїРѕР»СЊР·СѓРµС‚ Ivoka)
         const val ACTION_IVOKA_PHONE_CALL = "com.qinggan.broadcast.action.ivokaphonecall"
 
-        // Параметры которые ожидает BluetoothPhone
+        // РџР°СЂР°РјРµС‚СЂС‹ РєРѕС‚РѕСЂС‹Рµ РѕР¶РёРґР°РµС‚ BluetoothPhone
         const val EXTRA_IVOKA_CALL_INFO = "Ivoka_CallInfo"
         const val EXTRA_SCREEN_INT = "screen_int"
         const val EXTRA_MAC = "mac"

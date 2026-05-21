@@ -12,16 +12,16 @@ import ru.voboost.voice.core.ISpeechRecognizer
 import ru.voboost.voice.speech.SpeechRecognizer
 
 /**
- * Поллинг состояния телефона через AudioPolicyManager
- * Периодически проверяет isInCall() и переключает speechRecognizer в MUTED режим
+ * РџРѕР»Р»РёРЅРі СЃРѕСЃС‚РѕСЏРЅРёСЏ С‚РµР»РµС„РѕРЅР° С‡РµСЂРµР· AudioPolicyManager
+ * РџРµСЂРёРѕРґРёС‡РµСЃРєРё РїСЂРѕРІРµСЂСЏРµС‚ isInCall() Рё РїРµСЂРµРєР»СЋС‡Р°РµС‚ speechRecognizer РІ MUTED СЂРµР¶РёРј
  */
 class PhoneCallPoller(private val context: Context,
-                      @Volatile private var _speechRecognizer: ISpeechRecognizer?) {
+                      @Volatile private var speechRecognizer: ISpeechRecognizer?) {
 
 
     companion object {
         const val TAG = "PhoneCallPoller"
-        private const val CHECK_INTERVAL_MS = 500L // Проверка каждые 500мс
+        private const val CHECK_INTERVAL_MS = 500L // РџСЂРѕРІРµСЂРєР° РєР°Р¶РґС‹Рµ 500РјСЃ
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
@@ -30,7 +30,7 @@ class PhoneCallPoller(private val context: Context,
     @Volatile private var isPolling = false
 
     /**
-     * Запустить поллинг состояния телефона
+     * Р—Р°РїСѓСЃС‚РёС‚СЊ РїРѕР»Р»РёРЅРі СЃРѕСЃС‚РѕСЏРЅРёСЏ С‚РµР»РµС„РѕРЅР°
      */
     fun start() {
         if (isPolling) {
@@ -46,19 +46,19 @@ class PhoneCallPoller(private val context: Context,
                     val inCall = checkPhoneState()
                     
                     // Get reference to speechRecognizer to avoid concurrent mutation issues
-                    val recognizer = _speechRecognizer
+                    val recognizer = speechRecognizer
                     
-                    if (inCall && recognizer != null) { // В звонке - мьютим распознавание
+                    if (inCall && recognizer != null) { // Р’ Р·РІРѕРЅРєРµ - РјСЊСЋС‚РёРј СЂР°СЃРїРѕР·РЅР°РІР°РЅРёРµ
                         val currentMode = recognizer.getMode()
                         if (currentMode != SpeechRecognizer.Mode.MUTED) {
-                            Log.i(TAG, "📞 Call active - muting recognizer")
+                            Log.i(TAG, "рџ“ћ Call active - muting recognizer")
                             recognizer.setModeSafe(SpeechRecognizer.Mode.MUTED)
                         }
                     }
-                    else if (!inCall && recognizer != null) { // Нет звонка - возвращаем KEYWORD режим
+                    else if (!inCall && recognizer != null) { // РќРµС‚ Р·РІРѕРЅРєР° - РІРѕР·РІСЂР°С‰Р°РµРј KEYWORD СЂРµР¶РёРј
                         val currentMode = recognizer.getMode()
                         if (currentMode == SpeechRecognizer.Mode.MUTED) {
-                            Log.i(TAG, "📞 Call ended - restoring keyword mode")
+                            Log.i(TAG, "рџ“ћ Call ended - restoring keyword mode")
                             recognizer.setModeSafe(SpeechRecognizer.Mode.KEYWORD)
                         }
                     }
@@ -67,37 +67,37 @@ class PhoneCallPoller(private val context: Context,
                 }
                 catch (e: Exception) {
                     Log.e(TAG, "Error in polling loop", e)
-                    delay(1000L) // Retry через 1 сек
+                    delay(1000L) // Retry С‡РµСЂРµР· 1 СЃРµРє
                 }
             }
         }
 
-        Log.i(TAG, "✅ Phone call polling started")
+        Log.i(TAG, "вњ… Phone call polling started")
     }
 
     /**
-     * Остановить поллинг
+     * РћСЃС‚Р°РЅРѕРІРёС‚СЊ РїРѕР»Р»РёРЅРі
      */
     fun stop() {
         isPolling = false
         pollingJob?.cancel()
         pollingJob = null
-        Log.i(TAG, "❌ Phone call polling stopped")
+        Log.i(TAG, "вќЊ Phone call polling stopped")
     }
 
     /**
-     * Проверить состояние телефона через AudioPolicyManager
+     * РџСЂРѕРІРµСЂРёС‚СЊ СЃРѕСЃС‚РѕСЏРЅРёРµ С‚РµР»РµС„РѕРЅР° С‡РµСЂРµР· AudioPolicyManager
      */
     private fun checkPhoneState(): Boolean {
-        return try { // Создаем временную connection к AudioPolicyService
+        return try { // РЎРѕР·РґР°РµРј РІСЂРµРјРµРЅРЅСѓСЋ connection Рє AudioPolicyService
             val audioPolicyChecker = AudioPolicyServiceManager(context)
             val inCall = audioPolicyChecker.isInCall()
             
-            // Освобождаем ресурсы сразу после проверки
+            // РћСЃРІРѕР±РѕР¶РґР°РµРј СЂРµСЃСѓСЂСЃС‹ СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РїСЂРѕРІРµСЂРєРё
             audioPolicyChecker.clearCallbacks()
 
             if (inCall) {
-                Log.d(TAG, "📞 isInCall: true")
+                Log.d(TAG, "рџ“ћ isInCall: true")
             }
             inCall
         }
@@ -108,11 +108,11 @@ class PhoneCallPoller(private val context: Context,
     }
 
     /**
-     * Освободить ресурсы
+     * РћСЃРІРѕР±РѕРґРёС‚СЊ СЂРµСЃСѓСЂСЃС‹
      */
     fun release() {
         stop()
-        _speechRecognizer = null
+        speechRecognizer = null
         Log.d(TAG, "PhoneCallPoller released")
     }
 }

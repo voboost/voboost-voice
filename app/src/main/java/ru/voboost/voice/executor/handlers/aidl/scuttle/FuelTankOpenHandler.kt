@@ -6,17 +6,17 @@ import ru.voboost.voice.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 /**
- * Открыть крышку бензобака
+ * РћС‚РєСЂС‹С‚СЊ РєСЂС‹С€РєСѓ Р±РµРЅР·РѕР±Р°РєР°
  *
  * config.json:
  *   id: "fuel_tank_open", classify: 19, command: 0
  *
- * CAN-шина:
+ * CAN-С€РёРЅР°:
  *   VehicleState.IVI_FUEL_PORT_CAP (778)
  *   value: VALUE_OPEN (2)
  *
- * Примечание: команда закрытия бензобака в config.json отсутствует
- * Если понадобится — добавить FuelTankCloseHandler по аналогии
+ * РџСЂРёРјРµС‡Р°РЅРёРµ: РєРѕРјР°РЅРґР° Р·Р°РєСЂС‹С‚РёСЏ Р±РµРЅР·РѕР±Р°РєР° РІ config.json РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚
+ * Р•СЃР»Рё РїРѕРЅР°РґРѕР±РёС‚СЃСЏ вЂ” РґРѕР±Р°РІРёС‚СЊ FuelTankCloseHandler РїРѕ Р°РЅР°Р»РѕРіРёРё
  */
 class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
 
@@ -31,7 +31,7 @@ class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager) : ICo
         }
 
         val state = VehicleState.IVI_FUEL_PORT_CAP
-        val value = CanBusServiceManager.VALUE_OPEN  // 1 для этого авто
+        val value = CanBusServiceManager.VALUE_OPEN  // 1 РґР»СЏ СЌС‚РѕРіРѕ Р°РІС‚Рѕ
         Log.d(TAG, "Scuttle command: IState=$state (ordinal=${state.ordinal}), value=$value")
         return canBusManager.setVehicleState(state, value)
     }

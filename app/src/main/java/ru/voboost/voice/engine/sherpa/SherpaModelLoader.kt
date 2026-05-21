@@ -5,10 +5,10 @@ import ru.voboost.voice.config.ExternalStoragePaths
 import ru.voboost.voice.speech.IModelLoader
 
 /**
- * Загрузчик моделей Sherpa-ONNX
- * Реализует универсальный интерфейс IModelLoader
+ * Р—Р°РіСЂСѓР·С‡РёРє РјРѕРґРµР»РµР№ Sherpa-ONNX
+ * Р РµР°Р»РёР·СѓРµС‚ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ IModelLoader
  *
- * Модель загружается из внешнего хранилища:
+ * РњРѕРґРµР»СЊ Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ РёР· РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°:
  * /storage/emulated/0/voboost/models/sherpa/asr-ru-model/
  */
 class SherpaModelLoader() : IModelLoader {
@@ -18,17 +18,17 @@ class SherpaModelLoader() : IModelLoader {
     }
 
     /**
-     * Загрузить модель Sherpa-ONNX из указанного пути
-     * @param modelPath Путь к директории модели
-     * @return Путь к модели (String)
+     * Р—Р°РіСЂСѓР·РёС‚СЊ РјРѕРґРµР»СЊ Sherpa-ONNX РёР· СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїСѓС‚Рё
+     * @param modelPath РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё РјРѕРґРµР»Рё
+     * @return РџСѓС‚СЊ Рє РјРѕРґРµР»Рё (String)
      */
     override fun loadModel(): Any {
         return getModelPath()
     }
 
     /**
-     * Получить путь к модели Sherpa-ONNX из внешнего хранилища
-     * @return Путь к директории модели
+     * РџРѕР»СѓС‡РёС‚СЊ РїСѓС‚СЊ Рє РјРѕРґРµР»Рё Sherpa-ONNX РёР· РІРЅРµС€РЅРµРіРѕ С…СЂР°РЅРёР»РёС‰Р°
+     * @return РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё РјРѕРґРµР»Рё
      */
     private fun getModelPath(): String {
         val externalModelDir = ExternalStoragePaths.sherpaAsrModelDir

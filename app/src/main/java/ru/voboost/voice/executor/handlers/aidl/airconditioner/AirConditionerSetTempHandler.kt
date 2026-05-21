@@ -5,12 +5,12 @@ import com.qinggan.canbus.AirConditionState
 import ru.voboost.voice.canbus.CanBusServiceManager
 
 /**
- * Установить температуру кондиционера
+ * РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С‚РµРјРїРµСЂР°С‚СѓСЂСѓ РєРѕРЅРґРёС†РёРѕРЅРµСЂР°
  *
- * Учитывает зону говорящего из voiceParams:
- * - front_left > только левая сторона
- * - front_right > только правая сторона
- * - center / all_location / second_* > обе стороны
+ * РЈС‡РёС‚С‹РІР°РµС‚ Р·РѕРЅСѓ РіРѕРІРѕСЂСЏС‰РµРіРѕ РёР· voiceParams:
+ * - front_left > С‚РѕР»СЊРєРѕ Р»РµРІР°СЏ СЃС‚РѕСЂРѕРЅР°
+ * - front_right > С‚РѕР»СЊРєРѕ РїСЂР°РІР°СЏ СЃС‚РѕСЂРѕРЅР°
+ * - center / all_location / second_* > РѕР±Рµ СЃС‚РѕСЂРѕРЅС‹
  *
  * config.json:
  *   id: "ac_set_temp", classify: 5, command: 3
@@ -21,55 +21,55 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
 
     companion object {
         private const val TAG = "AirConditionerCmd"
-        private val RUSSIAN_NUMBERS = mapOf("ноль" to 0,
-                                            "один" to 1,
-                                            "два" to 2,
-                                            "три" to 3,
-                                            "четыре" to 4,
-                                            "пять" to 5,
-                                            "шесть" to 6,
-                                            "семь" to 7,
-                                            "восемь" to 8,
-                                            "девять" to 9,
-                                            "десять" to 10,
-                                            "одинадцать" to 11,
-                                            "двенадцать" to 12,
-                                            "тринадцать" to 13,
-                                            "четырнадцать" to 14,
-                                            "пятнадцать" to 15,
-                                            "шестнадцать" to 16,
-                                            "семнадцать" to 17,
-                                            "восемнадцать" to 18,
-                                            "девятнадцать" to 19,
-                                            "двадцать" to 20,
-                                            "двадцать один" to 21,
-                                            "двадцать два" to 22,
-                                            "двадцать три" to 23,
-                                            "двадцать четыре" to 24,
-                                            "двадцать пять" to 25,
-                                            "двадцать шесть" to 26,
-                                            "двадцать семь" to 27,
-                                            "двадцать восемь" to 28,
-                                            "двадцать девять" to 29,
-                                            "тридцать" to 30,
-                                            "тридцать один" to 31,
-                                            "тридцать два" to 32)
+        private val RUSSIAN_NUMBERS = mapOf("РЅРѕР»СЊ" to 0,
+                                            "РѕРґРёРЅ" to 1,
+                                            "РґРІР°" to 2,
+                                            "С‚СЂРё" to 3,
+                                            "С‡РµС‚С‹СЂРµ" to 4,
+                                            "РїСЏС‚СЊ" to 5,
+                                            "С€РµСЃС‚СЊ" to 6,
+                                            "СЃРµРјСЊ" to 7,
+                                            "РІРѕСЃРµРјСЊ" to 8,
+                                            "РґРµРІСЏС‚СЊ" to 9,
+                                            "РґРµСЃСЏС‚СЊ" to 10,
+                                            "РѕРґРёРЅР°РґС†Р°С‚СЊ" to 11,
+                                            "РґРІРµРЅР°РґС†Р°С‚СЊ" to 12,
+                                            "С‚СЂРёРЅР°РґС†Р°С‚СЊ" to 13,
+                                            "С‡РµС‚С‹СЂРЅР°РґС†Р°С‚СЊ" to 14,
+                                            "РїСЏС‚РЅР°РґС†Р°С‚СЊ" to 15,
+                                            "С€РµСЃС‚РЅР°РґС†Р°С‚СЊ" to 16,
+                                            "СЃРµРјРЅР°РґС†Р°С‚СЊ" to 17,
+                                            "РІРѕСЃРµРјРЅР°РґС†Р°С‚СЊ" to 18,
+                                            "РґРµРІСЏС‚РЅР°РґС†Р°С‚СЊ" to 19,
+                                            "РґРІР°РґС†Р°С‚СЊ" to 20,
+                                            "РґРІР°РґС†Р°С‚СЊ РѕРґРёРЅ" to 21,
+                                            "РґРІР°РґС†Р°С‚СЊ РґРІР°" to 22,
+                                            "РґРІР°РґС†Р°С‚СЊ С‚СЂРё" to 23,
+                                            "РґРІР°РґС†Р°С‚СЊ С‡РµС‚С‹СЂРµ" to 24,
+                                            "РґРІР°РґС†Р°С‚СЊ РїСЏС‚СЊ" to 25,
+                                            "РґРІР°РґС†Р°С‚СЊ С€РµСЃС‚СЊ" to 26,
+                                            "РґРІР°РґС†Р°С‚СЊ СЃРµРјСЊ" to 27,
+                                            "РґРІР°РґС†Р°С‚СЊ РІРѕСЃРµРјСЊ" to 28,
+                                            "РґРІР°РґС†Р°С‚СЊ РґРµРІСЏС‚СЊ" to 29,
+                                            "С‚СЂРёРґС†Р°С‚СЊ" to 30,
+                                            "С‚СЂРёРґС†Р°С‚СЊ РѕРґРёРЅ" to 31,
+                                            "С‚СЂРёРґС†Р°С‚СЊ РґРІР°" to 32)
     }
 
     /**
-     * Распознать число из текста (поддержка русских числительных 0-32)
-     * Также обрабатывает обычные цифры: "24" > 24
+     * Р Р°СЃРїРѕР·РЅР°С‚СЊ С‡РёСЃР»Рѕ РёР· С‚РµРєСЃС‚Р° (РїРѕРґРґРµСЂР¶РєР° СЂСѓСЃСЃРєРёС… С‡РёСЃР»РёС‚РµР»СЊРЅС‹С… 0-32)
+     * РўР°РєР¶Рµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РѕР±С‹С‡РЅС‹Рµ С†РёС„СЂС‹: "24" > 24
      */
     private fun parseTemperature(raw: String): Int {
         val text = raw.lowercase().trim()
 
-        // Прямое совпадение
+        // РџСЂСЏРјРѕРµ СЃРѕРІРїР°РґРµРЅРёРµ
         RUSSIAN_NUMBERS[text]?.let { return it }
 
-        // Цифры: "24" или "24.0"
+        // Р¦РёС„СЂС‹: "24" РёР»Рё "24.0"
         text.toFloatOrNull()?.let { return it.toInt() }
 
-        // Комбинации: "двадцать" + " четыре"
+        // РљРѕРјР±РёРЅР°С†РёРё: "РґРІР°РґС†Р°С‚СЊ" + " С‡РµС‚С‹СЂРµ"
         val parts = text.split(Regex("\\s+"))
         if (parts.size == 2) {
             val tens = RUSSIAN_NUMBERS[parts[0]] ?: 0
@@ -84,7 +84,7 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
     override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> {
         val rawTemp = voiceParams["temp"]?.toString() ?: "22"
         val temperature = parseTemperature(rawTemp)
-        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp')")
+        Log.d(TAG, "Set temperature: $temperatureВ°C (raw='$rawTemp')")
         return AirConditionState.AC_LEFT_TEMP to temperature
     }
 
@@ -97,7 +97,7 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
         val rawTemp = voiceParams["temp"]?.toString() ?: "22"
         val temperature = parseTemperature(rawTemp)
         val zone = voiceParams["_zone"] as? String
-        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp', zone=$zone)")
+        Log.d(TAG, "Set temperature: $temperatureВ°C (raw='$rawTemp', zone=$zone)")
 
         return canBusManager.setTemperatureByZone(zone, temperature)
     }

@@ -7,10 +7,10 @@ import ru.voboost.voice.config.ConfigManager.PhraseType
 import ru.voboost.voice.core.QueueSpeechSynthesis
 
 /**
- * Состояние: Таймаут распознавания
+ * РЎРѕСЃС‚РѕСЏРЅРёРµ: РўР°Р№РјР°СѓС‚ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ
  *
- * Логика:
- * 1. Сказать "Отмена" + звук
+ * Р›РѕРіРёРєР°:
+ * 1. РЎРєР°Р·Р°С‚СЊ "РћС‚РјРµРЅР°" + Р·РІСѓРє
  * 2. > finish(StateResult.Next(StateType.IDLE))
  */
 class TimeoutState(private val context: StateContext) : BaseState() {
@@ -23,11 +23,11 @@ class TimeoutState(private val context: StateContext) : BaseState() {
     override suspend fun execute() {
         Log.w(TAG, "Entering TIMEOUT IState")
 
-        try { // Звук окончания
+        try { // Р—РІСѓРє РѕРєРѕРЅС‡Р°РЅРёСЏ
             context.soundEffectManager?.playEndSoundAsync()
             kotlinx.coroutines.delay(200)
 
-            // Говорим "Отмена"
+            // Р“РѕРІРѕСЂРёРј "РћС‚РјРµРЅР°"
             val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
             if(!cancelPhrase.isNullOrEmpty())
             {

@@ -5,15 +5,15 @@ import ru.voboost.voice.speech.IStreamFactory
 import org.vosk.Model
 
 /**
- * Фабрика потоков распознавания Vosk
- * Реализует универсальный интерфейс IStreamFactory
+ * Р¤Р°Р±СЂРёРєР° РїРѕС‚РѕРєРѕРІ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ Vosk
+ * Р РµР°Р»РёР·СѓРµС‚ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ IStreamFactory
  */
 class VoskStreamFactory : IStreamFactory {
     
     /**
-     * Создать поток распознавания Vosk
-     * @param model Объект модели Vosk
-     * @return VoskStream который реализует IRecognitionEngine
+     * РЎРѕР·РґР°С‚СЊ РїРѕС‚РѕРє СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ Vosk
+     * @param model РћР±СЉРµРєС‚ РјРѕРґРµР»Рё Vosk
+     * @return VoskStream РєРѕС‚РѕСЂС‹Р№ СЂРµР°Р»РёР·СѓРµС‚ IRecognitionEngine
      */
     override fun create(model: Any): IRecognitionEngine {
         if (model !is Model) {

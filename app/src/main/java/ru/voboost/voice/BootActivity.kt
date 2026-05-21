@@ -8,11 +8,11 @@ import android.os.Looper
 import android.util.Log
 
 /**
- * Невидимая Activity для получения foreground context при автозапуске.
+ * РќРµРІРёРґРёРјР°СЏ Activity РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ foreground context РїСЂРё Р°РІС‚РѕР·Р°РїСѓСЃРєРµ.
  * 
- * Android 10+ запрещает запуск foreground service с доступом к микрофону из фона.
- * BootReceiver работает в фоне, поэтому мы запускаем эту Activity,
- * она получает foreground context, запускает сервис и закрывается.
+ * Android 10+ Р·Р°РїСЂРµС‰Р°РµС‚ Р·Р°РїСѓСЃРє foreground service СЃ РґРѕСЃС‚СѓРїРѕРј Рє РјРёРєСЂРѕС„РѕРЅСѓ РёР· С„РѕРЅР°.
+ * BootReceiver СЂР°Р±РѕС‚Р°РµС‚ РІ С„РѕРЅРµ, РїРѕСЌС‚РѕРјСѓ РјС‹ Р·Р°РїСѓСЃРєР°РµРј СЌС‚Сѓ Activity,
+ * РѕРЅР° РїРѕР»СѓС‡Р°РµС‚ foreground context, Р·Р°РїСѓСЃРєР°РµС‚ СЃРµСЂРІРёСЃ Рё Р·Р°РєСЂС‹РІР°РµС‚СЃСЏ.
  */
 class BootActivity : Activity() {
 
@@ -22,16 +22,16 @@ class BootActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(TAG, "onCreate — starting VoboostVoiceService with foreground context")
+        Log.i(TAG, "onCreate вЂ” starting VoboostVoiceService with foreground context")
 
-        // Запускаем сервис из foreground context Activity
+        // Р—Р°РїСѓСЃРєР°РµРј СЃРµСЂРІРёСЃ РёР· foreground context Activity
         val serviceIntent = Intent(this, VoboostVoiceService::class.java)
         startForegroundService(serviceIntent)
         Log.i(TAG, "? startForegroundService called from Activity context")
 
-        // Ждём 5 секунд чтобы сервис успел вызвать startForeground() и инициализировать AudioRecord
+        // Р–РґС‘Рј 5 СЃРµРєСѓРЅРґ С‡С‚РѕР±С‹ СЃРµСЂРІРёСЃ СѓСЃРїРµР» РІС‹Р·РІР°С‚СЊ startForeground() Рё РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ AudioRecord
         Handler(Looper.getMainLooper()).postDelayed({
-            Log.i(TAG, "BootActivity finishing — service should have microphone access now")
+            Log.i(TAG, "BootActivity finishing вЂ” service should have microphone access now")
             finish()
         }, 5000)
     }
