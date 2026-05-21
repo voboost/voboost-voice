@@ -10,6 +10,10 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 - ⚠️ NLU ONNX not working due to native library conflicts with Sherpa
 - ✅ Parser mode NLU as fallback (fast, stable)
 - ✅ **Echo cancellation implemented** via AudioPolicyManager + PhoneCallPoller
+- ✅ **App ID migrated** from `ru.voboost.voiceassistant` → `ru.voboost.voice`
+- ✅ **Migration script** created: `scripts/install/migrate-from-voiceassistant.bat`
+- ✅ **Hidden API Policy** documented for AIDL access
+- ✅ **Documentation updated**: INSTALLATION.md + TROUBLESHOOTING.md (pushed to GitHub)
 
 ## Speech Engines Architecture
 
@@ -274,6 +278,47 @@ class PhoneCallPoller(private val context: Context,
 1. Enable and test PhoneCallPoller polling logic in VoboostVoiceService
 2. Test with Bluetooth call to verify echo cancellation works
 3. Add more detailed logging to debug call state detection
+
+### 2026-05-21 - Documentation: Hidden API Policy
+
+**Added documentation for Hidden API Policy configuration:**
+
+**Files Modified:**
+- `docs/SETUP/INSTALLATION.md` — Added "Hidden API Policy (для работы с AIDL)" section
+- `docs/SETUP/TROUBLESHOOTING.md` — Added Problem 9: "AIDL не работает (CAN bus / AudioPolicy)"
+
+**Hidden API Policy Commands:**
+```bash
+adb shell "settings put global hidden_api_policy 1"
+adb shell "settings put global hidden_api_policy_pre_p 1"
+adb shell "settings put global hidden_api_policy_pre_q 1"
+adb shell "settings put global hidden_api_policy_pre_r 1"
+
+# Verify
+adb shell settings get global hidden_api_policy  # Should return: 1
+```
+
+**Why Required:**
+- Android blocks access to hidden APIs (marked as `@hide`)
+- AIDL interfaces (`IAudioPolicyService`, `ICanBusService`) use hidden methods
+- Without this setting: echo cancellation and CAN bus events don't work
+
+**Status:** ✅ Committed and pushed to GitHub (`feature/development`)
+
+### 2026-05-21 - App ID Migration Script
+
+**Migration script created:** `scripts/install/migrate-from-voiceassistant.bat`
+
+**What it does:**
+1. Uninstalls old app (`ru.voboost.voiceassistant`)
+2. Migrates models (vosk, sherpa, nlu, llm) and config.json to new directory
+3. Deletes old directory
+4. Installs new APK (`ru.voboost.voice`)
+5. Grants permissions
+6. Sets Hidden API Policy
+7. Starts service
+
+**Status:** ✅ Created, committed, and pushed to GitHub
 
 ### 2026-05-20 - Echo Cancellation Implementation (WIP)
 - Added `PhoneCallStateHandler` to detect phone calls via CAN bus and mute microphone (❌ events not arriving)
