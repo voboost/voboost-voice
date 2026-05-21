@@ -109,3 +109,4 @@ echo.
 echo Следующий шаг:
 echo   - Для быстрой установки:  install-update.bat
 echo   - Для полного развёртывания: VoboostVoiceAssistant-install.bat
+

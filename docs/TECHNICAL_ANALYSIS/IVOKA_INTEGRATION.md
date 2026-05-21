@@ -84,7 +84,7 @@ class VoiceActivationService : Service() {
     
     private fun activateVoiceAssistant() {
         val intent = Intent(this, VoboostVoiceService::class.java)
-        intent.action = "ru.voboost.voiceassistant.ACTIVATE"
+        intent.action = "ru.voboost.voice.ACTIVATE"
         startService(intent)
     }
 }
@@ -114,7 +114,7 @@ Interceptor.attach(
                 var intent = Java.use('android.content.Intent');
                 var serviceIntent = intent.$new(
                     context,
-                    "ru.voboost.voiceassistant/.VoboostVoiceService"
+                    "ru.voboost.voice/.VoboostVoiceService"
                 );
                 
                 // Отключить Ivoka (если не отключен через pm disable)
@@ -159,7 +159,7 @@ frida -U -f system_server -l frida-voice-button.js --no-pause
 **Вариант B: Перехват через Voboost (без root)**
 ```bash
 # Если Voboost уже запущен
-frida -U ru.voboost.voiceassistant -l frida-voice-button.js
+frida -U ru.voboost.voice -l frida-voice-button.js
 ```
 
 ---

@@ -1,0 +1,7 @@
+package ru.voboost.voice.executor.handlers.aidl.drivingmode
+
+import ru.voboost.voice.canbus.CanBusServiceManager
+
+class OffRoadDrivingModeHandler(canBusManager: CanBusServiceManager)
+    : AbstractDrivingModeHandler(canBusManager, OFF_ROAD)
+

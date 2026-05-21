@@ -7,7 +7,7 @@ REM  VoboostVoiceAssistant - Копирование NLU моделей на ус
 REM ============================================================================
 
 set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
-set "OUT_PATH=/storage/emulated/0/Android/data/ru.voboost.voiceassistant/files"
+set "OUT_PATH=/storage/emulated/0/Android/data/ru.voboost.voice/files"
 set "PATH=%ADB_PATH%;%PATH%"
 set "NLU_MODEL_PATH=D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant\models\nlu\model.onnx"
 set "TOKENIZER_PATH=D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant\models\nlu\tokenizer.json"
@@ -68,7 +68,8 @@ echo.
 
 echo ============================================================================
 echo  Готово! Перезапустите приложение:
-echo    adb shell am force-stop ru.voboost.voiceassistant
-echo    adb shell am start-foreground-service ru.voboost.voiceassistant/.VoboostVoiceService
+echo    adb shell am force-stop ru.voboost.voice
+echo    adb shell am start-foreground-service ru.voboost.voice/.VoboostVoiceService
 echo ============================================================================
 pause
+

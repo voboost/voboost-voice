@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="ru.voboost.voiceassistant">
+    package="ru.voboost.voice">
 
     <!-- ✅ Микрофон (обязательно) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -75,7 +75,7 @@
             android:foregroundServiceType="microphone"
             android:stopWithTask="false">
             <intent-filter>
-                <action android:name="ru.voboost.voiceassistant.START" />
+                <action android:name="ru.voboost.voice.START" />
                 <!-- Добавьте стандартный экшен для голосовых сервисов -->
                 <action android:name="android.service.voice.VoiceInteractionService" />
             </intent-filter>
@@ -87,8 +87,8 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="ru.voboost.voiceassistant.ACTIVATE" />
-                <action android:name="ru.voboost.voiceassistant.CANCEL" />
+                <action android:name="ru.voboost.voice.ACTIVATE" />
+                <action android:name="ru.voboost.voice.CANCEL" />
             </intent-filter>
         </receiver>
 

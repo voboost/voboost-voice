@@ -53,3 +53,4 @@ if !errorlevel! equ 0 (
     echo ERROR: Failed to send broadcast!
     %ADB% devices
 )
+

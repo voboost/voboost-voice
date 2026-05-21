@@ -1,66 +1,66 @@
-п»ї@echo off
+@echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM ============================================================================
-REM  VoboostVoiceAssistant - РћР±РЅРѕРІР»РµРЅРёРµ config.json + РїРµСЂРµР·Р°РїСѓСЃРє СЃРµСЂРІРёСЃР°
+REM  VoboostVoiceAssistant - Обновление config.json + перезапуск сервиса
 REM ============================================================================
 
 set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
-set "PKG=ru.voboost.voiceassistant"
+set "PKG=ru.voboost.voice"
 set "OUT_DIR=/storage/emulated/0/Android/data/%PKG%/files"
 set "CONFIG_SRC=D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant\app\src\main\assets\config.json"
 set "PATH=%ADB_PATH%;%PATH%"
 
 echo.
 echo ============================================================================
-echo  VoboostVoiceAssistant - РћР±РЅРѕРІР»РµРЅРёРµ config.json + РїРµСЂРµР·Р°РїСѓСЃРє
+echo  VoboostVoiceAssistant - Обновление config.json + перезапуск
 echo ============================================================================
 echo.
 
-REM 1. РџСЂРѕРІРµСЂРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ
-echo [1/3] РџСЂРѕРІРµСЂРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ...
+REM 1. Проверка подключения
+echo [1/3] Проверка подключения...
 adb shell "echo 1" >nul 2>&1
 if !errorlevel! neq 0 (
-    echo [ERROR] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РЅРµ РѕС‚РІРµС‡Р°РµС‚. РџСЂРѕРІРµСЂСЊС‚Рµ РєР°Р±РµР»СЊ/РѕС‚Р»Р°РґРєСѓ.
+    echo [ERROR] Устройство не отвечает. Проверьте кабель/отладку.
     pause & exit /b 1
 )
-echo [OK] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РїРѕРґРєР»СЋС‡РµРЅРѕ
+echo [OK] Устройство подключено
 echo.
 
-REM 2. Root (РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РґР»СЏ Android 11+ / Android/data)
-echo [2/3] РџРѕР»СѓС‡РµРЅРёРµ root-РїСЂР°РІ...
+REM 2. Root (обязательно для Android 11+ / Android/data)
+echo [2/3] Получение root-прав...
 adb root >nul 2>&1
 timeout /t 2 /nobreak >nul
 echo [OK]
 echo.
 
-REM 3. РљРѕРїРёСЂРѕРІР°РЅРёРµ Рё РїРµСЂРµР·Р°РїСѓСЃРє
-echo [3/3] РљРѕРїРёСЂРѕРІР°РЅРёРµ config.json...
+REM 3. Копирование и перезапуск
+echo [3/3] Копирование config.json...
 if not exist "%CONFIG_SRC%" (
-    echo [ERROR] Р¤Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ: "%CONFIG_SRC%"
+    echo [ERROR] Файл не найден: "%CONFIG_SRC%"
     pause & exit /b 1
 )
 
 adb push "%CONFIG_SRC%" "%OUT_DIR%/config.json" >nul 2>&1
 if !errorlevel! neq 0 (
-    echo [ERROR] РћС€РёР±РєР° РєРѕРїРёСЂРѕРІР°РЅРёСЏ! РќР° Android 11+ С‚СЂРµР±СѓРµС‚СЃСЏ СЂР°Р±РѕС‡РёР№ adb root.
+    echo [ERROR] Ошибка копирования! На Android 11+ требуется рабочий adb root.
     pause & exit /b 1
 )
-echo [OK] config.json РѕР±РЅРѕРІР»С‘РЅ
+echo [OK] config.json обновлён
 
-echo РџРµСЂРµР·Р°РїСѓСЃРє СЃРµСЂРІРёСЃР°...
+echo Перезапуск сервиса...
 adb shell "am force-stop %PKG%" >nul 2>&1
 timeout /t 2 /nobreak >nul
 adb shell "am start-foreground-service --user 0 -n %PKG%/.VoboostVoiceService" >nul 2>&1
 if !errorlevel! equ 0 (
-    echo [OK] РЎРµСЂРІРёСЃ Р·Р°РїСѓС‰РµРЅ
+    echo [OK] Сервис запущен
 ) else (
-    echo [WARN] РђРІС‚РѕР·Р°РїСѓСЃРє РЅРµ СЃСЂР°Р±РѕС‚Р°Р». Р—Р°РїСѓСЃС‚РёС‚Рµ РїСЂРёР»РѕР¶РµРЅРёРµ РІСЂСѓС‡РЅСѓСЋ.
+    echo [WARN] Автозапуск не сработал. Запустите приложение вручную.
 )
 echo.
 
 echo ============================================================================
-echo  Р“РѕС‚РѕРІРѕ! РљРѕРЅС„РёРі РѕР±РЅРѕРІР»РµРЅ, СЃРµСЂРІРёСЃ РїРµСЂРµР·Р°РїСѓС‰РµРЅ.
+echo  Готово! Конфиг обновлен, сервис перезапущен.
 echo ============================================================================
 pause

@@ -2,7 +2,7 @@
 
 **Последнее обновление:** 2026-05-15  
 **Статус:** ✅ ВСЕ РАБОТАЕТ  
-**Package:** ru.voboost.voiceassistant  
+**Package:** ru.voboost.voice  
 
 ---
 
@@ -193,18 +193,18 @@ adb shell chmod 644 /system/priv-app/VoboostVoiceAssistant/VoboostVoiceAssistant
 
 ```bash
 # Основные разрешения
-adb shell pm grant ru.voboost.voiceassistant android.permission.RECORD_AUDIO
-adb shell pm grant ru.voboost.voiceassistant android.permission.SYSTEM_ALERT_WINDOW
-adb shell pm grant ru.voboost.voiceassistant android.permission.FOREGROUND_SERVICE
+adb shell pm grant ru.voboost.voice android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voice android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voice android.permission.FOREGROUND_SERVICE
 
 # Дать разрешение на автозапуск
-adb shell appops set ru.voboost.voiceassistant RECEIVE_BOOT_COMPLETED allow
+adb shell appops set ru.voboost.voice RECEIVE_BOOT_COMPLETED allow
 ```
 
 ### 4. Настройка Accessibility Service
 
 ```bash
-adb shell settings put secure enabled_accessibility_services ru.voboost.voiceassistant/ru.voboost.voiceassistant.VoiceActivationService
+adb shell settings put secure enabled_accessibility_services ru.voboost.voice/ru.voboost.voice.VoiceActivationService
 adb shell settings put secure accessibility_enabled 1
 ```
 
@@ -234,7 +234,7 @@ scripts/install/copy-config-to-sdcard.bat
 
 ### Конфигурация команд
 
-Команды настраиваются в `app/src/main/assets/config.json` или `/data/user/0/ru.voboost.voiceassistant/files/config.json`.
+Команды настраиваются в `app/src/main/assets/config.json` или `/data/user/0/ru.voboost.voice/files/config.json`.
 
 Пример команды:
 

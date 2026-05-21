@@ -44,7 +44,7 @@ Java.perform(function() {
                     isListening = false;
                     
                     // Отправляем broadcast для отмены
-                    sendBroadcastToVoboost("ru.voboost.voiceassistant.CANCEL");
+                    sendBroadcastToVoboost("ru.voboost.voice.CANCEL");
                     
                 } else {
                     // Кнопка нажата → ЗАПУСК Voboost
@@ -52,7 +52,7 @@ Java.perform(function() {
                     isListening = true;
                     
                     // Отправляем broadcast для запуска
-                    sendBroadcastToVoboost("ru.voboost.voiceassistant.ACTIVATE");
+                    sendBroadcastToVoboost("ru.voboost.voice.ACTIVATE");
                 }
                 
                 // Возвращаем true (обработали, но передаем дальше для совместимости)
@@ -100,7 +100,7 @@ Java.perform(function() {
                             } else {
                                 console.log("🟢 ACTIVATE");
                                 isListening = true;
-                                sendBroadcastToVoboost("ru.voboost.voiceassistant.ACTIVATE");
+                                sendBroadcastToVoboost("ru.voboost.voice.ACTIVATE");
                             }
                         }
                     }
@@ -136,7 +136,7 @@ Java.perform(function() {
                 console.log("📍 Found KeyManagerService instance");
                 
                 var intent = Intent.$new(action);
-                intent.setPackage("ru.voboost.voiceassistant");
+                intent.setPackage("ru.voboost.voice");
                 
                 service.sendBroadcast(intent);
                 console.log("✅ Broadcast sent: " + action);
@@ -148,7 +148,7 @@ Java.perform(function() {
                     onMatch: function(instance) {
                         try {
                             var intent = Intent.$new(action);
-                            intent.setPackage("ru.voboost.voiceassistant");
+                            intent.setPackage("ru.voboost.voice");
                             instance.sendBroadcast(intent);
                             console.log("✅ Broadcast sent via alternative method");
                         } catch (e) {
@@ -207,3 +207,4 @@ Java.perform(function() {
     console.log("   - 🔑 Key events (monitoring)");
     console.log("");
 });
+

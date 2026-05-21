@@ -37,7 +37,7 @@
 ### Структура проекта (устаревшая)
 
 ```
-app/src/main/java/ru/voboost/voiceassistant/
+app/src/main/java/ru/voboost/voice/
 ├── VoboostVoiceService.kt       # Главный сервис
 ├── VoiceActivationService.kt    # Accessibility для кнопки
 ├── VoiceCommandReceiver.kt      # Broadcast receiver
@@ -72,7 +72,7 @@ scripts/install/VoboostVoiceAssistant-install.bat
 
 ### Конфигурация команд
 
-Команды настраиваются в `app/src/main/assets/config.json` или `/data/user/0/ru.voboost.voiceassistant/files/config.json`.
+Команды настраиваются в `app/src/main/assets/config.json` или `/data/user/0/ru.voboost.voice/files/config.json`.
 
 **26 команд из коробки:**
 - Управление автомобилем (лючки, бензобак)
@@ -125,3 +125,5 @@ scripts/install/VoboostVoiceAssistant-install.bat
 **Author:** Voboost Team  
 **License:** [License information to be added]
 **Документация:** [docs/README.md](./docs/README.md)
+
+

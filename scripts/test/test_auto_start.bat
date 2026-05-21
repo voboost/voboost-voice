@@ -1,32 +1,33 @@
-п»ї@echo off
+@echo off
 chcp 65001 >nul
 echo ============================================
-echo   VoboostVoiceAssistant - РўРµСЃС‚ Р°РІС‚РѕР·Р°РїСѓСЃРєР°
+echo   VoboostVoiceAssistant - Тест автозапуска
 echo ============================================
 echo.
 
-echo [1/2] Р­РјСѓР»СЏС†РёСЏ Р·Р°РіСЂСѓР·РєРё СЃРёСЃС‚РµРјС‹...
-adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voiceassistant
+echo [1/2] Эмуляция загрузки системы...
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED -p ru.voboost.voice
 
 echo.
-echo [2/2] РћР¶РёРґР°РЅРёРµ Р·Р°РїСѓСЃРєР° СЃРµСЂРІРёСЃР° (5 СЃРµРє)...
+echo [2/2] Ожидание запуска сервиса (5 сек)...
 timeout /t 5 /nobreak >nul
 
 echo.
-echo РџСЂРѕРІРµСЂРєР° Р»РѕРіРѕРІ:
+echo Проверка логов:
 echo ============================================
 adb logcat -d | findstr /i "BootReceiver VoboostVoiceService SpeechRecognition"
 echo ============================================
 echo.
 
-echo РџСЂРѕРІРµСЂРєР° Р·Р°РїСѓС‰РµРЅРЅС‹С… СЃРµСЂРІРёСЃРѕРІ:
+echo Проверка запущенных сервисов:
 adb shell dumpsys activity services | findstr /i "voboost"
 echo.
 
 echo ============================================
-echo   Р“РѕС‚РѕРІРѕ!
+echo   Готово!
 echo ============================================
 echo.
-echo Р•СЃР»Рё РІРёРґРёС‚Рµ "Vosk initialized successfully" - РІСЃС‘ СЂР°Р±РѕС‚Р°РµС‚!
+echo Если видите "Vosk initialized successfully" - всё работает!
 echo.
 pause
+

@@ -11,7 +11,7 @@ set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
 set "PATH=%ADB_PATH%;%PATH%"
 
 REM Пакет приложения
-set "PKG=ru.voboost.voiceassistant"
+set "PKG=ru.voboost.voice"
 
 echo.
 echo ============================================================================
@@ -88,7 +88,8 @@ echo  Готово!
 echo ============================================================================
 echo.
 echo Теперь нужно перезапустить приложение:
-echo   adb shell am force-stop ru.voboost.voiceassistant
-echo   adb shell am start-foreground-service -n ru.voboost.voiceassistant/.VoboostVoiceService
+echo   adb shell am force-stop ru.voboost.voice
+echo   adb shell am start-foreground-service -n ru.voboost.voice/.VoboostVoiceService
 echo.
 pause
+

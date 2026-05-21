@@ -211,7 +211,7 @@ systemTTS.speak("Привет, водитель!")
 ## 📁 Структура пакетов
 
 ```
-ru.voboost.voiceassistant/
+ru.voboost.voice/
 ├── core/                          # Интерфейсы и фабрики
 │   ├── ISpeechRecognizer.kt       # STT интерфейс
 │   ├── ISpeechSynthesis.kt        # TTS интерфейс

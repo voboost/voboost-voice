@@ -1,13 +1,13 @@
-п»ї@echo off
+@echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM ============================================================================
-REM  VoboostVoiceAssistant - РљРѕРїРёСЂРѕРІР°РЅРёРµ РјРѕРґРµР»РµР№ Рё РєРѕРЅС„РёРіР° РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
+REM  VoboostVoiceAssistant - Копирование моделей и конфига на устройство
 REM ============================================================================
 
 set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
-set "OUT_PATH=/storage/emulated/0/Android/data/ru.voboost.voiceassistant/files"
+set "OUT_PATH=/storage/emulated/0/Android/data/ru.voboost.voice/files"
 set "PATH=%ADB_PATH%;%PATH%"
 set "MODEL_LLM_PATH=D:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant\models\llm\Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task"
 
@@ -17,45 +17,45 @@ echo  VoboostVoiceAssistant - Copy Config & Models
 echo ============================================================================
 echo.
 
-REM 1. РџСЂРѕРІРµСЂРєР° ADB
-echo [1/5] РџСЂРѕРІРµСЂРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ ADB...
+REM 1. Проверка ADB
+echo [1/5] Проверка подключения ADB...
 adb shell "echo 1" >nul 2>&1
 if !errorlevel! neq 0 (
-    echo [ERROR] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РЅРµ РѕС‚РІРµС‡Р°РµС‚ РёР»Рё ADB РЅРµ РЅР°СЃС‚СЂРѕРµРЅ.
+    echo [ERROR] Устройство не отвечает или ADB не настроен.
     pause & exit /b 1
 )
-echo [OK] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РЅР°Р№РґРµРЅРѕ Рё РґРѕСЃС‚СѓРїРЅРѕ
+echo [OK] Устройство найдено и доступно
 echo.
 
-REM 2. РЎРѕР·РґР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№
-echo [2/5] РЎРѕР·РґР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№...
+REM 2. Создание директорий
+echo [2/5] Создание директорий...
 adb shell "mkdir -p %OUT_PATH%/models/llm" >nul 2>&1
-echo [OK] Р”РёСЂРµРєС‚РѕСЂСЏ РіРѕС‚РѕРІР°
+echo [OK] Директоря готова
 echo.
 
 
-REM 3. LLM РјРѕРґРµР»СЊ
-echo [4/5] РљРѕРїРёСЂРѕРІР°РЅРёРµ LLM РјРѕРґРµР»Рё...
+REM 3. LLM модель
+echo [4/5] Копирование LLM модели...
 if exist "%MODEL_LLM_PATH%" (
-    echo       РљРѕРїРёСЂРѕРІР°РЅРёРµ LLM...
+    echo       Копирование LLM...
     adb push "%MODEL_LLM_PATH%" "%OUT_PATH%/models/llm/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task"
 
-    if !errorlevel! equ 0 (echo [OK] LLM СЃРєРѕРїРёСЂРѕРІР°РЅР°) else (echo [ERROR] РЎР±РѕР№ РєРѕРїРёСЂРѕРІР°РЅРёСЏ! & pause & exit /b 1)
+    if !errorlevel! equ 0 (echo [OK] LLM скопирована) else (echo [ERROR] Сбой копирования! & pause & exit /b 1)
 ) else (
-    echo [WARN] LLM РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°! (РѕР¶РёРґР°РµС‚СЃСЏ models\llm\Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task)
+    echo [WARN] LLM модель не найдена! (ожидается models\llm\Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task)
 )
 echo.
 
-REM Р¤РёРЅР°Р»СЊРЅР°СЏ РїСЂРѕРІРµСЂРєР° РєР»СЋС‡РµРІС‹С… С„Р°Р№Р»РѕРІ
+REM Финальная проверка ключевых файлов
 echo ============================================================================
-echo  РџСЂРѕРІРµСЂРєР° С†РµР»РѕСЃС‚РЅРѕСЃС‚Рё...
+echo  Проверка целостности...
 echo ============================================================================
 adb shell "test -f '%OUT_PATH%/models/llm/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task' && echo [OK] LLM model || echo [FAIL] LLM model"
 echo.
 
 echo ============================================================================
-echo  Р“РѕС‚РѕРІРѕ! РџРµСЂРµР·Р°РїСѓСЃС‚РёС‚Рµ РїСЂРёР»РѕР¶РµРЅРёРµ:
-echo    adb shell am force-stop ru.voboost.voiceassistant
-echo    adb shell am start-foreground-service ru.voboost.voiceassistant/.VoboostVoiceService
+echo  Готово! Перезапустите приложение:
+echo    adb shell am force-stop ru.voboost.voice
+echo    adb shell am start-foreground-service ru.voboost.voice/.VoboostVoiceService
 echo ============================================================================
 pause

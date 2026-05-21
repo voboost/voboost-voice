@@ -5,7 +5,7 @@ REM  VoboostVoiceAssistant - Миграция с com.voboost на ru.voboost
 REM ============================================================================
 REM  Этот скрипт:
 REM  1. Переходит в root и перемонтирует /system
-REM  2. Переименовывает папку com.voboost.voiceassistant -> ru.voboost.voiceassistant
+REM  2. Переименовывает папку com.voboost.voiceassistant -> ru.voboost.voice
 REM     (в /system/priv-app/ и в /data/user/0/)
 REM  3. Обновляет APK
 REM  4. Обновляет конфиг из assets/config.json
@@ -25,8 +25,8 @@ set "APK_PATH=app\build\outputs\apk\debug\app-debug.apk"
 set "CONFIG_PATH=app\src\main\assets\config.json"
 
 REM Старые и новые имена пакетов
-set "OLD_PKG=com.voboost.voiceassistant"
-set "NEW_PKG=ru.voboost.voiceassistant"
+set "OLD_PKG=ru.voboost.voiceassistant"
+set "NEW_PKG=ru.voboost.voice"
 
 REM Пути на устройстве
 set "SYSTEM_DIR=/system/priv-app/VoboostVoiceAssistant"
@@ -209,3 +209,6 @@ echo    adb shell ps ^| grep voboost
 echo    adb logcat -s VoboostVoiceService:*
 echo.
 pause
+
+
+

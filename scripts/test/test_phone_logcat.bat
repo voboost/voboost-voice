@@ -38,3 +38,4 @@ echo.
     VoboostVoiceService:I ^
     IntentHandler:I ^
     PhoneCommand:I
+

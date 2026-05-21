@@ -90,3 +90,4 @@ echo Теперь нужно перезагрузить устройство:
 echo   adb reboot
 echo.
 pause
+

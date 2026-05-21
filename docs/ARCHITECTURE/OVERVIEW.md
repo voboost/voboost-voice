@@ -144,7 +144,7 @@ interface IAudioSource {
 ## 📁 Структура пакетов
 
 ```
-ru.voboost.voiceassistant/
+ru.voboost.voice/
 ├── core/                    # Ядро системы
 │   ├── ISpeechRecognizer.kt  # Интерфейс STT
 │   ├── ISpeechSynthesis.kt   # Интерфейс TTS
