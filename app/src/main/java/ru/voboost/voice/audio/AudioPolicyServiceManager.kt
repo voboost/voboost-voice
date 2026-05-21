@@ -141,5 +141,12 @@ class AudioPolicyServiceManager(context: Context) {
               "Not connected to CanBusService, attempting to use anyway")
         return false
     }
+
+    /**
+     * Удалить все callback'и (освобождение ресурсов)
+     */
+    fun clearCallbacks() {
+        connectionCallbacks.clear()
+    }
 }
 

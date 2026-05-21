@@ -277,6 +277,20 @@ class SpeechRecognizer(private val audioSource: IAudioSource,
         phraseStartedAt = if (newMode != Mode.MUTED) System.currentTimeMillis() else 0
     }
 
+    /**
+     * Get current mode (public for PhoneCallPoller)
+     */
+    override fun getMode(): Mode = mode
+
+    /**
+     * Set mode safely from external threads using coroutine scope
+     */
+    override fun setModeSafe(newMode: Mode) {
+        scope.launch {
+            setMode(newMode)
+        }
+    }
+
     fun reset() {
         recognitionEngine.reset()
         audioBuffer.reset()

@@ -8,6 +8,8 @@ interface ISpeechRecognizer {
     val results: MutableSharedFlow<SpeechResult>
 
     fun setMode(newMode: Mode)
+    fun getMode(): Mode
+    fun setModeSafe(newMode: Mode)
     fun start()
     fun stop()
     fun shutdown()
