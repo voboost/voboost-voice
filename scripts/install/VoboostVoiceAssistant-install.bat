@@ -6,10 +6,11 @@ REM ============================================================================
 REM  Этот скрипт:
 REM    1. Отключает стандартные ассистенты
 REM    2. Установка APK
-REM    6. Копирует модели (Vosk + Sherpa TTS)
-REM    4. Копирует config.json
-REM    5. Выдаёт разрешения
-REM    6. Запускает сервис
+REM    3. Копирует модели (Vosk + Sherpa TTS)
+REM    4. Копирует NLU модель и токенайзер
+REM    5. Копирует config.json
+REM    6. Выдаёт разрешения
+REM    7. Запускает сервис
 REM ============================================================================
 
 setlocal enabledelayedexpansion
@@ -60,7 +61,7 @@ echo.
 
 REM --- Шаг 4: Установка APK ---
 echo [4/6] Установка APK...
-adb insyall -g "%APK_PATH%" 
+adb insyall -g "%APK_PATH%"
 if errorlevel 1 (
     echo [ERROR] Ошибка установки APK!
     pause
@@ -76,6 +77,7 @@ REM Создаём директории
 adb shell "mkdir -p %EXTERNAL_DIR%/models/vosk" >nul 2>&1
 adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/asr-ru-model" >nul 2>&1
 adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/tts-ru-model" >nul 2>&1
+adb shell "mkdir -p %EXTERNAL_DIR%/models/nlu" >nul 2>&1
 
 REM Копируем Vosk модель
 if exist "models\vosk\vosk-model-small-ru-0.22" (
@@ -102,6 +104,21 @@ if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
     echo   [OK] Sherpa TTS модель скопирована
 ) else (
     echo   [WARN] Sherpa TTS модель не найдена: models\sherpa\tts-ru-model-temp\tts-ru-model
+)
+
+REM Копируем NLU модель и токенайзер
+if exist "models\nlu\model.onnx" (
+    adb push "models\nlu\model.onnx" "%EXTERNAL_DIR%/models/nlu/model.onnx" >nul 2>&1
+    echo   [OK] NLU модель скопирована
+) else (
+    echo   [WARN] NLU модель не найдена: models\nlu\model.onnx
+)
+
+if exist "models\nlu\tokenizer.json" (
+    adb push "models\nlu\tokenizer.json" "%EXTERNAL_DIR%/models/nlu/tokenizer.json" >nul 2>&1
+    echo   [OK] Токенайзер скопирован
+) else (
+    echo   [WARN] Токенайзер не найден: models\nlu\tokenizer.json
 )
 
 REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)

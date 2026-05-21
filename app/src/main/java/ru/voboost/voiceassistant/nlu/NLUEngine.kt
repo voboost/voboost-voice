@@ -153,4 +153,12 @@ class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
     private fun extractParamNames(pattern: String): List<String> {
         return "\\{([^}]+)\\}".toRegex().findAll(pattern).map { it.groupValues[1] }.toList()
     }
+
+    /**
+     * Освободить ресурсы (для совместимости с интерфейсом)
+     * Пустая реализация, т.к. парсер не использует внешние ресурсы
+     */
+    override fun release() {
+        // Нет ресурсов для освобождения
+    }
 }

@@ -27,8 +27,7 @@ import kotlin.math.max
  * если они доступны на устройстве.
  */
 class AndroidAudioSource(private val context: Context,
-                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE) :
-        IAudioSource {
+                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE) : IAudioSource {
 
     companion object {
         const val TAG = "AndroidAudioSource"
@@ -42,11 +41,9 @@ class AndroidAudioSource(private val context: Context,
     private var aec: AcousticEchoCanceler? = null
     private var agc: AutomaticGainControl? = null
 
-    @Volatile
-    private var isRecording = false
+    @Volatile private var isRecording = false
 
-    @Volatile
-    private var isInitialized = false
+    @Volatile private var isInitialized = false
 
     override fun initialize(): Boolean {
 
@@ -86,10 +83,6 @@ class AndroidAudioSource(private val context: Context,
     private fun tryCreateAudioRecordWithRetry(): AudioRecord? {
         var attempts = 1
 
-        // Ждём 3 минуты чтобы dvr_service освободил микрофон после BOOT
-       // Log.i(TAG, "⏳ Waiting 3 minutes before first attempt (letting dvr_service release mic)...")
-      //  Thread.sleep(1000L * 60 * 3)
-
         while (true) { // Бесконечный цикл
 
             Log.d(TAG, "Attempt #$attempts: creating AudioRecord...")
@@ -117,31 +110,31 @@ class AndroidAudioSource(private val context: Context,
     /**
      * Безопасно создать AudioRecord с конкретным источником (через Builder)
      */
-    @SuppressLint("MissingPermission")
-    private fun tryCreateAudioRecord(): AudioRecord? {
+    @SuppressLint("MissingPermission") private fun tryCreateAudioRecord(): AudioRecord? {
         try {
-
             var bufferSize = AudioRecord.getMinBufferSize(sampleRate,
                                                           AudioFormat.CHANNEL_IN_MONO,
                                                           AudioFormat.ENCODING_PCM_16BIT)
-
             Log.d(TAG, "AudioRecord created: bufferSize=$bufferSize")
             if (bufferSize <= 0) {
                 return null
             }
-
             // Используем минимум 2x от системного минимума для стабильности
             bufferSize = max(bufferSize * 2, sampleRate * 2 * BUFFER_SIZE_MS / 1000)
-
             Log.d(TAG,
                   "Creating AudioRecord via Builder: source=${MediaRecorder.AudioSource.VOICE_RECOGNITION}, sampleRate=$sampleRate, bufferSize=$bufferSize")
 
-            val format = AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_IN_MONO).build()
+            val format = AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(sampleRate)
+                .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                .build()
 
-            val record =
-                AudioRecord.Builder().setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                    .setAudioFormat(format).setBufferSizeInBytes(bufferSize).build()
+            val record = AudioRecord.Builder()
+                .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                .setAudioFormat(format)
+                .setBufferSizeInBytes(bufferSize)
+                .build()
 
             val state = record.state
             Log.d(TAG, "AudioRecord created: state=$state (0=UNINITIALIZED, 1=INITIALIZED)")
@@ -149,7 +142,6 @@ class AndroidAudioSource(private val context: Context,
             if (state == AudioRecord.STATE_INITIALIZED) {
                 Log.i(TAG,
                       "✅ AudioRecord initialized with source=${MediaRecorder.AudioSource.VOICE_RECOGNITION} (via Builder)")
-
                 return record
             }
             else {
@@ -178,40 +170,49 @@ class AndroidAudioSource(private val context: Context,
      */
     private fun applyAudioEffects() {
         val sessionId = audioRecord?.audioSessionId ?: return
+        
+        Log.i(TAG, "🎵 Applying audio effects to session=$sessionId")
 
+        // ✅ 1. NoiseSuppressor - подавление шума
         if (NoiseSuppressor.isAvailable()) {
             noiseSuppressor = NoiseSuppressor.create(sessionId)
             if (noiseSuppressor != null) {
-                Log.i(TAG, "✅ NoiseSuppressor enabled")
+                noiseSuppressor?.setEnabled(true)
+                Log.i(TAG, "✅ NoiseSuppressor enabled (session=$sessionId)")
             }
             else {
-                Log.w(TAG, "NoiseSuppressor not supported")
+                Log.w(TAG, "⚠️ NoiseSuppressor not supported (session=$sessionId)")
             }
         }
         else {
             Log.d(TAG, "NoiseSuppressor not available")
         }
 
+        // ✅ 2. AcousticEchoCanceler - подавление эха (КРИТИЧНО!)
         if (AcousticEchoCanceler.isAvailable()) {
             aec = AcousticEchoCanceler.create(sessionId)
             if (aec != null) {
-                Log.i(TAG, "✅ AcousticEchoCanceler enabled")
+                aec?.setEnabled(true)
+                Log.i(TAG, "✅ AcousticEchoCanceler ENABLED (session=$sessionId)")
+                Log.i(TAG, "   AEC state: ${aec?.enabled}")
             }
             else {
-                Log.w(TAG, "AcousticEchoCanceler not supported")
+                Log.w(TAG, "⚠️ AcousticEchoCanceler not supported (session=$sessionId)")
             }
         }
         else {
             Log.d(TAG, "AcousticEchoCanceler not available")
         }
 
+        // ✅ 3. AutomaticGainControl - авто-гейн
         if (AutomaticGainControl.isAvailable()) {
             agc = AutomaticGainControl.create(sessionId)
             if (agc != null) {
-                Log.i(TAG, "✅ AutomaticGainControl enabled")
+                agc?.enabled = true
+                Log.i(TAG, "✅ AutomaticGainControl enabled (session=$sessionId)")
             }
             else {
-                Log.w(TAG, "AutomaticGainControl not supported")
+                Log.w(TAG, "⚠️ AutomaticGainControl not supported (session=$sessionId)")
             }
         }
         else {
@@ -313,8 +314,7 @@ class AndroidAudioSource(private val context: Context,
     // Runnable для чтения аудио-данных в отдельном потоке
     private inner class AudioRecordRunnable(initialRecorder: AudioRecord) : Runnable {
 
-        @Volatile
-        private var recorder: AudioRecord = initialRecorder
+        @Volatile private var recorder: AudioRecord = initialRecorder
 
         override fun run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
@@ -330,8 +330,7 @@ class AndroidAudioSource(private val context: Context,
                         val dataCopy = buffer.copyOf(bytesRead)
                         for (listener in listeners) {
                             try {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    // AndroidAudioSource всегда возвращает front_left (водитель)
+                                CoroutineScope(Dispatchers.IO).launch { // AndroidAudioSource всегда возвращает front_left (водитель)
                                     listener.onAudioData(dataCopy, bytesRead, "front_left")
                                 }
                             }
@@ -341,8 +340,7 @@ class AndroidAudioSource(private val context: Context,
                         }
                     }
                     else if (bytesRead < 0) {
-                        Log.e(TAG,
-                              "AudioRecord read error: $bytesRead")
+                        Log.e(TAG, "AudioRecord read error: $bytesRead")
                     }
                 }
             }

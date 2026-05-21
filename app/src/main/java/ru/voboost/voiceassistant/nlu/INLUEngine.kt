@@ -32,4 +32,9 @@ interface INLUEngine {
     fun requiresConfirmation(commandConfig: CommandConfig): Boolean
     fun getConfirmationQuestion(commandConfig: CommandConfig): String
     fun getConfirmationTimeout(commandConfig: CommandConfig): Int
+
+    /**
+     * Освободить ресурсы движка (для ONNX/LLM моделей)
+     */
+    fun release()
 }

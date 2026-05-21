@@ -11,6 +11,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
+        // Sonatype для Sherpa-ONNX и других библиотек
+        maven { url 'https://s01.oss.sonatype.org/content/repositories/releases/' }
         //maven { url "https://raw.githubusercontent.com" }
         //maven { url 'https://maven.ximalaya.com'}
         //maven { url 'https://maven.aliyun.com'}

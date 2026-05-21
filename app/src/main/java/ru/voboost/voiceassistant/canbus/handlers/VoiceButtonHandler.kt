@@ -23,12 +23,6 @@ class VoiceButtonHandler(private val serviceScope: CoroutineScope,
                          private val configManager: ConfigManager) :
         ICanBusServiceConnectionCallback {
 
-    private val mCanBusListener = object : CanBusListener() {
-        override fun onCarKeyChanged(keycode: Int, keyStatus: Int) {
-            this@VoiceButtonHandler.handleCarKeyChanged(keycode, keyStatus)
-        }
-    }
-
     companion object {
         const val TAG = "VoiceButtonHandler"
         private const val DEBOUNCE_DELAY_MS = 500L
@@ -39,25 +33,15 @@ class VoiceButtonHandler(private val serviceScope: CoroutineScope,
     private var canBusManager: CanBusServiceManager? = null;
     private var isCallbackRegistered = false
 
-    override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
-        canBusManager = canBusServiceManager
-        register()
-        Log.d(TAG, "register")
-    }
-
-    override fun handlerDisconnected(canBusServiceManager: CanBusServiceManager) {
-        unregister()
-        canBusManager = null
-        Log.d(TAG, "unregistered")
-    }
-
-    override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager,
-                                         error: String) {
+    private val mCanBusListener = object : CanBusListener() {
+        override fun onCarKeyChanged(keycode: Int, keyStatus: Int) {
+            this@VoiceButtonHandler.handleCarKeyChanged(keycode, keyStatus)
+        }
     }
 
     private fun handleCarKeyChanged(keycode: Int, keyStatus: Int) {
         val config =
-            configManager.getConfig(); // keycode 16, status 1 = нажатие кнопки голосового помощника
+                configManager.getConfig(); // keycode 16, status 1 = нажатие кнопки голосового помощника
         if (keycode == config.activation.buttonKeycode && keyStatus == 1) {
             Log.i(TAG, "🎤 VOICE BUTTON PRESSED (keycode=$keycode, status=$keyStatus)")
 
@@ -84,6 +68,22 @@ class VoiceButtonHandler(private val serviceScope: CoroutineScope,
         }
     }
 
+    override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
+        canBusManager = canBusServiceManager
+        register()
+        Log.d(TAG, "register")
+    }
+
+    override fun handlerDisconnected(canBusServiceManager: CanBusServiceManager) {
+        unregister()
+        canBusManager = null
+        Log.d(TAG, "unregistered")
+    }
+
+    override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager,
+                                         error: String) {
+    }
+
     private fun register(): Boolean {
         if (isCallbackRegistered) return true // ✅ Передаем созданный объект mCanBusListener
         val success = canBusManager?.registerCallback(mCanBusListener)
@@ -98,6 +98,11 @@ class VoiceButtonHandler(private val serviceScope: CoroutineScope,
         if (success == true) isCallbackRegistered = false
         Log.i(TAG, "Voice button handler unregistered: $success")
         return success == true
+    }
+
+    fun release() {
+        unregister()
+        canBusManager = null
     }
 }
 

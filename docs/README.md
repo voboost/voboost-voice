@@ -296,4 +296,4 @@ const val YANDEX_FOLDER_ID = "your_folder_id"
 ## 📞 Поддержка
 
 **Author:** Voboost Team  
-**License:** MIT License
+**License:** [License information to be added]

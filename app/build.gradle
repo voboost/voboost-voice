@@ -63,24 +63,37 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17
     }
+//    packaging {
+//        jniLibs {
+//            // Приоритет: брать libonnxruntime.so от Microsoft
+//            pickFirst 'lib/arm64-v8a/libonnxruntime.so'
+//            pickFirst 'lib/armeabi-v7a/libonnxruntime.so'
+//            // Если вдруг дублируется JNI-обёртка
+//            pickFirst 'lib/**/libonnxruntime4j_jni.so'
+//        }
+//    }
 }
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // ==================== SPEECH ENGINES ====================
+   // implementation 'com.alphacephei:vosk-android:0.3.45'
     implementation('com.alphacephei:vosk-android:0.3.45') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
     // Sherpa-ONNX (офлайн STT + TTS) - основной движок
     implementation files('libs/sherpa-onnx-v1.12.34-java8.jar')
     // JNA (требуется для Vosk)
-    //implementation 'net.java.dev.jna:jna:5.13.0@aar'
+    implementation 'net.java.dev.jna:jna:5.13.0@aar'
     //LLM
     implementation 'com.google.mediapipe:tasks-genai:0.10.35'
     // ONNX Runtime для Android (CPU-оптимизирован, весит ~15-20 МБ)
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
 
-    implementation 'ai.djl.huggingface:tokenizers:0.28.0'
+    //implementation 'ai.djl.huggingface:tokenizers:0.28.0'
+    implementation ('ai.djl.huggingface:tokenizers:0.28.0'){
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }
     // ==================== ANDROIDX ====================
     // Kotlin coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'

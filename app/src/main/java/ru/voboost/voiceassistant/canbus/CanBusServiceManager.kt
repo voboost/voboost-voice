@@ -176,12 +176,12 @@ class CanBusServiceManager(context: Context) {
      * @param value Значение (1=CLOSE, 2=OPEN, и т.д.)
      * @return true если успешно
      */
-    fun setVehicleState(IState: VehicleState, value: Int): Boolean {
+    fun setVehicleState(state: VehicleState, value: Int): Boolean {
         if (!ensureConnected()) return false
 
         return try {
-            canBusService?.setVehicleState(IState, value)
-            Log.d(TAG, "setVehicleState: $IState = $value")
+            canBusService?.setVehicleState(state, value)
+            Log.d(TAG, "setVehicleState: $state = $value")
             true
         } catch (e: RemoteException) {
             Log.e(TAG, "Failed to set vehicle IState", e)
@@ -195,11 +195,11 @@ class CanBusServiceManager(context: Context) {
      * @param IState Состояние автомобиля
      * @return Значение или -1 если ошибка
      */
-    fun getVehicleState(IState: VehicleState): Int {
+    fun getVehicleState(state: VehicleState): Int {
         if (!ensureConnected()) return -1
 
         return try {
-            canBusService?.getVehicleState(IState) ?: -1
+            canBusService?.getVehicleState(state) ?: -1
         } catch (e: RemoteException) {
             Log.e(TAG, "Failed to get vehicle IState", e)
             -1
@@ -248,12 +248,12 @@ class CanBusServiceManager(context: Context) {
      * @param value Значение (1=CLOSE, 2=OPEN, 3=ACTIVE, и т.д.)
      * @return true если успешно
      */
-    fun setAirConditionState(IState: AirConditionState, value: Int): Boolean {
+    fun setAirConditionState(state: AirConditionState, value: Int): Boolean {
         if (!ensureConnected()) return false
 
         return try {
-            canBusService?.setAirConditionState(IState, value)
-            Log.d(TAG, "setAirConditionState: $IState = $value")
+            canBusService?.setAirConditionState(state, value)
+            Log.d(TAG, "setAirConditionState: $state = $value")
             true
         } catch (e: RemoteException) {
             Log.e(TAG, "Failed to set air condition IState", e)
@@ -458,7 +458,6 @@ class CanBusServiceManager(context: Context) {
             false
         }
     }
-
 
     fun onConnected()
     {

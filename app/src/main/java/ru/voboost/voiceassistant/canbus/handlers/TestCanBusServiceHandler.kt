@@ -11,12 +11,14 @@ import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 
 class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
         ICanBusServiceConnectionCallback {
-    private var canBusManager: CanBusServiceManager? = null
-    private var isCallbackRegistered = false
 
     companion object {
         const val TAG = "TestSpeedLimitHandler"
     }
+
+    private var canBusManager: CanBusServiceManager? = null
+    private var isCallbackRegistered = false
+    private val lastPayloads = mutableMapOf<Int, IntArray>()
 
     private val mCanBusListener = object : CanBusListener() {
 
@@ -41,9 +43,9 @@ class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
             this@TestCanBusServiceHandler.handleRealityWarningInfoChanged(key, value)
         }
 
-//        override fun onCanRawDataChanged(canID: Int, data: Bundle) {
-//            this@TestCanBusServiceHandler.handleCanRawDataChanged(canID, data)
-//        }
+        //        override fun onCanRawDataChanged(canID: Int, data: Bundle) {
+        //            this@TestCanBusServiceHandler.handleCanRawDataChanged(canID, data)
+        //        }
 
         override fun onHEVSystemModelChanged(hevMode: Int) {
             this@TestCanBusServiceHandler.handleHEVSystemModelChanged(hevMode)
@@ -100,7 +102,6 @@ class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
         Log.d(TAG, "⚠️ RealityWarningInfoChanged: $key -> $value")
     }
 
-    private val lastPayloads = mutableMapOf<Int, IntArray>()
 
     private fun handleCanRawDataChanged(canID: Int, data: Bundle) {
 
@@ -154,5 +155,11 @@ class TestCanBusServiceHandler(private val queueSpeech: QueueSpeechSynthesis) :
             Log.i(TAG, "TSR handler unregistered")
         }
         return success == true
+    }
+
+    fun release() {
+        unregister()
+        canBusManager = null
+        lastPayloads.clear()
     }
 }

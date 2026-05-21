@@ -20,7 +20,6 @@ import ru.voboost.voiceassistant.config.ConfigManager
 import ru.voboost.voiceassistant.core.ISpeechSynthesis
 import ru.voboost.voiceassistant.core.SpeechEngineFactory
 import ru.voboost.voiceassistant.core.SpeechEngineFactory.RecognitionEngine
-import ru.voboost.voiceassistant.nlu.NLUEngine
 import ru.voboost.voiceassistant.executor.CommandExecutor
 import ru.voboost.voiceassistant.ui.OverlayManager
 import ru.voboost.voiceassistant.canbus.CanBusServiceManager
@@ -32,13 +31,15 @@ import ru.voboost.voiceassistant.speech.CommandHandler
 import kotlinx.coroutines.*
 import android.Manifest
 import android.content.pm.ServiceInfo
+import ru.voboost.voiceassistant.audio.AudioPolicyServiceManager
 import ru.voboost.voiceassistant.audio.IAudioSource
 import ru.voboost.voiceassistant.audio.AudioSourceFactory
 import ru.voboost.voiceassistant.audio.VolumeManager
 import ru.voboost.voiceassistant.canbus.handlers.TestCanBusServiceHandler
 import ru.voboost.voiceassistant.canbus.handlers.VoiceButtonHandler
-import ru.voboost.voiceassistant.config.ExternalStoragePaths
+import ru.voboost.voiceassistant.canbus.PhoneCallPoller
 import ru.voboost.voiceassistant.core.ISpeechRecognizer
+import ru.voboost.voiceassistant.speech.SpeechRecognizer
 import ru.voboost.voiceassistant.core.QueueSpeechSynthesis
 import ru.voboost.voiceassistant.executor.VehicleCommandExecutor
 import ru.voboost.voiceassistant.nlu.INLUEngine
@@ -77,11 +78,14 @@ class VoboostVoiceService : Service() {
     private lateinit var audioSource: IAudioSource
     // CanBus Manager - единая точка доступа к CAN шине
     private lateinit var canBusManager: CanBusServiceManager
+    private lateinit var audioPolicyManager: AudioPolicyServiceManager
     // Voice Button Handler - обработка кнопки на руле
     private var voiceButtonHandler: VoiceButtonHandler? = null
     // TSR Speed Limit Handler - предупреждения о превышении скорости
     private var tsrSpeedLimitHandler: TSRSpeedLimitHandler? = null
     private var testCanBusServiceHandler: TestCanBusServiceHandler? = null
+    // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
+    private var phoneCallPoller: PhoneCallPoller? = null
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
     // Coroutines
@@ -163,17 +167,16 @@ class VoboostVoiceService : Service() {
         // TSR Speed Limit Handler — регистрируем через callback подключения
         tsrSpeedLimitHandler = TSRSpeedLimitHandler(queueSpeech)
         testCanBusServiceHandler = TestCanBusServiceHandler(queueSpeech)
+
+        audioPolicyManager = AudioPolicyServiceManager(this)
         // CanBus Manager - инициализация (автоматически подключается к CanBusService)
         canBusManager = CanBusServiceManager(this)
         Log.i(TAG, "CanBusServiceManager initialized")
         voiceButtonHandler?.let { canBusManager.registerConnectionCallback(it) }
         tsrSpeedLimitHandler?.let {  canBusManager.registerConnectionCallback(it)}
         testCanBusServiceHandler?.let {  canBusManager.registerConnectionCallback(it)}
-        // Если уже подключён — регистрируем сразу
-        if (canBusManager.isConnected()) {
-            Log.i(TAG, "CanBusService already connected — registering handlers immediately")
-            canBusManager.onConnected()
-        }
+
+
         // Создаём VehicleCommandExecutor через фабрику
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
         commandExecutor = CommandExecutor(context = this,
@@ -191,6 +194,9 @@ class VoboostVoiceService : Service() {
                                                                       audioSource = audioSource,
                                                                       configManager = configManager)
         Log.i(TAG, "SpeechRecognizer initialized")
+        // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
+        phoneCallPoller = PhoneCallPoller(this, speechRecognizer)
+        
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
                                    speechRecognizer = speechRecognizer,
@@ -205,6 +211,18 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "IState Machine initialized")
         voiceButtonHandler?.stateMachine = stateMachine
 
+        if(audioPolicyManager.isConnected())
+        {
+            Log.i(TAG, "AudioPolicyService already connected — registering handlers immediately")
+            audioPolicyManager.onConnected()
+        }
+
+        // Если уже подключён — регистрируем сразу
+        if (canBusManager.isConnected()) {
+            Log.i(TAG, "CanBusService already connected — registering handlers immediately")
+            canBusManager.onConnected()
+        }
+
         // Регистрируем receiver
         val filter = IntentFilter(ACTION_CANCEL)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -215,6 +233,9 @@ class VoboostVoiceService : Service() {
         }
         Log.d(TAG, "CancelReceiver registered")
 
+        // ✅ Запуск поллинга состояния телефона (до распознавания)
+        phoneCallPoller?.start()
+        
         // ✅ Запуск распознавания (если permission есть)
         if (hasRecordPermission()) {
             startKeywordSpotting()
@@ -285,10 +306,15 @@ class VoboostVoiceService : Service() {
         canBusManager.onDisconnected()
         // Отключаем Voice Button Handler
         voiceButtonHandler?.let { canBusManager.unregisterConnectionCallback(it) }
+        voiceButtonHandler?.release()
         voiceButtonHandler = null
         // Отключаем TSR Speed Limit Handler
         tsrSpeedLimitHandler?.let {  canBusManager.unregisterConnectionCallback(it)}
+        tsrSpeedLimitHandler?.release()
         tsrSpeedLimitHandler = null
+        // Останавливаем Phone Call Poller
+        phoneCallPoller?.stop()
+        Log.d(TAG, "PhoneCallPoller stopped")
 
         // Отключаем CanBus Manager
         try {
@@ -299,11 +325,30 @@ class VoboostVoiceService : Service() {
             Log.w(TAG, "Failed to unbind CanBusServiceManager", e)
         }
 
+        audioPolicyManager.onDisconnected()
+
+        try{
+            audioPolicyManager.unbind(this)
+            Log.d(TAG, "AudioPolicyManager unbound")
+        }
+        catch (e: Exception){
+            Log.w(TAG, "Failed to unbind AudioPolicyManager", e)
+        }
+
         stateMachine.stop()
         speechRecognizer.shutdown()
+        
+        // Освобождаем Phone Call Poller (после shutdown speechRecognizer)
+        phoneCallPoller?.release()
+        Log.d(TAG, "PhoneCallPoller released")
+        
         queueSpeech.cancelAll()
         speechSynthesis.shutdown()
         soundEffectManager.release()
+
+        // Освобождаем NLU Engine (ONNX модель и токенайзер)
+        nluEngine.release()
+        Log.d(TAG, "NLU Engine released")
 
         instance = null  // ← Очищаем instance ПОСЛЕ всех операций
         super.onDestroy()

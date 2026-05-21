@@ -7,8 +7,10 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import ru.voboost.voiceassistant.config.CommandConfig
 import ru.voboost.voiceassistant.config.ConfigManager
+import ru.voboost.voiceassistant.config.ExternalStoragePaths
 import ru.voboost.voiceassistant.nlu.INLUEngine
 import ru.voboost.voiceassistant.nlu.RecognizedCommand
+import java.io.FileNotFoundException
 import java.nio.LongBuffer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.sqrt
@@ -17,8 +19,6 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager) :
 
     companion object {
         private const val TAG = "OnnxNluEngine"
-        private const val MODEL_PATH = "nlu/model_quantized.onnx"
-        private const val TOKENIZER_PATH = "nlu/tokenizer.json"
         private const val SIMILARITY_THRESHOLD = 0.62f // Порог срабатывания
         private const val EMBEDDING_DIM = 384 // Размерность MiniLM-L12
     }
@@ -31,15 +31,23 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager) :
 
     init {
         Log.i(TAG, "Initializing ONNX NLU Engine...")
-        // Модель
-        val modelBytes = context.assets.open(MODEL_PATH).use { it.readBytes() }
+        
+        // Загрузка модели из внешнего хранилища
+        val modelFile = ExternalStoragePaths.nluModelFile
+        if (!modelFile.exists()) {
+            throw FileNotFoundException("NLU model not found: ${modelFile.absolutePath}")
+        }
+        val modelBytes = modelFile.readBytes()
         session = ortEnv.createSession(modelBytes, OrtSession.SessionOptions())
 
-        // Токенайзер — закрываем поток после загрузки
-        val tokenizer = context.assets.open(TOKENIZER_PATH).use { stream ->
-            HuggingFaceTokenizer.newInstance(stream, mapOf())
+        // Загрузка токенайзера из внешнего хранилища
+        val tokenizerFile = ExternalStoragePaths.tokenizerFile
+        if (!tokenizerFile.exists()) {
+            throw FileNotFoundException("Tokenizer not found: ${tokenizerFile.absolutePath}")
         }
-        this.tokenizer = tokenizer // присваиваем в поле
+        val tokenizerStream = tokenizerFile.inputStream()
+        this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, mapOf())
+        tokenizerStream.close()
 
         precomputeCommandEmbeddings()
         Log.i(TAG, "✅ ONNX NLU initialized. Commands indexed: ${commandPatterns.size}")
@@ -225,7 +233,10 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager) :
     override fun getConfirmationTimeout(commandConfig: CommandConfig) = commandConfig.confirmation.timeoutSec
                                                                         ?: 5
 
-    fun release() {
+    /**
+     * Освободить ресурсы (реализация интерфейса INLUEngine)
+     */
+    override fun release() {
         try {
             session.close()
             tokenizer.close()

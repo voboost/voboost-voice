@@ -183,7 +183,7 @@ class SpeechRecognizer(private val audioSource: IAudioSource,
      * Форсировать обработку текущей фразы (при обнаружении тишины)
      */
     private fun forceProcessCurrentPhrase(zone: String) {
-        Log.d(TAG, "🔇 Silence detected — forcing phrase processing")
+        //Log.d(TAG, "🔇 Silence detected — forcing phrase processing")
 
         // Обрабатываем всё, что есть в буфере
         while (audioBuffer.hasData()) {

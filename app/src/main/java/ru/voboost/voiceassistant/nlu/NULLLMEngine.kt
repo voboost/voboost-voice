@@ -181,7 +181,10 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
         fun isValid(): Boolean = id.isNotEmpty()
     }
 
-    fun release() {
+    /**
+     * Освободить ресурсы (реализация интерфейса INLUEngine)
+     */
+    override fun release() {
         try {
             llmInference.close()
         }

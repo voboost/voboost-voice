@@ -123,5 +123,5 @@ scripts/install/VoboostVoiceAssistant-install.bat
 ## 📞 Поддержка
 
 **Author:** Voboost Team  
-**License:** MIT License  
+**License:** [License information to be added]
 **Документация:** [docs/README.md](./docs/README.md)

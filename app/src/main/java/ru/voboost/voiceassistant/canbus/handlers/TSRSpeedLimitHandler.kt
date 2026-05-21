@@ -107,6 +107,11 @@ class TSRSpeedLimitHandler(private val queueSpeech: QueueSpeechSynthesis) :
         return success == true
     }
 
+    fun release() {
+        unregister()
+        canBusManager = null
+    }
+
     /**
      * Получить текущую скорость
      */
