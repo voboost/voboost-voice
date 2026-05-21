@@ -1,1 +1,176 @@
-"# Решение проблем Voice Assistant\n\n**Дата:** 2026-05-15  \n**Статус:** ✅ Актуальная версия\n\n---\n\n## ❓ Частые проблемы и их решения\n\n### Проблема 1: Сервис не запускается\n\n#### Симптомы:\n- Приложение установлено, но не работает\n- В логах ошибки инициализации\n- Нет активности в UI\n\n#### Решение:\n```bash\n# 1. Проверить разрешения\nadb shell dumpsys package ru.voboost.voice | grep -A 30 \"requested permissions\"\n\n# 2. Дать все необходимые разрешения\nadb shell pm grant ru.voboost.voice android.permission.RECORD_AUDIO\nadb shell pm grant ru.voboost.voice android.permission.SYSTEM_ALERT_WINDOW\nadb shell pm grant ru.voboost.voice android.permission.FOREGROUND_SERVICE\n\n# 3. Проверить Accessibility Service\nadb shell settings get secure enabled_accessibility_services\nadb shell settings put secure enabled_accessibility_services ru.voboost.voice/ru.voboost.voice.VoiceActivationService\nadb shell settings put secure accessibility_enabled 1\n```\n\n---\n\n### Проблема 2: Модели не найдены\n\n#### Симптомы:\n- В логах: `Vosk model not found` или `Sherpa TTS model not found`\n- Распознавание речи не работает\n\n#### Решение:\n```bash\n# Проверить наличие моделей\nadb shell ls /data/user/0/ru.voboost.voice/files/models/\n\n# Если модели отсутствуют - полная переустановка\nscripts/install/VoboostVoiceAssistant-install.bat\n\n# Или вручную скопировать модели\nadb push models/vosk/ /data/user/0/ru.voboost.voice/files/models/\nadb push models/sherpa/ /data/user/0/ru.voboost.voice/files/models/\n```\n\n---\n\n### Проблема 3: Голос не слышен (TTS)\n\n#### Симптомы:\n- Распознавание работает, но ответов нет\n- В логах ошибки синтеза речи\n\n#### Решение:\n```bash\n# Проверить разрешение на оверлеи\nadb shell appops get ru.voboost.voice SYSTEM_ALERT_WINDOW\n\n# Если deny - дать разрешение\nadb shell appops set ru.voboost.voice SYSTEM_ALERT_WINDOW allow\n\n# Перезапустить сервис\nadb shell am force-stop ru.voboost.voice\nadb shell am start-foreground-service -n ru.voboost.voice/.VoboostVoiceService\n```\n\n---\n\n### Проблема 4: Кнопка на руле не работает\n\n#### Симптомы:\n- Нажатие кнопки не активирует голосовой помощник\n- В логах нет событий от KeyManager\n\n#### Решение:\n```bash\n# Проверить KEYCODE кнопки\nadb logcat | grep -i \"keycode\\|KeyEvent\"\n\n# Отключить стандартные ассистенты\nadb shell pm disable com.qinggan.ivoka\nadb shell pm disable com.qinggan.ivoka1\nadb shell pm disable com.qinggan.sttservice\n\n# Запустить Frida скрипт (если используется)\nfrida -U ru.voboost.voice -l frida-voice-button.js\n```\n\n---\n\n### Проблема 5: Конфликт со стандартными ассистентами\n\n#### Симптомы:\n- IVoka активен одновременно с Voboost\n- QGSpeechService перехватывает микрофон\n\n#### Решение:\n```bash\n# Отключить стандартные сервисы\nadb shell pm disable com.qinggan.ivoka\nadb shell pm disable com.qinggan.ivoka1\nadb shell pm disable com.qinggan.sttservice\n\n# Проверить статус\nadb shell pm list packages -d | grep -E \"ivoka|sttservice\"\n```\n\n---\n\n### Проблема 6: Автозапуск не работает\n\n#### Симптомы:\n- Сервис не запускается после перезагрузки\n- В логах нет событий BOOT_COMPLETED\n\n#### Решение:\n```bash\n# Дать разрешение на автозапуск\nadb shell appops set ru.voboost.voice RECEIVE_BOOT_COMPLETED allow\n\n# Проверить разрешение\nadb shell dumpsys package ru.voboost.voice | grep BOOT\n```\n\n---\n\n### Проблема 7: Ошибки инициализации движков\n\n#### Симптомы:\n- В логах ошибки Vosk или Sherpa\n- Распознавание или синтез не инициализируются\n\n#### Решение:\n```bash\n# Проверить логи инициализации\nadb logcat -d | grep -i \"vosk\\|sherpa\\|tts\"\n\n# Если ошибки загрузки модели:\n# 1. Удалить кэш приложения\nadb shell pm clear ru.voboost.voice\n\n# 2. Полная переустановка\nscripts/install/VoboostVoiceAssistant-install.bat\n```\n\n---\n\n### Проблема 8: Высокая нагрузка на процессор\n\n#### Симптомы:\n- Устройство греется\n- Батарея быстро разряжается\n- Задержки в ответах\n\n#### Решение:\n```bash\n# Проверить активные процессы\nadb shell top -n 1 | grep voboost\n\n# Ограничить частоту опроса (если возможно)\n# В config.json уменьшить timeout значения\n```\n\n---\n\n## 🔍 Diagnostics commands\n\n### Общая проверка состояния:\n```bash\n# Проверить процесс\nadb shell ps | grep voboost\n\n# Проверить сервис\nadb shell dumpsys activity services | grep -i voboost\n\n# Проверить разрешения\nadb shell dumpsys package ru.voboost.voice | grep -A 50 \"requested permissions\"\n```\n\n### Логирование:\n```bash\n# Все логи\nadb logcat\n\n# Только Voboost логи\nadb logcat | grep -i voboost\n\n# Логи инициализации\nadb logcat | grep -i \"vosk\\|sherpa\\|tts\\|command\"\n```\n\n---\n\n## 📊 Чек-лист диагностики\n\nПри возникновении проблемы проверьте:\n\n- [ ] Приложение установлено (проверить в настройках)\n- [ ] Разрешения выданы (RECORD_AUDIO, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)\n- [ ] Accessibility Service активен\n- [ ] Модели установлены (файлы в `/data/user/0/ru.voboost.voice/files/models/`)\n- [ ] Конфигурация загружена (`config.json` существует и валидна)\n- [ ] Стандартные ассистенты отключены (IVoka, QGSpeechService)\n- [ ] Servise запущен (`adb shell ps | grep voboost`)\n\n---\n\n## 📝 Пример диагностики "сервис не работает"\n\n### Шаг 1: Проверить процесс\n```bash\n$ adb shell ps | grep voboost\nu0_a68    12345  1234 ru.voboost.voice\n```\n\n### Шаг 2: Проверить сервис\n```bash\n$ adb shell dumpsys activity services | grep -i voboost\nACTIVITY ru.voboost.voice/.VoboostVoiceService\n```\n\n### Шаг 3: Проверить разрешения\n```bash\n$ adb shell dumpsys package ru.voboost.voice | grep RECORD_AUDIO\nandroid.permission.RECORD_AUDIO\n    grantId=1234567890\n```\n\n### Шаг 4: Посмотреть логи\n```bash\nadb logcat -d | grep -i voboost\nI/VoboostVoiceService: onCreate\nI/SpeechRecognition: Vosk initialized successfully!\nE/TTS: Failed to initialize Sherpa TTS\n```\n\n### Шаг 5: Применить решение\n- Если ошибка TTS - перезапустить сервис с правами на оверлеи\n- Если модель не найдена - переустановить с моделями\n\n---\n\n## 📞 Поддержка\n\nЕсли проблема не решена:\n1. Соберите логи: `adb logcat -d > voboost_logs.txt`\n2. Укажите версию приложения и Android\n3. Опишите воспроизводимость проблемы\n4. Приложите логи к обращению в поддержку\n\n---\n\n## 📚 См. также\n\n- [Установка](./INSTALLATION.md) - Инструкция по установке\n- [Настройка](./CONFIGURATION.md) - Настройка конфигурации\n- [Архитектура](../ARCHITECTURE/) - Техническая документация"
+# Решение проблем Voice Assistant
+
+**Дата:** 2026-05-21  
+**Статус:** ✅ Актуальная версия  
+**Package:** ru.voboost.voice  
+
+---
+
+## ❓ Частые проблемы и их решения
+
+### Проблема 1: Сервис не запускается
+
+**Симптомы:**
+- Приложение установлено, но не работает
+- В логах ошибки инициализации
+- Нет активности в UI
+
+**Решение:**
+```bash
+adb shell pm grant ru.voboost.voice android.permission.RECORD_AUDIO
+adb shell pm grant ru.voboost.voice android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant ru.voboost.voice android.permission.FOREGROUND_SERVICE
+adb shell settings put secure enabled_accessibility_services ru.voboost.voice/ru.voboost.voice.VoiceActivationService
+adb shell settings put secure accessibility_enabled 1
+```
+
+---
+
+### Проблема 2: Модели не найдены
+
+**Симптомы:** `Vosk model not found` или `Sherpa TTS model not found`
+
+**Решение:**
+```bash
+scripts/install/VoboostVoiceAssistant-install.bat
+```
+
+---
+
+### Проблема 3: Голос не слышен (TTS)
+
+**Симптомы:** Распознавание работает, но ответов нет
+
+**Решение:**
+```bash
+adb shell appops set ru.voboost.voice SYSTEM_ALERT_WINDOW allow
+adb shell am force-stop ru.voboost.voice
+adb shell am start-foreground-service -n ru.voboost.voice/.VoboostVoiceService
+```
+
+---
+
+### Проблема 4: Кнопка на руле не работает
+
+**Симптомы:** Нажатие кнопки не активирует помощник
+
+**Решение:**
+```bash
+adb shell pm disable com.qinggan.ivoka
+adb shell pm disable com.qinggan.ivoka1
+adb shell pm disable com.qinggan.sttservice
+```
+
+---
+
+### Проблема 5: Конфликт со стандартными ассистентами
+
+**Симптомы:** IVoka активен одновременно с Voboost
+
+**Решение:**
+```bash
+adb shell pm disable com.qinggan.ivoka
+adb shell pm disable com.qinggan.ivoka1
+adb shell pm disable com.qinggan.sttservice
+```
+
+---
+
+### Проблема 6: Автозапуск не работает
+
+**Симптомы:** Сервис не запускается после перезагрузки
+
+**Решение:**
+```bash
+adb shell appops set ru.voboost.voice RECEIVE_BOOT_COMPLETED allow
+```
+
+---
+
+### Проблема 7: Ошибки инициализации движков
+
+**Симптомы:** Ошибки Vosk или Sherpa в логах
+
+**Решение:**
+```bash
+adb shell pm clear ru.voboost.voice
+scripts/install/VoboostVoiceAssistant-install.bat
+```
+
+---
+
+### Проблема 8: AIDL не работает (CAN bus / AudioPolicy) ⚠️
+
+**Симптомы:**
+- Сервис запущен, но **не работает эхоподавление** при Bluetooth звонках
+- Не приходят события от CAN bus
+- В логах ошибки доступа к скрытым API
+
+**Причина:**
+Android блокирует доступ к скрытым API (`@hide`). AIDL интерфейсы (`IAudioPolicyService`, `ICanBusService`) используют скрытые методы.
+
+**Решение:**
+```bash
+# Установить Hidden API Policy
+adb shell "settings put global hidden_api_policy 1"
+adb shell "settings put global hidden_api_policy_pre_p 1"
+adb shell "settings put global hidden_api_policy_pre_q 1"
+adb shell "settings put global hidden_api_policy_pre_r 1"
+
+# Проверить
+adb shell settings get global hidden_api_policy
+# Должно вернуть: 1
+
+# Перезапустить сервис
+adb shell am force-stop ru.voboost.voice
+adb shell am start-foreground-service -n ru.voboost.voice/.VoboostVoiceService
+```
+
+**Проверка:**
+```bash
+adb logcat | grep "AudioPolicyServiceManager\|PhoneCallPoller"
+# Ожидаемый вывод при звонке:
+# I/PhoneCallPoller: Call state: ACTIVE (muting recognizer)
+# I/PhoneCallPoller: Call state: IDLE (restoring recognizer)
+```
+
+> **Примечание:** Скрипты установки автоматически устанавливают Hidden API Policy. При ручной установке через `adb install` нужно выполнить команды выше.
+
+---
+
+## 🔍 Диагностика
+
+```bash
+# Проверить процесс
+adb shell ps | grep voboost
+
+# Проверить сервис
+adb shell dumpsys activity services | grep -i voboost
+
+# Проверить Hidden API Policy
+adb shell settings get global hidden_api_policy
+
+# Логи
+adb logcat | grep -i voboost
+adb logcat | grep -i "PhoneCallPoller\|AudioPolicy\|AEC"
+```
+
+---
+
+## 📊 Чек-лист
+
+- [ ] Приложение установлено
+- [ ] Разрешения выданы (RECORD_AUDIO, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)
+- [ ] Accessibility Service активен
+- [ ] Модели установлены
+- [ ] Конфигурация загружена
+- [ ] Стандартные ассистенты отключены
+- [ ] Сервис запущен
+- [ ] **Hidden API Policy установлен** (`adb shell settings get global hidden_api_policy = 1`)
+
+---
+
+## 📚 Документация
+
+- [Установка](./INSTALLATION.md)
+- [Настройка](./CONFIGURATION.md)
