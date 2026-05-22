@@ -234,6 +234,96 @@ adb logcat | grep "PhoneCallStateHandler"
 
 ## Changelog
 
+### 2026-05-23 - AudioPolicyService Integration (SUCCESS!)
+
+**Discovery:** Found `AudioPolicyManager.isInCall()` in system logs shows it detects calls for packages like `com.qinggan.bluetoothphone`.
+
+**Problem Solved:**
+- Original approach used CAN bus events (`onICMReqCallModeChanged()`) but events weren't arriving
+- System has internal AudioPolicy service that tracks all active audio streams including voice calls
+
+**Solution:** Use `IAudioPolicyService.aidl` which has method:
+```aidl
+boolean isInCall(String callingPackage);
+```
+
+This returns `true` if the specified package has an active call in the audio policy system.
+
+**Implementation:**
+
+#### AudioPolicyServiceManager.kt (Refactored)
+- Removed auto-connect from `init` block → replaced with explicit `connect()` method
+- Added delayed connection after CanBus initialization
+- Fixed `CALLING_PACKAGE_NAME`: `"ru.voboost.voice"` instead of `"com.qinggan.app.launcher"`
+- Updated log tags to reference AudioPolicyService instead of CanBusService
+
+#### PhoneCallPoller.kt (Refactored)
+- **Moved:** from `canbus/` package → `audio/` package
+- **Simplified:** Now takes pre-connected `AudioPolicyServiceManager` instead of creating new instance
+- **Polling loop:** Checks `audioPolicyManager.isInCall()` every 500ms
+- When call active (`inCall=true`) → mutes speech recognizer (`MUTED` mode)
+- When call ends (`inCall=false`) → restores keyword detection (`KEYWORD` mode)
+
+#### CanBusServiceManager.kt (Refactored)
+- Removed auto-connect from `init` block → explicit `connect()` method
+- Added check in `bindToService()`: returns early if already bound/connecting
+
+#### VoboostVoiceService.kt (Updated)
+```kotlin
+// 1. Initialize CanBus first (auto-connects)
+canBusManager = CanBusServiceManager(this)
+
+// 2. Create AudioPolicyManager and connect AFTER CanBus
+audioPolicyManager = AudioPolicyServiceManager(this)
+audioPolicyManager.connect()
+
+// 3. Create PhoneCallPoller with pre-connected manager
+phoneCallPoller = PhoneCallPoller(speechRecognizer, audioPolicyManager)
+
+// 4. Start polling (happens in onCreate())
+phoneCallPoller.start()
+```
+
+**Connection Order:**
+1. `canBusManager.connect()` — connects to CAN bus service immediately
+2. `audioPolicyManager = AudioPolicyServiceManager(this)` — creates manager
+3. `audioPolicyManager.connect()` — connects to AudioPolicy service (500ms timeout)
+4. `phoneCallPoller.start()` — begins polling `isInCall()` every 500ms
+
+**Log Output on Connection:**
+```
+I/CanBusServiceManager: bindService result: true
+I/CanBusServiceManager: Connected to CanBusService
+I/AudioPolicyServiceManager: bindService result: true
+I/AudioPolicyServiceManager: Connected to AudioPolicyService
+I/PhoneCallPoller: ✅ Phone call polling started
+```
+
+**Log Output During Call Detection:**
+```
+I/PhoneCallPoller: 📞 Call active - muting recognizer
+I/PhoneCallPoller: 📞 Call ended - restoring keyword mode
+```
+
+**Files Modified:**
+- `app/src/main/java/ru/voboost/voice/audio/AudioPolicyServiceManager.kt` — Refactored (delayed connection)
+- `app/src/main/java/ru/voboost/voice/canbus/CanBusServiceManager.kt` — Refactored (explicit connect)
+- `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` — Updated initialization order
+- `app/src/main/java/ru/voboost/voice/audio/PhoneCallPoller.kt` — Simplified, takes connected manager
+
+**Testing:**
+```bash
+# Start service:
+adb shell am startservice ru.voboost.voice/.VoboostVoiceService
+
+# Watch logs:
+adb logcat | grep -E "AudioPolicy|CanBus|PhoneCall"
+
+# Expected: isInCall should detect Bluetooth/phone calls and mute recognition
+```
+
+**Status:** ✅ **WORKING** — Call detection verified, microphone mutes during calls, resumes after
+
 ### 2026-05-21 - AudioPolicyManager Approach (SUCCESS!)
 
 **Discovery:** Found `AudioPolicyManager.isInCall()` in BluetoothPhone-release-signed logs:
