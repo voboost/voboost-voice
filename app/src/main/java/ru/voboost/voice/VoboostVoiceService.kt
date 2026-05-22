@@ -367,6 +367,8 @@ class VoboostVoiceService : Service() {
         }
 
         serviceScope.launch {
+            // Сохраняем ссылку на сервис для проверки в withContext
+            val currentService = this@VoboostVoiceService
             try {
                 Log.i(TAG, "Starting keyword spotting (waiting for activation phrase)...")
                 speechRecognizer.start()  // Запускаем непрерывный поток распознавания
@@ -375,12 +377,11 @@ class VoboostVoiceService : Service() {
             catch (e: Exception) {
                 Log.e(TAG, "Failed to start keyword spotting", e)
                 // Retry с таймером и проверкой onStopping/onDestroy
-                // Используем withTimeoutOption для проверки isActive
                 try {
                     withContext(Dispatchers.Default) {
                         delay(3000)
                         // Проверяем, что сервис не остановлен
-                        if (this@VoboostVoiceService !is Service || !this@VoboostVoiceService.isDestroying) {
+                        if (!currentService.isDestroying) {
                             Log.i(TAG, "Retrying keyword spotting after exception...")
                             startKeywordSpotting()
                         } else {

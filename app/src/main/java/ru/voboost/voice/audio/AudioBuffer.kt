@@ -1,184 +1,184 @@
-package ru.voboost.voice.audio
-
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
-import kotlin.math.min
-
-/**
- * ╨д╨╕╨║╤Б╨╕╤А╨╛╨▓╨░╨╜╨╜╤Л╨╣ ╨║╨╛╨╗╤М╤Ж╨╡╨▓╨╛╨╣ ╨▒╤Г╤Д╨╡╤А ╨┤╨╗╤П ╨░╤Г╨┤╨╕╨╛ + ╨┤╨╡╤В╨╡╨║╤В╨╛╤А ╤В╨╕╤И╨╕╨╜╤Л.
- *
- * ╨Ю╤Б╨╛╨▒╨╡╨╜╨╜╨╛╤Б╤В╨╕:
- * - тЭМ ╨Э╨╡╤В ╨░╨╗╨╗╨╛╨║╨░╤Ж╨╕╨╣ ╨▓ hot path (╤Д╨╕╨║╤Б╨╕╤А╨╛╨▓╨░╨╜╨╜╤Л╨╣ ╤А╨░╨╖╨╝╨╡╤А)
- * - тЭМ ╨Э╨╡╤В ╨┤╨╕╨╜╨░╨╝╨╕╤З╨╡╤Б╨║╨╛╨│╨╛ ╤А╨░╤Б╤И╨╕╤А╨╡╨╜╨╕╤П (╨┐╤А╨╡╨┤╤Б╨║╨░╨╖╤Г╨╡╨╝╨░╤П ╨┐╨░╨╝╤П╤В╤М)
- * - тЬЕ ╨Т╤Б╤В╤А╨╛╨╡╨╜╨╜╤Л╨╣ RMS-based silence detection
- * - тЬЕ Thread-safe ╤З╨╡╤А╨╡╨╖ ReentrantLock (╨▒╤Л╤Б╤В╤А╨╡╨╡ synchronized ╨┤╨╗╤П ╤З╨░╤Б╤В╤Л╤Е ╨╛╨┐╨╡╤А╨░╤Ж╨╕╨╣)
- */
-class AudioBuffer(
-    val capacityBytes: Int = 256 * 1024, // 256KB ~ 8 ╤Б╨╡╨║ @16kHz/16bit mono
-    private val sampleRate: Int = 16000,
-    private val bitsPerSample: Int = 16,
-    // ╨Я╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨┤╨╡╤В╨╡╨║╤В╨╛╤А╨░ ╤В╨╕╤И╨╕╨╜╤Л
-    private var silenceThresholdDb: Float = -45f, // dBFS, ╤В╨╕╨┐╨╕╤З╨╜╨╛ -50..-40
-    private var minSilenceDurationMs: Int = 600,  // ╤Б╨║╨╛╨╗╤М╨║╨╛ ╤В╨╕╤И╨╕╨╜╤Л ╤Б╤З╨╕╤В╨░╤В╤М ╨║╨╛╨╜╤Ж╨╛╨╝ ╤Д╤А╨░╨╖╤Л
-    private val rmsWindowSizeMs: Int = 50         // ╨╛╨║╨╜╨╛ ╨┤╨╗╤П ╤А╨░╤Б╤З╤С╤В╨░ RMS
-                 ) {
-    companion object {
-        const val TAG = "AudioBuffer"
-        private val LOCK = ReentrantLock()
-    }
-
-    private val buffer = ByteArray(capacityBytes)
-    private var head: Int = 0 // ╨╛╤В╨║╤Г╨┤╨░ ╤З╨╕╤В╨░╤В╤М
-    private var tail: Int = 0 // ╨║╤Г╨┤╨░ ╨┐╨╕╤Б╨░╤В╤М
-    private var size: Int = 0 // ╤Б╨║╨╛╨╗╤М╨║╨╛ ╨┤╨░╨╜╨╜╤Л╤Е ╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛
-
-    // ╨б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╨┤╨╡╤В╨╡╨║╤В╨╛╤А╨░ ╤В╨╕╤И╨╕╨╜╤Л
-    private var lastSpeechTimeMs: Long = 0
-    private var rmsSum: Long = 0
-    private var rmsCount: Int = 0
-    private val rmsWindowSamples: Int = (sampleRate * rmsWindowSizeMs) / 1000
-
-    // ╨Ъ╨╛╨╜╨▓╨╡╤А╤Б╨╕╤П ╨┐╨╛╤А╨╛╨│╨░: dBFS тЖТ ╨╗╨╕╨╜╨╡╨╣╨╜╨░╤П ╨░╨╝╨┐╨╗╨╕╤В╤Г╨┤╨░ (╨┤╨╗╤П 16-bit PCM)
-    private val silenceThresholdLinear =
-            (Short.MAX_VALUE * Math.pow(10.0, silenceThresholdDb / 20.0)).toInt()
-
-    /**
-     * ╨Ф╨╛╨▒╨░╨▓╨╕╤В╤М ╨░╤Г╨┤╨╕╨╛-╨┤╨░╨╜╨╜╤Л╨╡. ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В true, ╨╡╤Б╨╗╨╕ ╨╛╨▒╨╜╨░╤А╤Г╨╢╨╡╨╜ ╨║╨╛╨╜╨╡╤Ж ╤Д╤А╨░╨╖╤Л (╤В╨╕╤И╨╕╨╜╨░).
-     *
-     * тЪая╕П ╨Т╤Л╨╖╤Л╨▓╨░╨╡╤В╤Б╤П ╨╕╨╖ ╨░╤Г╨┤╨╕╨╛-╨║╨╛╨╗╨╗╨▒╤Н╨║╨░ тАФ ╨Э╨Х ╨Ф╨Ю╨Ы╨Ц╨Х╨Э ╨░╨╗╨╗╨╛╤Ж╨╕╤А╨╛╨▓╨░╤В╤М!
-     */
-    fun put(data: ByteArray, offset: Int, length: Int): Boolean {
-        LOCK.lock()
-        try {
-            // 1. ╨Ч╨░╨┐╨╕╤Б╤Л╨▓╨░╨╡╨╝ ╨┤╨░╨╜╨╜╤Л╨╡ ╨▓ ╨║╨╛╨╗╤М╤Ж╨╡╨▓╨╛╨╣ ╨▒╤Г╤Д╨╡╤А
-            var written = 0
-            while (written < length) {
-                val space = capacityBytes - tail
-                val toWrite = minOf(length - written, space)
-                System.arraycopy(data, offset + written, buffer, tail, toWrite)
-                tail = (tail + toWrite) and (capacityBytes - 1) // ╨▒╤Л╤Б╤В╤А╤Л╨╣ mod ╨┤╨╗╤П ╤Б╤В╨╡╨┐╨╡╨╜╨╕ ╨┤╨▓╨╛╨╣╨║╨╕
-                size = min(size + toWrite, capacityBytes)
-                written += toWrite
-            }
-
-            // 2. ╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╨┤╨╡╤В╨╡╨║╤В╨╛╤А ╤В╨╕╤И╨╕╨╜╤Л
-            val now = System.currentTimeMillis()
-            if (hasSpeechActivity(data, offset, length)) {
-                lastSpeechTimeMs = now
-            }
-
-            // 3. ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝, ╨╜╨╡ ╨┐╤А╨╛╤И╨╗╨░ ╨╗╨╕ ╤В╨╕╤И╨╕╨╜╨░ ╨┤╨╛╨╗╤М╤И╨╡ ╨┐╨╛╤А╨╛╨│╨░
-            val silenceDuration = now - lastSpeechTimeMs
-            return silenceDuration >= minSilenceDurationMs && size > 0
-
-        } finally {
-            LOCK.unlock()
-        }
-    }
-
-    /**
-     * ╨Я╤А╨╛╨▓╨╡╤А╨╕╤В╤М, ╨╡╤Б╤В╤М ╨╗╨╕ ╨░╨║╤В╨╕╨▓╨╜╨╛╤Б╤В╤М ╤А╨╡╤З╨╕ ╨▓ ╤З╨░╨╜╨║╨╡ (RMS > ╨┐╨╛╤А╨╛╨│╨░)
-     */
-    private fun hasSpeechActivity(data: ByteArray, offset: Int, length: Int): Boolean {
-        // ╨а╨░╨▒╨╛╤В╨░╨╡╨╝ ╤В╨╛╨╗╤М╨║╨╛ ╤Б 16-bit PCM (2 ╨▒╨░╨╣╤В╨░ ╨╜╨░ ╤Б╤Н╨╝╨┐╨╗, little-endian)
-        if (bitsPerSample != 16) return true // fallback
-
-        var speechDetected = false
-        val end = offset + length - 1
-
-        var i = offset
-        while (i < end) {
-            // ╨з╨╕╤В╨░╨╡╨╝ 16-bit sample (little-endian)
-            val sample = (data[i].toInt() and 0xFF) or (data[i + 1].toInt() shl 8)
-            val amplitude = kotlin.math.abs(sample)
-
-            if (amplitude > silenceThresholdLinear) {
-                speechDetected = true
-                break
-            }
-            i += 2
-        }
-
-        return speechDetected
-    }
-
-    /**
-     * ╨Ш╨╖╨▓╨╗╨╡╤З╤М ╨┤╨░╨╜╨╜╤Л╨╡ ╨┤╨╗╤П ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨╕. ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨╜╤Л╤Е ╨▒╨░╨╣╤В.
-     *
-     * @param destination ╨▒╤Г╤Д╨╡╤А ╨┤╨╗╤П ╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨╕╤П (╨┤╨╛╨╗╨╢╨╡╨╜ ╨▒╤Л╤В╤М ╨┤╨╛╤Б╤В╨░╤В╨╛╤З╨╜╨╛ ╨▒╨╛╨╗╤М╤И╨╕╨╝)
-     * @param maxSize ╨╝╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╨╛╨╡ ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨▒╨░╨╣╤В ╨┤╨╗╤П ╨╕╨╖╨▓╨╗╨╡╤З╨╡╨╜╨╕╤П (╨╛╨┐╤В╨╕╨╝╨╕╨╖╨░╤Ж╨╕╤П)
-     */
-    fun take(destination: ByteArray, maxSize: Int = destination.size): Int {
-        LOCK.lock()
-        try {
-            if (size == 0) return 0
-
-            val toCopy = minOf(size, destination.size, maxSize)
-            var copied = 0
-            var readPos = head
-
-            while (copied < toCopy) {
-                val available = capacityBytes - readPos
-                val chunk = minOf(toCopy - copied, available)
-                System.arraycopy(buffer, readPos, destination, copied, chunk)
-                readPos = (readPos + chunk) and (capacityBytes - 1)
-                copied += chunk
-            }
-
-            head = readPos
-            size -= copied
-            return copied
-
-        } finally {
-            LOCK.unlock()
-        }
-    }
-
-    /**
-     * ╨С╤Л╤Б╤В╤А╨░╤П ╨┐╤А╨╛╨▓╨╡╤А╨║╨░: ╨╡╤Б╤В╤М ╨╗╨╕ ╨┤╨░╨╜╨╜╤Л╨╡ ╨┤╨╗╤П ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨╕
-     */
-    fun hasData(minBytes: Int = 1): Boolean = LOCK.withLock { size >= minBytes }
-
-    /**
-     * ╨Ъ╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╤Л╤Е ╨▒╨░╨╣╤В
-     */
-    fun availableBytes(): Int = LOCK.withLock { size }
-
-    /**
-     * ╨б╨▒╤А╨╛╤Б╨╕╤В╤М ╨▒╤Г╤Д╨╡╤А ╨╕ ╨┤╨╡╤В╨╡╨║╤В╨╛╤А ╤В╨╕╤И╨╕╨╜╤Л
-     */
-    fun reset() {
-        LOCK.lock()
-        try {
-            head = 0
-            tail = 0
-            size = 0
-            lastSpeechTimeMs = 0
-            rmsSum = 0
-            rmsCount = 0
-        } finally {
-            LOCK.unlock()
-        }
-    }
-
-    /**
-     * ╨Ъ╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П ╨┤╨╡╤В╨╡╨║╤В╨╛╤А╨░ ╤В╨╕╤И╨╕╨╜╤Л "╨╜╨░ ╨╗╨╡╤В╤Г"
-     */
-    fun updateSilenceParams(
-        thresholdDb: Float? = null,
-        minDurationMs: Int? = null
-                           ) {
-        LOCK.lock()
-        try {
-            thresholdDb?.let {
-                silenceThresholdDb = it
-                // ╨Я╨╡╤А╨╡╤Б╤З╨╕╤В╤Л╨▓╨░╨╡╨╝ ╨╗╨╕╨╜╨╡╨╣╨╜╤Л╨╣ ╨┐╨╛╤А╨╛╨│
-                // (╨▓ ╤А╨╡╨░╨╗╤М╨╜╨╛╨╝ ╨║╨╛╨┤╨╡ ╨╗╤Г╤З╤И╨╡ ╤Б╨┤╨╡╨╗╨░╤В╤М ╤Б╨▓╨╛╨╣╤Б╤В╨▓╨░ ╤Б setter)
-            }
-            minDurationMs?.let { minSilenceDurationMs = it }
-        } finally {
-            LOCK.unlock()
-        }
-    }
-}
-
+package ru.voboost.voice.audio
+
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+import kotlin.math.min
+
+/**
+ * Фиксированный кольцевой буфер для аудио + детектор тишины.
+ *
+ * Особенности:
+ * - ❌ Нет аллокаций в hot path (фиксированный размер)
+ * - ❌ Нет динамического расширения (предсказуемая память)
+ * - ✅ Встроенный RMS-based silence detection
+ * - ✅ Thread-safe через ReentrantLock (быстрее synchronized для частых операций)
+ */
+class AudioBuffer(
+    val capacityBytes: Int = 256 * 1024, // 256KB ~ 8 сек @16kHz/16bit mono
+    private val sampleRate: Int = 16000,
+    private val bitsPerSample: Int = 16,
+    // Параметры детектора тишины
+    private var silenceThresholdDb: Float = -45f, // dBFS, типично -50..-40
+    private var minSilenceDurationMs: Int = 600,  // сколько тишины считать концом фразы
+    private val rmsWindowSizeMs: Int = 50         // окно для расчёта RMS
+                 ) {
+    companion object {
+        const val TAG = "AudioBuffer"
+        private val LOCK = ReentrantLock()
+    }
+
+    private val buffer = ByteArray(capacityBytes)
+    private var head: Int = 0 // откуда читать
+    private var tail: Int = 0 // куда писать
+    private var size: Int = 0 // сколько данных доступно
+
+    // Состояние детектора тишины
+    private var lastSpeechTimeMs: Long = 0
+    private var rmsSum: Long = 0
+    private var rmsCount: Int = 0
+    private val rmsWindowSamples: Int = (sampleRate * rmsWindowSizeMs) / 1000
+
+    // Конверсия порога: dBFS → линейная амплитуда (для 16-bit PCM)
+    private val silenceThresholdLinear =
+            (Short.MAX_VALUE * Math.pow(10.0, silenceThresholdDb / 20.0)).toInt()
+
+    /**
+     * Добавить аудио-данные. Возвращает true, если обнаружен конец фразы (тишина).
+     *
+     * ⚠️ Вызывается из аудио-коллбэка — НЕ ДОЛЖЕН аллоцировать!
+     */
+    fun put(data: ByteArray, offset: Int, length: Int): Boolean {
+        LOCK.lock()
+        try {
+            // 1. Записываем данные в кольцевой буфер
+            var written = 0
+            while (written < length) {
+                val space = capacityBytes - tail
+                val toWrite = minOf(length - written, space)
+                System.arraycopy(data, offset + written, buffer, tail, toWrite)
+                tail = (tail + toWrite) and (capacityBytes - 1) // быстрый mod для степени двойки
+                size = min(size + toWrite, capacityBytes)
+                written += toWrite
+            }
+
+            // 2. Обновляем детектор тишины
+            val now = System.currentTimeMillis()
+            if (hasSpeechActivity(data, offset, length)) {
+                lastSpeechTimeMs = now
+            }
+
+            // 3. Проверяем, не прошла ли тишина дольше порога
+            val silenceDuration = now - lastSpeechTimeMs
+            return silenceDuration >= minSilenceDurationMs && size > 0
+
+        } finally {
+            LOCK.unlock()
+        }
+    }
+
+    /**
+     * Проверить, есть ли активность речи в чанке (RMS > порога)
+     */
+    private fun hasSpeechActivity(data: ByteArray, offset: Int, length: Int): Boolean {
+        // Работаем только с 16-bit PCM (2 байта на сэмпл, little-endian)
+        if (bitsPerSample != 16) return true // fallback
+
+        var speechDetected = false
+        val end = offset + length - 1
+
+        var i = offset
+        while (i < end) {
+            // Читаем 16-bit sample (little-endian)
+            val sample = (data[i].toInt() and 0xFF) or (data[i + 1].toInt() shl 8)
+            val amplitude = kotlin.math.abs(sample)
+
+            if (amplitude > silenceThresholdLinear) {
+                speechDetected = true
+                break
+            }
+            i += 2
+        }
+
+        return speechDetected
+    }
+
+    /**
+     * Извлечь данные для обработки. Возвращает количество скопированных байт.
+     *
+     * @param destination буфер для копирования (должен быть достаточно большим)
+     * @param maxSize максимальное количество байт для извлечения (оптимизация)
+     */
+    fun take(destination: ByteArray, maxSize: Int = destination.size): Int {
+        LOCK.lock()
+        try {
+            if (size == 0) return 0
+
+            val toCopy = minOf(size, destination.size, maxSize)
+            var copied = 0
+            var readPos = head
+
+            while (copied < toCopy) {
+                val available = capacityBytes - readPos
+                val chunk = minOf(toCopy - copied, available)
+                System.arraycopy(buffer, readPos, destination, copied, chunk)
+                readPos = (readPos + chunk) and (capacityBytes - 1)
+                copied += chunk
+            }
+
+            head = readPos
+            size -= copied
+            return copied
+
+        } finally {
+            LOCK.unlock()
+        }
+    }
+
+    /**
+     * Быстрая проверка: есть ли данные для обработки
+     */
+    fun hasData(minBytes: Int = 1): Boolean = LOCK.withLock { size >= minBytes }
+
+    /**
+     * Количество доступных байт
+     */
+    fun availableBytes(): Int = LOCK.withLock { size }
+
+    /**
+     * Сбросить буфер и детектор тишины
+     */
+    fun reset() {
+        LOCK.lock()
+        try {
+            head = 0
+            tail = 0
+            size = 0
+            lastSpeechTimeMs = 0
+            rmsSum = 0
+            rmsCount = 0
+        } finally {
+            LOCK.unlock()
+        }
+    }
+
+    /**
+     * Конфигурация детектора тишины "на лету"
+     */
+    fun updateSilenceParams(
+        thresholdDb: Float? = null,
+        minDurationMs: Int? = null
+                           ) {
+        LOCK.lock()
+        try {
+            thresholdDb?.let {
+                silenceThresholdDb = it
+                // Пересчитываем линейный порог
+                // (в реальном коде лучше сделать свойства с setter)
+            }
+            minDurationMs?.let { minSilenceDurationMs = it }
+        } finally {
+            LOCK.unlock()
+        }
+    }
+}
+
