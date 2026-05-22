@@ -68,10 +68,10 @@ if exist "models\sherpa\tts-ru-model" (
 )
 echo.
 
-REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
-echo [4/4] Исправление разрешений для eSpeak-ng...
-adb shell "chmod -R 755 /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/espeak-ng-data"
-echo [OK] Разрешения исправлены (755)
+REM Исправление разрешений для всех моделей Sherpa (критично для работы TTS!)
+echo [4/4] Fixing rights for all Sherpa models...
+adb shell "chmod -R 755 /storage/emulated/0/Android/data/%PKG%/files/models/sherpa/tts-ru-model/"
+echo [OK] Rights fixed (755)
 echo.
 
 REM Проверка

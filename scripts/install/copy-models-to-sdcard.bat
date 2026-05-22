@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM ============================================================================
-REM  VoboostVoiceAssistant - Копирование моделей и конфига на устройство
+REM  VoboostVoiceAssistant - РљРѕРїРёСЂРѕРІР°РЅРёРµ РјРѕРґРµР»РµР№ Рё РєРѕРЅС„РёРіР° РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
 REM ============================================================================
 
 set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
@@ -19,96 +19,96 @@ echo  VoboostVoiceAssistant - Copy Config & Models
 echo ============================================================================
 echo.
 
-REM 1. Проверка ADB
-echo [1/5] Проверка подключения ADB...
+REM 1. РџСЂРѕРІРµСЂРєР° ADB
+echo [1/5] РџСЂРѕРІРµСЂРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ ADB...
 adb shell "echo 1" >nul 2>&1
 if !errorlevel! neq 0 (
-    echo [ERROR] Устройство не отвечает или ADB не настроен.
+    echo [ERROR] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РЅРµ РѕС‚РІРµС‡Р°РµС‚ РёР»Рё ADB РЅРµ РЅР°СЃС‚СЂРѕРµРЅ.
     pause & exit /b 1
 )
-echo [OK] Устройство найдено и доступно
+echo [OK] РЈСЃС‚СЂРѕР№СЃС‚РІРѕ РЅР°Р№РґРµРЅРѕ Рё РґРѕСЃС‚СѓРїРЅРѕ
 echo.
 
-REM 2. Создание директорий
-echo [2/5] Создание директорий...
+REM 2. РЎРѕР·РґР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№
+echo [2/5] РЎРѕР·РґР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№...
 adb shell "mkdir -p %OUT_PATH%/models/vosk" >nul 2>&1
 adb shell "mkdir -p %OUT_PATH%/models/sherpa" >nul 2>&1
-echo [OK] Директории готовы
+echo [OK] Р”РёСЂРµРєС‚РѕСЂРёРё РіРѕС‚РѕРІС‹
 echo.
 
 REM 3. Config
-echo [3/5] Копирование config.json...
+echo [3/5] РљРѕРїРёСЂРѕРІР°РЅРёРµ config.json...
 if exist "%MODEL_CONFIG_PATH%" (
     adb push "%MODEL_CONFIG_PATH%" "%OUT_PATH%/config.json" >nul 2>&1
-    if !errorlevel! equ 0 (echo [OK] config.json скопирован) else (echo [ERROR] Ошибка копирования config.json & pause & exit /b 1)
+    if !errorlevel! equ 0 (echo [OK] config.json СЃРєРѕРїРёСЂРѕРІР°РЅ) else (echo [ERROR] РћС€РёР±РєР° РєРѕРїРёСЂРѕРІР°РЅРёСЏ config.json & pause & exit /b 1)
 ) else (
-    echo [WARN] config.json не найден в assets
+    echo [WARN] config.json РЅРµ РЅР°Р№РґРµРЅ РІ assets
 )
 echo.
 
-REM 4. Vosk модель
-echo [4/5] Копирование Vosk модели...
+REM 4. Vosk РјРѕРґРµР»СЊ
+echo [4/5] РљРѕРїРёСЂРѕРІР°РЅРёРµ Vosk РјРѕРґРµР»Рё...
 if exist "%MODEL_VOSK_PATH%\vosk-model-small-ru-0.22" (
-    echo       Прямое копирование папки...
+    echo       РџСЂСЏРјРѕРµ РєРѕРїРёСЂРѕРІР°РЅРёРµ РїР°РїРєРё...
     adb push "%MODEL_VOSK_PATH%\vosk-model-small-ru-0.22" "%OUT_PATH%/models/vosk/" >nul 2>&1
-    if !errorlevel! equ 0 (echo [OK] Папка скопирована) else (echo [ERROR] Сбой копирования! & pause & exit /b 1)
+    if !errorlevel! equ 0 (echo [OK] РџР°РїРєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°) else (echo [ERROR] РЎР±РѕР№ РєРѕРїРёСЂРѕРІР°РЅРёСЏ! & pause & exit /b 1)
 ) else if exist "%MODEL_VOSK_PATH%\vosk-model-small-ru-0.22.tar.gz" (
-    echo       Копирование архива + распаковка...
+    echo       РљРѕРїРёСЂРѕРІР°РЅРёРµ Р°СЂС…РёРІР° + СЂР°СЃРїР°РєРѕРІРєР°...
     adb push "%MODEL_VOSK_PATH%\vosk-model-small-ru-0.22.tar.gz" "%OUT_PATH%/models/vosk/" >nul 2>&1
     if !errorlevel! equ 0 (
-        echo       Распаковка на устройстве...
+        echo       Р Р°СЃРїР°РєРѕРІРєР° РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ...
         adb shell "cd %OUT_PATH%/models/vosk && tar -xzf vosk-model-small-ru-0.22.tar.gz"
         if !errorlevel! equ 0 (
             adb shell "rm -f %OUT_PATH%/models/vosk/vosk-model-small-ru-0.22.tar.gz"
-            echo [OK] Модель распакована
+            echo [OK] РњРѕРґРµР»СЊ СЂР°СЃРїР°РєРѕРІР°РЅР°
         ) else (
-            echo [ERROR] Распаковка tar.gz не удалась! & pause & exit /b 1
+            echo [ERROR] Р Р°СЃРїР°РєРѕРІРєР° tar.gz РЅРµ СѓРґР°Р»Р°СЃСЊ! & pause & exit /b 1
         )
     ) else (
-        echo [ERROR] Ошибка загрузки архива! & pause & exit /b 1
+        echo [ERROR] РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р°СЂС…РёРІР°! & pause & exit /b 1
     )
 ) else (
-    echo [WARN] Vosk модель не найдена! (ожидается models\vosk\vosk-model-small-ru-0.22 или архив .tar.gz)
+    echo [WARN] Vosk РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°! (РѕР¶РёРґР°РµС‚СЃСЏ models\vosk\vosk-model-small-ru-0.22 РёР»Рё Р°СЂС…РёРІ .tar.gz)
 )
 echo.
 
-REM 5. Sherpa TTS модель
-echo [5/5] Копирование Sherpa TTS модели...
+REM 5. Sherpa TTS РјРѕРґРµР»СЊ
+echo [5/5] РљРѕРїРёСЂРѕРІР°РЅРёРµ Sherpa TTS РјРѕРґРµР»Рё...
 if exist "%MODEL_SHERPA_PATH%\tts-ru-model" (
-    echo       Прямое копирование папки...
+    echo       РџСЂСЏРјРѕРµ РєРѕРїРёСЂРѕРІР°РЅРёРµ РїР°РїРєРё...
     adb push "%MODEL_SHERPA_PATH%\tts-ru-model" "%OUT_PATH%/models/sherpa/" >nul 2>&1
-    if !errorlevel! equ 0 (echo [OK] Папка скопирована) else (echo [ERROR] Сбой копирования! & pause & exit /b 1)
+    if !errorlevel! equ 0 (echo [OK] РџР°РїРєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°) else (echo [ERROR] РЎР±РѕР№ РєРѕРїРёСЂРѕРІР°РЅРёСЏ! & pause & exit /b 1)
 ) else if exist "%MODEL_SHERPA_PATH%\tts-ru-model.tar.gz" (
-    echo       Копирование архива + распаковка...
+    echo       РљРѕРїРёСЂРѕРІР°РЅРёРµ Р°СЂС…РёРІР° + СЂР°СЃРїР°РєРѕРІРєР°...
     adb push "%MODEL_SHERPA_PATH%\tts-ru-model.tar.gz" "%OUT_PATH%/models/sherpa/" >nul 2>&1
     if !errorlevel! equ 0 (
-        echo       Распаковка на устройстве...
+        echo       Р Р°СЃРїР°РєРѕРІРєР° РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ...
         adb shell "cd %OUT_PATH%/models/sherpa && tar -xzf tts-ru-model.tar.gz"
         if !errorlevel! equ 0 (
             adb shell "rm -f %OUT_PATH%/models/sherpa/tts-ru-model.tar.gz"
-            echo [OK] Модель распакована
+            echo [OK] РњРѕРґРµР»СЊ СЂР°СЃРїР°РєРѕРІР°РЅР°
         ) else (
-            echo [ERROR] Распаковка tar.gz не удалась! & pause & exit /b 1
+            echo [ERROR] Р Р°СЃРїР°РєРѕРІРєР° tar.gz РЅРµ СѓРґР°Р»Р°СЃСЊ! & pause & exit /b 1
         )
     ) else (
-        echo [ERROR] Ошибка загрузки архива! & pause & exit /b 1
+        echo [ERROR] РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р°СЂС…РёРІР°! & pause & exit /b 1
     )
 ) else (
-    echo [WARN] Sherpa модель не найдена!
+    echo [WARN] Sherpa РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°!
 )
 echo.
 
-REM Финальная проверка ключевых файлов
+REM Р¤РёРЅР°Р»СЊРЅР°СЏ РїСЂРѕРІРµСЂРєР° РєР»СЋС‡РµРІС‹С… С„Р°Р№Р»РѕРІ
 echo ============================================================================
-echo  Проверка целостности...
+echo  РџСЂРѕРІРµСЂРєР° С†РµР»РѕСЃС‚РЅРѕСЃС‚Рё...
 echo ============================================================================
 adb shell "test -f '%OUT_PATH%/config.json' && echo [OK] config.json || echo [FAIL] config.json"
-adb shell "test -f '%OUT_PATH%/models/vosk/vosk-model-small-ru-0.22/am/final.mdl' && echo [OK] Vosk model || echo [FAIL] Vosk model (проверьте распаковку)"
+adb shell "test -f '%OUT_PATH%/models/vosk/vosk-model-small-ru-0.22/am/final.mdl' && echo [OK] Vosk model || echo [FAIL] Vosk model (РїСЂРѕРІРµСЂСЊС‚Рµ СЂР°СЃРїР°РєРѕРІРєСѓ)"
 adb shell "test -f '%OUT_PATH%/models/sherpa/tts-ru-model/ru_RU-ruslan-medium.onnx' && echo [OK] Sherpa TTS || echo [FAIL] Sherpa TTS"
 echo.
 
 echo ============================================================================
-echo  Готово! Перезапустите приложение:
+echo  Р“РѕС‚РѕРІРѕ! РџРµСЂРµР·Р°РїСѓСЃС‚РёС‚Рµ РїСЂРёР»РѕР¶РµРЅРёРµ:
 echo    adb shell am force-stop ru.voboost.voice
 echo    adb shell am start-foreground-service ru.voboost.voice/.VoboostVoiceService
 echo ============================================================================

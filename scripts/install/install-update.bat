@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
 REM ========================================
-REM Быстрое обновление VoboostVoiceAssistant
-REM Обновление APK БЕЗ перезагрузки и моделей
+REM Р‘С‹СЃС‚СЂРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ VoboostVoiceAssistant
+REM РћР±РЅРѕРІР»РµРЅРёРµ APK Р‘Р•Р— РїРµСЂРµР·Р°РіСЂСѓР·РєРё Рё РјРѕРґРµР»РµР№
 REM ========================================
 
 set "ADB=d:\Projects\Android\MM\6.11.1\export\adb\adb.exe"
@@ -10,13 +10,13 @@ set APK_PATH=d:\Projects\Android\MM\6.11.1\export\VoboostVoiceAssistant\app\buil
 set PKG=ru.voboost.voice
 
 echo ========================================
-echo  VoboostVoiceAssistant - Быстрое обновление
+echo  VoboostVoiceAssistant - Р‘С‹СЃС‚СЂРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ
 echo ========================================
 echo.
 
 if not exist "%APK_PATH%" (
-    echo [ERROR] APK не найден: %APK_PATH%
-    echo Сначала: build-project.bat
+    echo [ERROR] APK РЅРµ РЅР°Р№РґРµРЅ: %APK_PATH%
+    echo РЎРЅР°С‡Р°Р»Р°: build-project.bat
     pause
     exit /b 1
 )
@@ -25,21 +25,21 @@ echo [1/4] Root...
 %ADB% root >nul 2>&1
 timeout /t 1 /nobreak >nul
 
-echo [2/4] Отключение ассистентов...
+echo [2/4] РћС‚РєР»СЋС‡РµРЅРёРµ Р°СЃСЃРёСЃС‚РµРЅС‚РѕРІ...
 %ADB% shell pm disable com.qinggan.ivoka       >nul 2>&1
 %ADB% shell pm disable com.qinggan.ivoka1      >nul 2>&1
 %ADB% shell pm disable com.qinggan.sttservice  >nul 2>&1
 echo   [OK]
 
-echo [3/4] Обновление APK...
+echo [3/4] РћР±РЅРѕРІР»РµРЅРёРµ APK...
 %ADB% install -g %APK_PATH% >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Не удалось скопировать APK!
+    echo [ERROR] РќРµ СѓРґР°Р»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ APK!
     pause
     exit /b 1
 )
 
-echo [4/4] Перезапуск...
+echo [4/4] РџРµСЂРµР·Р°РїСѓСЃРє...
 %ADB% shell "am force-stop %PKG%" >nul 2>&1
 timeout /t 2 /nobreak >nul
 %ADB% shell "am start-foreground-service -n %PKG%/.VoboostVoiceService" >nul 2>&1
@@ -47,13 +47,13 @@ echo   [OK]
 
 echo.
 echo ========================================
-echo  ? APK обновлён и перезапущен
+echo  ? APK РѕР±РЅРѕРІР»С‘РЅ Рё РїРµСЂРµР·Р°РїСѓС‰РµРЅ
 echo ========================================
 echo.
-echo Полная установка с моделями:
+echo РџРѕР»РЅР°СЏ СѓСЃС‚Р°РЅРѕРІРєР° СЃ РјРѕРґРµР»СЏРјРё:
 echo   VoboostVoiceAssistant-install.bat
 echo.
-echo Модели и конфиг хранятся на внешнем хранилище:
+echo РњРѕРґРµР»Рё Рё РєРѕРЅС„РёРі С…СЂР°РЅСЏС‚СЃСЏ РЅР° РІРЅРµС€РЅРµРј С…СЂР°РЅРёР»РёС‰Рµ:
 echo   /storage/emulated/0/Android/data/ru.voboost.voice/files/
 echo.
 pause

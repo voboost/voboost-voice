@@ -87,9 +87,9 @@ if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
     echo   [WARN] Sherpa TTS модель не найдена: models\sherpa\tts-ru-model-temp\tts-ru-model
 )
 
-REM Примечание: на Android 10+ chmod для /storage/emulated/ часто игнорируется ОС
-adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/espeak-ng-data" >nul 2>&1
-echo   [OK] Разрешения eSpeak-ng обработаны
+REM Note: Android 10+ chmod for /storage/emulated/ is often ignored by OS
+adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/" >nul 2>&1
+echo   [OK] Rights fixed for TTS model (755)
 
 if exist "%CONFIG_PATH%" (
     adb push "%CONFIG_PATH%" "%EXTERNAL_DIR%/config.json" >nul 2>&1

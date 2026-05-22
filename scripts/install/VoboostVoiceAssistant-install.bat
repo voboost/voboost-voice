@@ -1,25 +1,25 @@
 @echo off
 chcp 65001 >nul
 REM ============================================================================
-REM  VoboostVoiceAssistant - Полная установка с нуля
+REM  VoboostVoiceAssistant - РџРѕР»РЅР°СЏ СѓСЃС‚Р°РЅРѕРІРєР° СЃ РЅСѓР»СЏ
 REM ============================================================================
-REM  Этот скрипт:
-REM    1. Отключает стандартные ассистенты
-REM    2. Установка APK
-REM    3. Копирует модели (Vosk + Sherpa TTS)
-REM    4. Копирует NLU модель и токенайзер
-REM    5. Копирует config.json
-REM    6. Выдаёт разрешения
-REM    7. Запускает сервис
+REM  Р­С‚РѕС‚ СЃРєСЂРёРїС‚:
+REM    1. РћС‚РєР»СЋС‡Р°РµС‚ СЃС‚Р°РЅРґР°СЂС‚РЅС‹Рµ Р°СЃСЃРёСЃС‚РµРЅС‚С‹
+REM    2. РЈСЃС‚Р°РЅРѕРІРєР° APK
+REM    3. РљРѕРїРёСЂСѓРµС‚ РјРѕРґРµР»Рё (Vosk + Sherpa TTS)
+REM    4. РљРѕРїРёСЂСѓРµС‚ NLU РјРѕРґРµР»СЊ Рё С‚РѕРєРµРЅР°Р№Р·РµСЂ
+REM    5. РљРѕРїРёСЂСѓРµС‚ config.json
+REM    6. Р’С‹РґР°С‘С‚ СЂР°Р·СЂРµС€РµРЅРёСЏ
+REM    7. Р—Р°РїСѓСЃРєР°РµС‚ СЃРµСЂРІРёСЃ
 REM ============================================================================
 
 setlocal enabledelayedexpansion
 
-REM Путь к ADB
+REM РџСѓС‚СЊ Рє ADB
 set "ADB_PATH=D:\Projects\Android\MM\6.11.1\export\adb"
 set "PATH=%ADB_PATH%;%PATH%"
 
-REM Пути
+REM РџСѓС‚Рё
 set "APK_PATH=app\build\outputs\apk\debug\app-debug.apk"
 set "LIBS_DIR=native_libs\arm64-v8a"
 set "CONFIG_PATH=app\src\main\assets\config.json"
@@ -29,157 +29,157 @@ set "EXTERNAL_DIR=/storage/emulated/0/Android/data/%PKG%/files"
 
 echo.
 echo ============================================================================
-echo  VoboostVoiceAssistant - Полная установка
+echo  VoboostVoiceAssistant - РџРѕР»РЅР°СЏ СѓСЃС‚Р°РЅРѕРІРєР°
 echo ============================================================================
 echo.
 
-REM --- Шаг 1: Отключение стандартных ассистентов ---
-echo [1/6] Отключение стандартных ассистентов...
+REM --- РЁР°Рі 1: РћС‚РєР»СЋС‡РµРЅРёРµ СЃС‚Р°РЅРґР°СЂС‚РЅС‹С… Р°СЃСЃРёСЃС‚РµРЅС‚РѕРІ ---
+echo [1/6] РћС‚РєР»СЋС‡РµРЅРёРµ СЃС‚Р°РЅРґР°СЂС‚РЅС‹С… Р°СЃСЃРёСЃС‚РµРЅС‚РѕРІ...
 adb shell pm disable com.qinggan.ivoka       >nul 2>&1
 adb shell pm disable com.qinggan.ivoka1      >nul 2>&1
 adb shell pm disable com.qinggan.sttservice  >nul 2>&1
-echo   [OK] Отключены
+echo   [OK] РћС‚РєР»СЋС‡РµРЅС‹
 echo.
 
-REM --- Шаг 2: Проверка APK ---
-echo [2/6] Проверка наличия APK...
+REM --- РЁР°Рі 2: РџСЂРѕРІРµСЂРєР° APK ---
+echo [2/6] РџСЂРѕРІРµСЂРєР° РЅР°Р»РёС‡РёСЏ APK...
 if not exist "%APK_PATH%" (
-    echo [ERROR] APK не найден: %APK_PATH%
-    echo Сначала соберите проект: build-project.bat
+    echo [ERROR] APK РЅРµ РЅР°Р№РґРµРЅ: %APK_PATH%
+    echo РЎРЅР°С‡Р°Р»Р° СЃРѕР±РµСЂРёС‚Рµ РїСЂРѕРµРєС‚: build-project.bat
     pause
     exit /b 1
 )
-echo   [OK] APK найден
+echo   [OK] APK РЅР°Р№РґРµРЅ
 echo.
 
-REM --- Шаг 3: Root ---
+REM --- РЁР°Рі 3: Root ---
 echo [3/6] Root...
 adb root
 timeout /t 2 /nobreak >nul
 echo   [OK]
 echo.
 
-REM --- Шаг 4: Установка APK ---
-echo [4/6] Установка APK...
-adb insyall -g "%APK_PATH%"
+REM --- РЁР°Рі 4: РЈСЃС‚Р°РЅРѕРІРєР° APK ---
+echo [4/6] РЈСЃС‚Р°РЅРѕРІРєР° APK...
+adb install -g "%APK_PATH%"
 if errorlevel 1 (
-    echo [ERROR] Ошибка установки APK!
+    echo [ERROR] РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё APK!
     pause
     exit /b 1
 )
-echo   [OK] APK установлен
+echo   [OK] APK installed
 echo.
 
-REM --- Шаг 5: Копирование моделей ---
-echo [5/6] Копирование моделей и конфига...
+REM --- РЁР°Рі 5: РљРѕРїРёСЂРѕРІР°РЅРёРµ РјРѕРґРµР»РµР№ ---
+echo [5/6] РљРѕРїРёСЂРѕРІР°РЅРёРµ РјРѕРґРµР»РµР№ Рё РєРѕРЅС„РёРіР°...
 
-REM Создаём директории
+REM РЎРѕР·РґР°С‘Рј РґРёСЂРµРєС‚РѕСЂРёРё
 adb shell "mkdir -p %EXTERNAL_DIR%/models/vosk" >nul 2>&1
 adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/asr-ru-model" >nul 2>&1
 adb shell "mkdir -p %EXTERNAL_DIR%/models/sherpa/tts-ru-model" >nul 2>&1
 adb shell "mkdir -p %EXTERNAL_DIR%/models/nlu" >nul 2>&1
 
-REM Копируем Vosk модель
+REM РљРѕРїРёСЂСѓРµРј Vosk РјРѕРґРµР»СЊ
 if exist "models\vosk\vosk-model-small-ru-0.22" (
     adb push "models\vosk\vosk-model-small-ru-0.22" ^
       "%EXTERNAL_DIR%/models/vosk/" >nul 2>&1
-    echo   [OK] Vosk модель скопирована
+    echo   [OK] Vosk РјРѕРґРµР»СЊ СЃРєРѕРїРёСЂРѕРІР°РЅР°
 ) else (
-    echo   [WARN] Vosk модель не найдена: models\vosk\vosk-model-small-ru-0.22
+    echo   [WARN] Vosk РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°: models\vosk\vosk-model-small-ru-0.22
 )
 
-REM Копируем Sherpa ASR модель
+REM РљРѕРїРёСЂСѓРµРј Sherpa ASR РјРѕРґРµР»СЊ
 if exist "models\sherpa\asr-ru-model" (
     adb push "models\sherpa\asr-ru-model" ^
       "%EXTERNAL_DIR%/models/sherpa/asr-ru-model" >nul 2>&1
-    echo   [OK] Sherpa ASR модель скопирована
+    echo   [OK] Sherpa ASR РјРѕРґРµР»СЊ СЃРєРѕРїРёСЂРѕРІР°РЅР°
 ) else (
-    echo   [WARN] Sherpa ASR модель не найдена: models\sherpa\asr-ru-model
+    echo   [WARN] Sherpa ASR РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°: models\sherpa\asr-ru-model
 )
 
-REM Копируем Sherpa TTS модель (из tts-ru-model-temp/tts-ru-model)
+REM РљРѕРїРёСЂСѓРµРј Sherpa TTS РјРѕРґРµР»СЊ (РёР· tts-ru-model-temp/tts-ru-model)
 if exist "models\sherpa\tts-ru-model-temp\tts-ru-model" (
     adb push "models\sherpa\tts-ru-model-temp\tts-ru-model" ^
       "%EXTERNAL_DIR%/models/sherpa/tts-ru-model" >nul 2>&1
-    echo   [OK] Sherpa TTS модель скопирована
+    echo   [OK] Sherpa TTS РјРѕРґРµР»СЊ СЃРєРѕРїРёСЂРѕРІР°РЅР°
 ) else (
-    echo   [WARN] Sherpa TTS модель не найдена: models\sherpa\tts-ru-model-temp\tts-ru-model
+    echo   [WARN] Sherpa TTS РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°: models\sherpa\tts-ru-model-temp\tts-ru-model
 )
 
-REM Копируем NLU модель и токенайзер
+REM РљРѕРїРёСЂСѓРµРј NLU РјРѕРґРµР»СЊ Рё С‚РѕРєРµРЅР°Р№Р·РµСЂ
 if exist "models\nlu\model.onnx" (
     adb push "models\nlu\model.onnx" "%EXTERNAL_DIR%/models/nlu/model.onnx" >nul 2>&1
-    echo   [OK] NLU модель скопирована
+    echo   [OK] NLU РјРѕРґРµР»СЊ СЃРєРѕРїРёСЂРѕРІР°РЅР°
 ) else (
-    echo   [WARN] NLU модель не найдена: models\nlu\model.onnx
+    echo   [WARN] NLU РјРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°: models\nlu\model.onnx
 )
 
 if exist "models\nlu\tokenizer.json" (
     adb push "models\nlu\tokenizer.json" "%EXTERNAL_DIR%/models/nlu/tokenizer.json" >nul 2>&1
-    echo   [OK] Токенайзер скопирован
+    echo   [OK] РўРѕРєРµРЅР°Р№Р·РµСЂ СЃРєРѕРїРёСЂРѕРІР°РЅ
 ) else (
-    echo   [WARN] Токенайзер не найден: models\nlu\tokenizer.json
+    echo   [WARN] РўРѕРєРµРЅР°Р№Р·РµСЂ РЅРµ РЅР°Р№РґРµРЅ: models\nlu\tokenizer.json
 )
 
-REM Исправление разрешений для eSpeak-ng (критично для работы TTS!)
-adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/espeak-ng-data" >nul 2>&1
-echo   [OK] Разрешения eSpeak-ng исправлены (755)
+REM РСЃРїСЂР°РІР»РµРЅРёРµ СЂР°Р·СЂРµС€РµРЅРёР№ РґР»СЏ РІСЃРµС… РјРѕРґРµР»РµР№ (РєСЂРёС‚РёС‡РЅРѕ РґР»СЏ СЂР°Р±РѕС‚С‹ TTS!)
+adb shell "chmod -R 755 %EXTERNAL_DIR%/models/sherpa/tts-ru-model/" >nul 2>&1
+echo   [OK] Rights fixed for TTS model (755)
 
-REM Копируем config.json
+REM РљРѕРїРёСЂСѓРµРј config.json
 if exist "%CONFIG_PATH%" (
     adb push "%CONFIG_PATH%" "%EXTERNAL_DIR%/config.json" >nul 2>&1
-    echo   [OK] config.json скопирован
+    echo   [OK] config.json СЃРєРѕРїРёСЂРѕРІР°РЅ
 ) else (
-    echo   [WARN] config.json не найден: %CONFIG_PATH%
+    echo   [WARN] config.json РЅРµ РЅР°Р№РґРµРЅ: %CONFIG_PATH%
 )
-echo   [OK] Модели и конфиг скопированы на внешнее хранилище
+echo   [OK] РњРѕРґРµР»Рё Рё РєРѕРЅС„РёРі СЃРєРѕРїРёСЂРѕРІР°РЅС‹ РЅР° РІРЅРµС€РЅРµРµ С…СЂР°РЅРёР»РёС‰Рµ
 
-REM Устанавливаем права на внешнее хранилище (chmod, chown не нужен для external storage)
-adb shell "chmod -R 755 %EXTERNAL_DIR%" >nul 2>&1
-echo   [OK] Права установлены на внешнее хранилище
+REM РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂР°РІР° РЅР° РІСЃРµ РјРѕРґРµР»Рё (chmod, chown РЅРµ РЅСѓР¶РµРЅ РґР»СЏ external storage)
+adb shell "chmod -R 755 %EXTERNAL_DIR%/models/" >nul 2>&1
+echo   [OK] Rights installed for all models
 echo.
 
-REM --- Шаг 6: Разрешения и запуск ---
-echo [6/6] Разрешения и запуск сервиса...
+REM --- РЁР°Рі 6: Р Р°Р·СЂРµС€РµРЅРёСЏ Рё Р·Р°РїСѓСЃРє ---
+echo [6/6] Р Р°Р·СЂРµС€РµРЅРёСЏ Рё Р·Р°РїСѓСЃРє СЃРµСЂРІРёСЃР°...
 
 adb shell "pm grant %PKG% android.permission.RECORD_AUDIO" >nul 2>&1
 adb shell "pm grant %PKG% android.permission.READ_CONTACTS" >nul 2>&1
 adb shell "pm grant %PKG% android.permission.SYSTEM_ALERT_WINDOW" >nul 2>&1
 adb shell "pm grant %PKG% android.permission.FOREGROUND_SERVICE" >nul 2>&1
-echo   [OK] Разрешения выданы
+echo   [OK] Р Р°Р·СЂРµС€РµРЅРёСЏ РІС‹РґР°РЅС‹
 
-REM Останавливаем и запускаем сервис
+REM РћСЃС‚Р°РЅР°РІР»РёРІР°РµРј Рё Р·Р°РїСѓСЃРєР°РµРј СЃРµСЂРІРёСЃ
 adb shell "am force-stop %PKG%" >nul 2>&1
 timeout /t 2 /nobreak >nul
 adb shell "am start-foreground-service --user 0 -n %PKG%/.VoboostVoiceService"
 if errorlevel 1 (
-    echo [WARN] Ошибка запуска — возможно нужно подождать ещё несколько секунд
+    echo [WARN] РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° вЂ” РІРѕР·РјРѕР¶РЅРѕ РЅСѓР¶РЅРѕ РїРѕРґРѕР¶РґР°С‚СЊ РµС‰С‘ РЅРµСЃРєРѕР»СЊРєРѕ СЃРµРєСѓРЅРґ
 )
 
 timeout /t 3 /nobreak
 
-REM Проверяем процесс
+REM РџСЂРѕРІРµСЂСЏРµРј РїСЂРѕС†РµСЃСЃ
 adb shell "ps | grep voboost" >nul 2>&1
 if errorlevel 1 (
-    echo [WARN] Процесс не найден сразу — возможно ещё инициализируется
-    echo   Попробуйте через 10 секунд: adb shell ps ^| grep voboost
+    echo [WARN] РџСЂРѕС†РµСЃСЃ РЅРµ РЅР°Р№РґРµРЅ СЃСЂР°Р·Сѓ вЂ” РІРѕР·РјРѕР¶РЅРѕ РµС‰С‘ РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚СЃСЏ
+    echo   РџРѕРїСЂРѕР±СѓР№С‚Рµ С‡РµСЂРµР· 10 СЃРµРєСѓРЅРґ: adb shell ps ^| grep voboost
 ) else (
-    echo   [OK] Сервис запущен
+    echo   [OK] РЎРµСЂРІРёСЃ Р·Р°РїСѓС‰РµРЅ
 )
 echo.
 
 REM ============================================================================
-REM  Готово
+REM  Р“РѕС‚РѕРІРѕ
 REM ============================================================================
 echo ============================================================================
-echo  Готово! VoboostVoiceAssistant полностью установлен и запущен!
+echo  Р“РѕС‚РѕРІРѕ! VoboostVoiceAssistant РїРѕР»РЅРѕСЃС‚СЊСЋ СѓСЃС‚Р°РЅРѕРІР»РµРЅ Рё Р·Р°РїСѓС‰РµРЅ!
 echo ============================================================================
 echo.
-echo Как использовать:
-echo   1. Нажмите кнопку на руле
-echo   2. Скажите команду: "открой окно", "позвони сынок", "включи кондиционер"
+echo РљР°Рє РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ:
+echo   1. РќР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ РЅР° СЂСѓР»Рµ
+echo   2. РЎРєР°Р¶РёС‚Рµ РєРѕРјР°РЅРґСѓ: "РѕС‚РєСЂРѕР№ РѕРєРЅРѕ", "РїРѕР·РІРѕРЅРё СЃС‹РЅРѕРє", "РІРєР»СЋС‡Рё РєРѕРЅРґРёС†РёРѕРЅРµСЂ"
 echo.
-echo Логи:
+echo Р›РѕРіРё:
 echo   adb logcat -s VoboostVoiceService:* IntentHandler:*
 echo.
 pause
