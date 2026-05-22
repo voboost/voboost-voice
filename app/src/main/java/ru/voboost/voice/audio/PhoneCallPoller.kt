@@ -1,13 +1,11 @@
-package ru.voboost.voice.canbus
+package ru.voboost.voice.audio
 
-import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import ru.voboost.voice.audio.AudioPolicyServiceManager
 import ru.voboost.voice.core.ISpeechRecognizer
 import ru.voboost.voice.speech.SpeechRecognizer
 
@@ -15,10 +13,8 @@ import ru.voboost.voice.speech.SpeechRecognizer
  * Поллинг состояния телефона через AudioPolicyManager
  * Периодически проверяет isInCall() и переключает speechRecognizer в MUTED режим
  */
-class PhoneCallPoller(private val context: Context,
-                      @Volatile private var speechRecognizer: ISpeechRecognizer?) {
-
-
+class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
+                      private val audioPolicyManager: AudioPolicyServiceManager) {
     companion object {
         const val TAG = "PhoneCallPoller"
         private const val CHECK_INTERVAL_MS = 500L // Проверка каждые 500мс
@@ -43,19 +39,17 @@ class PhoneCallPoller(private val context: Context,
         pollingJob = scope.launch {
             while (isPolling) {
                 try {
-                    val inCall = checkPhoneState()
-                    
-                    // Get reference to speechRecognizer to avoid concurrent mutation issues
+                    val inCall = audioPolicyManager.isInCall() // Get reference to speechRecognizer to avoid concurrent mutation issues
                     val recognizer = speechRecognizer
-                    
-                    if (inCall && recognizer != null) { // В звонке - мьютим распознавание
+
+                    if (inCall) { // В звонке - мьютим распознавание
                         val currentMode = recognizer.getMode()
                         if (currentMode != SpeechRecognizer.Mode.MUTED) {
                             Log.i(TAG, "📞 Call active - muting recognizer")
                             recognizer.setModeSafe(SpeechRecognizer.Mode.MUTED)
                         }
                     }
-                    else if (!inCall && recognizer != null) { // Нет звонка - возвращаем KEYWORD режим
+                    else { // Нет звонка - возвращаем KEYWORD режим
                         val currentMode = recognizer.getMode()
                         if (currentMode == SpeechRecognizer.Mode.MUTED) {
                             Log.i(TAG, "📞 Call ended - restoring keyword mode")
@@ -86,33 +80,10 @@ class PhoneCallPoller(private val context: Context,
     }
 
     /**
-     * Проверить состояние телефона через AudioPolicyManager
-     */
-    private fun checkPhoneState(): Boolean {
-        return try { // Создаем временную connection к AudioPolicyService
-            val audioPolicyChecker = AudioPolicyServiceManager(context)
-            val inCall = audioPolicyChecker.isInCall()
-            
-            // Освобождаем ресурсы сразу после проверки
-            audioPolicyChecker.clearCallbacks()
-
-            if (inCall) {
-                Log.d(TAG, "📞 isInCall: true")
-            }
-            inCall
-        }
-        catch (e: Exception) {
-            Log.e(TAG, "Failed to check phone state", e)
-            false
-        }
-    }
-
-    /**
      * Освободить ресурсы
      */
     fun release() {
         stop()
-        speechRecognizer = null
         Log.d(TAG, "PhoneCallPoller released")
     }
 }

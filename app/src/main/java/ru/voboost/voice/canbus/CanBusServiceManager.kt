@@ -24,7 +24,7 @@ import com.qinggan.canbus.WindowStatus
  *
  * @param context Context приложения
  */
-class CanBusServiceManager(context: Context) {
+class CanBusServiceManager(private val context: Context) {
 
     companion object {
         const val TAG = "CanBusServiceManager"
@@ -73,8 +73,8 @@ class CanBusServiceManager(context: Context) {
         }
     }
 
-    init {
-        // Автоматически подключаемся к сервису при создании
+    fun connect()
+    {
         bindToService(context)
     }
 
@@ -459,7 +459,7 @@ class CanBusServiceManager(context: Context) {
         }
     }
 
-    fun onConnected()
+    private fun onConnected()
     {
         connectionCallbacks.forEach { it.handlerConnected(this) }
     }

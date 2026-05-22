@@ -37,9 +37,8 @@ import ru.voboost.voice.audio.AudioSourceFactory
 import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.canbus.handlers.TestCanBusServiceHandler
 import ru.voboost.voice.canbus.handlers.VoiceButtonHandler
-import ru.voboost.voice.canbus.PhoneCallPoller
+import ru.voboost.voice.audio.PhoneCallPoller
 import ru.voboost.voice.core.ISpeechRecognizer
-import ru.voboost.voice.speech.SpeechRecognizer
 import ru.voboost.voice.core.QueueSpeechSynthesis
 import ru.voboost.voice.executor.VehicleCommandExecutor
 import ru.voboost.voice.nlu.INLUEngine
@@ -85,7 +84,7 @@ class VoboostVoiceService : Service() {
     private var tsrSpeedLimitHandler: TSRSpeedLimitHandler? = null
     private var testCanBusServiceHandler: TestCanBusServiceHandler? = null
     // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
-    private var phoneCallPoller: PhoneCallPoller? = null
+    private lateinit var phoneCallPoller: PhoneCallPoller
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
     // Coroutines
@@ -168,13 +167,15 @@ class VoboostVoiceService : Service() {
         tsrSpeedLimitHandler = TSRSpeedLimitHandler(queueSpeech)
         testCanBusServiceHandler = TestCanBusServiceHandler(queueSpeech)
 
-        audioPolicyManager = AudioPolicyServiceManager(this)
-        // CanBus Manager - инициализация (автоматически подключается к CanBusService)
+
         canBusManager = CanBusServiceManager(this)
         Log.i(TAG, "CanBusServiceManager initialized")
         voiceButtonHandler?.let { canBusManager.registerConnectionCallback(it) }
         tsrSpeedLimitHandler?.let {  canBusManager.registerConnectionCallback(it)}
         testCanBusServiceHandler?.let {  canBusManager.registerConnectionCallback(it)}
+
+        // Подключаемся к AudioPolicyService после инициализации CanBus
+        audioPolicyManager = AudioPolicyServiceManager(this)
 
 
         // Создаём VehicleCommandExecutor через фабрику
@@ -195,7 +196,7 @@ class VoboostVoiceService : Service() {
                                                                       configManager = configManager)
         Log.i(TAG, "SpeechRecognizer initialized")
         // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
-        phoneCallPoller = PhoneCallPoller(this, speechRecognizer)
+        phoneCallPoller = PhoneCallPoller( speechRecognizer, audioPolicyManager)
         
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
@@ -211,17 +212,8 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "IState Machine initialized")
         voiceButtonHandler?.stateMachine = stateMachine
 
-        if(audioPolicyManager.isConnected())
-        {
-            Log.i(TAG, "AudioPolicyService already connected — registering handlers immediately")
-            audioPolicyManager.onConnected()
-        }
-
-        // Если уже подключён — регистрируем сразу
-        if (canBusManager.isConnected()) {
-            Log.i(TAG, "CanBusService already connected — registering handlers immediately")
-            canBusManager.onConnected()
-        }
+        canBusManager.connect()
+        audioPolicyManager.connect()
 
         // Регистрируем receiver
         val filter = IntentFilter(ACTION_CANCEL)
@@ -234,7 +226,7 @@ class VoboostVoiceService : Service() {
         Log.d(TAG, "CancelReceiver registered")
 
         // ? Запуск поллинга состояния телефона (до распознавания)
-        phoneCallPoller?.start()
+        phoneCallPoller.start()
         
         // ? Запуск распознавания (если permission есть)
         if (hasRecordPermission()) {
@@ -313,7 +305,7 @@ class VoboostVoiceService : Service() {
         tsrSpeedLimitHandler?.release()
         tsrSpeedLimitHandler = null
         // Останавливаем Phone Call Poller
-        phoneCallPoller?.stop()
+        phoneCallPoller.stop()
         Log.d(TAG, "PhoneCallPoller stopped")
 
         // Отключаем CanBus Manager
@@ -339,7 +331,7 @@ class VoboostVoiceService : Service() {
         speechRecognizer.shutdown()
         
         // Освобождаем Phone Call Poller (после shutdown speechRecognizer)
-        phoneCallPoller?.release()
+        phoneCallPoller.release()
         Log.d(TAG, "PhoneCallPoller released")
         
         queueSpeech.cancelAll()

@@ -44,12 +44,10 @@ android {
     }
 
     // Исключаем модели и конфиг из APK (они будут на SD-карте)
-    aaptOptions {
-        ignoreAssetsPattern 'vosk-model-small-ru-0.22:tts-ru-model:asr-ru-model:config.json'
-    }
 
     androidResources {
         noCompress += ['wav', 'amr', 'ogg', 'json', 'mdl', 'fst', 'int', 'conf', 'stats', 'mat', 'ie', 'dubm', 'tar.gz']
+        ignoreAssetsPattern 'vosk-model-small-ru-0.22:tts-ru-model:asr-ru-model:config.json'
     }
 
     lint {

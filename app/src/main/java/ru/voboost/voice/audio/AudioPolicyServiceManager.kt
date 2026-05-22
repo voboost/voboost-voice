@@ -7,16 +7,14 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import com.qinggan.audiopolicy.IAudioPolicyService
-import ru.voboost.voice.canbus.CanBusServiceManager
 
-class AudioPolicyServiceManager(context: Context) {
+class AudioPolicyServiceManager(private val context: Context) {
 
     companion object {
         const val TAG = "AudioPolicyServiceManager"
         private const val AUDIO_POLICY_SERVICE_PACKAGE = "com.qinggan.audiopolicy.service"
         private const val AUDIO_POLICY_SERVICE_ACTION = "com.qinggan.audiopolicy.action.AUDIO_POLICY_SERVICE"
-        private const val CALLING_PACKAGE_NAME = "com.qinggan.app.launcher"
-
+        private const val CALLING_PACKAGE_NAME = "ru.voboost.voice"
     }
 
     private var audioPolicyService: IAudioPolicyService? = null
@@ -24,7 +22,10 @@ class AudioPolicyServiceManager(context: Context) {
     private var isConnecting = false
     private val connectionCallbacks = mutableListOf<IAudioPolicyServiceConnectionCallback>()
 
-    init {
+    /**
+     * Подключиться к сервису (вызывать после инициализации сервиса)
+     */
+    fun connect() {
         bindToService(context)
     }
 
@@ -46,7 +47,7 @@ class AudioPolicyServiceManager(context: Context) {
 
     private fun bindToService(context: Context) {
         if (isBound || isConnecting) {
-            Log.d(TAG, "Already bound or connecting to CanBusService")
+            Log.d(TAG, "Already bound or connecting to AudioPolicyService")
             return
         }
 
@@ -59,35 +60,36 @@ class AudioPolicyServiceManager(context: Context) {
             Log.d(TAG, "bindService result: $result")
 
             if (!result) {
-                Log.e(TAG, "Failed to bind to CanBusService - bindService returned false")
+                Log.e(TAG, "Failed to bind to AudioPolicyService - bindService returned false")
                 isConnecting = false
                 onConnectionFailed("bindService returned false")
             }
         }
         catch (e: Exception) {
-            Log.e(TAG, "Failed to bind to CanBusService", e)
+            Log.e(TAG, "Failed to bind to AudioPolicyService", e)
             isConnecting = false
             onConnectionFailed(e.message ?: "Unknown error")
         }
     }
 
     private fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        Log.i(CanBusServiceManager.Companion.TAG, "Connected to CanBusService")
+        Log.i(TAG, "Connected to AudioPolicyService")
         audioPolicyService = IAudioPolicyService.Stub.asInterface(service)
         isBound = true
-        isConnecting = false // Уведомляем callback'и
+        isConnecting = false
+
         onConnected()
     }
 
     private fun onServiceDisconnected(name: ComponentName?) {
-        Log.w(CanBusServiceManager.Companion.TAG, "Disconnected from CanBusService")
+        Log.w(TAG, "Disconnected from AudioPolicyService")
         audioPolicyService = null
         isBound = false // Уведомляем callback'и
         onDisconnected()
     }
 
     private fun onBindingDied(name: ComponentName?) {
-        Log.e(CanBusServiceManager.Companion.TAG, "Binding died for CanBusService")
+        Log.e(TAG, "Binding died for AudioPolicyService")
         isBound = false
         isConnecting = false
         audioPolicyService = null
@@ -118,10 +120,10 @@ class AudioPolicyServiceManager(context: Context) {
         if (isBound) {
             try {
                 context.unbindService(serviceConnection)
-                Log.i(CanBusServiceManager.Companion.TAG, "Unbound from CanBusService")
+                Log.i(TAG, "Unbound from AudioPolicyService")
             }
             catch (e: Exception) {
-                Log.e(CanBusServiceManager.Companion.TAG, "Failed to unbind from CanBusService", e)
+                Log.e(TAG, "Failed to unbind from AudioPolicyService", e)
             }
             finally {
                 isBound = false
@@ -137,8 +139,8 @@ class AudioPolicyServiceManager(context: Context) {
     private fun ensureConnected(): Boolean {
         if (isConnected()) return true
 
-        Log.w(CanBusServiceManager.Companion.TAG,
-              "Not connected to CanBusService, attempting to use anyway")
+        Log.w(TAG,
+              "Not connected to AudioPolicyService, attempting to use anyway")
         return false
     }
 
