@@ -3,16 +3,17 @@
 ## Project Overview
 Voice assistant replacement for IVI automotive system (package: `ru.voboost.voice`)
 
-## Current State (2026-05-21)
+## Current State (2026-05-23)
 - ✅ NLU models moved from assets to external SD card storage
 - ✅ Build system fully automated via `scripts/build-project.bat [1|2|3]`
-- ✅ Sherpa-ONNX v1.13 integrated for TTS and ASR (replaces v1.12.34)
+- ✅ **Sherpa-ONNX v1.12.34 local JAR** for TTS (v1.13 not used due to ONNX runtime conflicts)
+- ✅ Vosk ASR working without conflicts
 - ⚠️ NLU ONNX not working due to native library conflicts with Sherpa
-- ✅ Parser mode NLU as fallback (fast, stable)
-- ✅ **Echo cancellation implemented** via AudioPolicyManager + PhoneCallPoller
+- ✅ Parser mode NLU as fallback (fast, stable, <5ms response time)
+- ✅ **Echo cancellation implemented** via AudioPolicyService + PhoneCallPoller (verified working 2026-05-23)
 - ✅ **App ID migrated** from `ru.voboost.voiceassistant` → `ru.voboost.voice`
 - ✅ **Migration script** created: `scripts/install/migrate-from-voiceassistant.bat`
-- ✅ **Hidden API Policy** documented for AIDL access
+- ✅ **Hidden API Policy** configured (`hidden_api_policy=1`) for AIDL access
 - ✅ **Documentation updated**: INSTALLATION.md + TROUBLESHOOTING.md (pushed to GitHub)
 
 ## Speech Engines Architecture
@@ -21,87 +22,22 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 | Engine | Status | Notes |
 |--------|--------|-------|
 | **Vosk** | ✅ Active | Java API `com.alphacephei:vosk-android:0.3.45`, uses JNA for native access |
-| Sherpa-ONNX | ✅ Available | Uses ONNX Runtime internally, but not used for ASR currently |
+| Sherpa-ONNX | ❌ Not Used | Uses ONNX Runtime internally, but has library conflicts with Microsoft ONNX |
 
 ### TTS (Text-to-Speech)
 | Engine | Status | Notes |
 |--------|--------|-------|
-| **Sherpa-ONNX** | ✅ Active | v1.13.1 via Maven `io.github.k2-fsa:sherpa-onnx:1.13.1`, uses MiniLM for semantic similarity |
+| **Sherpa-ONNX** | ✅ Active | v1.12.34 local JAR via `libs/sherpa-onnx-v1.12.34-java8.jar`, uses MiniLM for semantic similarity |
 | System TTS | Available | Android native API |
+
+**Note:** Sherpa v1.13 not used due to ONNX runtime library conflicts with Microsoft ONNX dependency
 
 ### NLU (Natural Language Understanding)
 | Engine | Status | Notes |
 |--------|--------|-------|
 | **Parser** | ✅ Active | Regex-based exact match, <5ms response time |
-| ONNX (MiniLM) | ⚠️ Not Working | Conflicts withSherpa's native ONNX library (`OrtGetApiBase` error) |
+| ONNX (MiniLM) | ❌ Broken | Conflicts with Sherpa's native ONNX library (`OrtGetApiBase` error) |
 | LLM (MediaPipe) | Available | Too slow (20+ seconds), not recommended |
-
-## Recent Changes (2026-05-19)
-
-### Sherpa-ONNX v1.13 Integration
-Updated from v1.12.34 to v1.13.1 with breaking API changes:
-- All config classes now use **direct constructors** instead of Builder pattern
-- Example: `OfflineTtsVitsModelConfig(model, tokens, dataDir, noiseScale, noiseScaleW, lengthScale)`
-
-### Modified Files
-| File | Change |
-|------|--------|
-| `app/build.gradle` | UpdatedSherpa dependency to v1.13.1; removed v1.12.34 local JAR |
-| `settings.gradle` | Added Sonatype Maven repository for Sherpa artifacts |
-| `app/src/main/java/.../engine/sherpa/SherpaSpeechSynthesis.kt` | Refactored config creation with new constructor API |
-| `app/src/main/java/.../engine/sherpa/SherpaStream.kt` | Refactored config creation with new constructor API |
-| `scripts/install/VoboostVoiceAssistant-install.bat` | Updated Sherpa model copying |
-
-### Echo Cancellation (2026-05-20)
-**Problem:** Microphone constantly records during Bluetooth calls causing echo for caller
-
-**Solution:** 
-1. Created `PhoneCallStateHandler.kt` to listen to CAN bus call state via `onICMReqCallModeChanged()` and `onICMReqCallStatusChanged()`
-2. When vehicle call active → mute speech recognizer; when call ends → restore
-3. Enhanced `AndroidAudioSource` with explicit AEC/NS/AGC effects:
-   - **AcousticEchoCanceler** (AEC) - cancels echo from speakers to microphone
-   - **NoiseSuppressor** (NS) - removes background noise  
-   - **AutomaticGainControl** (AGC) - normalizes volume
-
-**Modified Files:**
-| File | Change |
-|------|--------|
-| `app/src/main/java/ru/voboost/voice/canbus/handlers/PhoneCallStateHandler.kt` | Created new handler for phone state monitoring |
-| `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` | Added PhoneCallStateHandler registration |
-| `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` | Added public `getMode()` and `setModeSafe()` methods |
-| `app/src/main/java/ru/voboost/voice/audio/AndroidAudioSource.kt` | Enhanced audio effects with explicit enable() calls and session logging |
-
-**How AEC Works:**
-1. AudioRecord is created with `VOICE_RECOGNITION` source (required for AEC)
-2. System assigns unique `audioSessionId` to the recording session
-3. AEC creates echo canceller for that session and enables it
-4. All audio from microphone passes through AEC filter before app receives it
-
-**Testing:**
-```bash
-# Check logs for audio effects:
-adb logcat | grep "AcousticEchoCanceler\|NoiseSuppressor\|AudioRecord"
-
-# Expected output when recording starts:
-# I/AudioSourceFactory: Using AndroidAudioSource (fallback, zone=front_left)
-# I/AndroidAudioSource: ✅ AudioRecord state=1
-# I/AndroidAudioSource: 🎵 Applying audio effects to session=12345
-# I/AndroidAudioSource: ✅ NoiseSuppressor enabled (session=12345)
-# I/AndroidAudioSource: ✅ AcousticEchoCanceler ENABLED (session=12345)
-# I/AndroidAudioSource:    AEC state: true
-# I/AndroidAudioSource: ✅ AutomaticGainControl enabled (session=12345)
-```
-
-### NLU Engine Attempts
-
-#### Attempt 1: Microsoft ONNX Runtime
-- Added dependency: `com.microsoft.onnxruntime:onnxruntime-android:1.17.1`
-- Error: `UnsatisfiedLinkError: OrtGetApiBase` - native library conflict withSherpa
-- Root cause: Both libraries bundle different versions of `libonnxruntime.so`
-
-#### Attempt 2: Sherpa NLU with MiniLM
--Sherpa v1.13 does not include MiniLM model for semantic similarity
-- Only ASR and TTS models are available
 
 ### Current Working Configuration
 ```json
@@ -148,27 +84,58 @@ VoboostVoiceAssistant\scripts\build-project.bat 3   # Both Debug and Release
 | Library | Version | Purpose |
 |---------|---------|---------|
 | vosk-android | 0.3.45 | ASR with Vosk model |
-| sherpa-onnx | 1.13.1 | TTS with MiniLM (not used for NLU) |
 | jna | 5.13.0@aar | JNA for Vosk native access |
+
+###Sherpa Dependencies (TTS Only)
+| Library | Version | Purpose | Status |
+|---------|---------|---------|--------|
+| sherpa-onnx-java8.jar | v1.12.34 | TTS with MiniLM | ✅ Active (local JAR) |
+
+**Note:** Sherpa v1.13 Maven dependency not used due to ONNX runtime conflicts
 
 ### Removed/Commented Dependencies
 | Dependency | Reason |
 |------------|--------|
 | `onnxruntime-android:1.17.1` | Native library conflict withSherpa |
 | `mediapipe:tasks-genai:0.10.35` | LLM too slow (20+ seconds) |
+| `sherpa-onnx:1.13.1` (Maven) | Causes ONNX runtime conflicts |
 
-## Known Issues
+**Note:** Sherpa v1.12.34 local JAR is used for TTS without conflicts
+
+### Dependencies in build.gradle (Current)
+```gradle
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    
+    // Vosk ASR (active)
+    implementation('com.alphacephei:vosk-android:0.3.45') {
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }
+    
+    // Sherpa TTS (v1.12.34 local JAR - v1.13 has conflicts)
+    implementation files('libs/sherpa-onnx-v1.12.34-java8.jar')
+    
+    // JNA for Vosk
+    implementation 'net.java.dev.jna:jna:5.13.0@aar'
+    
+    // LLM (too slow, not used)
+    implementation 'com.google.mediapipe:tasks-genai:0.10.35'
+    
+    // ONNX Runtime (commented due to conflicts)
+    // implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
+}
+```
 
 ### NLU ONNX Not Working
 **Problem:** Cannot use ONNX-based NLU (MiniLM model) due to native library conflict.
 
 **Error Log:**
 ```
-java.lang.UnsatisfiedLinkError: dlopen failed: cannot locate symbol "OrtGetApiBase" 
+java.lang.UnsatisfiedLinkError: dlopen failed: cannot locate symbol "OrtGetApiBase"
 referenced by "...libonnxruntime4j_jni.so"
 ```
 
-**Root Cause:**Sherpa-ONNX v1.13 bundles its own `libonnxruntime.so`, which conflicts withMicrosoft ONNX Runtime.
+**Root Cause:**Sherpa-ONNX v1.12 bundles its own `libonnxruntime.so`, which conflicts withMicrosoft ONNX Runtime.
 
 **Workaround:** Using Parser mode NLU instead (regex-based, fast and stable).
 
@@ -199,7 +166,7 @@ referenced by "...libonnxruntime4j_jni.so"
 ### Testing Echo Cancellation:
 1. Make a Bluetooth call while Voboost is running
 2. Verify logs show AEC enabled with session ID
-3. Check if microphone is muted during call (see PhoneCallStateHandler logs)
+3. Check if microphone is muted during call (see PhoneCallPoller logs)
 4. After call ends, verify recognition resumes automatically
 
 ## Development Notes
@@ -228,9 +195,9 @@ adb logcat | grep "PhoneCallStateHandler"
 ```
 
 ## Next Steps
-1. Test current configuration (Parser NLU + Vosk ASR + Sherpa TTS)
-2. If needed: Implement custom NLU using ai.djl.huggingface (DJL) instead of ONNX Runtime
-3. ✅ **Echo cancellation testing** - verify AEC is working during Bluetooth calls
+1. ✅ Test current configuration (Parser NLU + Vosk ASR + Sherpa TTS) - **TESTED 2026-05-23**
+2. ✅ Echo cancellation testing - verify AEC is working during Bluetooth calls - **WORKING**
+3. If needed: Implement custom NLU using ai.djl.huggingface (DJL) instead of ONNX Runtime
 
 ## Changelog
 
@@ -258,9 +225,9 @@ This returns `true` if the specified package has an active call in the audio pol
 - Updated log tags to reference AudioPolicyService instead of CanBusService
 
 #### PhoneCallPoller.kt (Refactored)
-- **Moved:** from `canbus/` package → `audio/` package
+- **Package:** `ru.voboost.voice.audio` (moved from `canbus`)
 - **Simplified:** Now takes pre-connected `AudioPolicyServiceManager` instead of creating new instance
-- **Polling loop:** Checks `audioPolicyManager.isInCall()` every 500ms
+- **Polling loop:** Checks `audioPolicyManager.isInCall()` every 500ms using Kotlin Coroutines
 - When call active (`inCall=true`) → mutes speech recognizer (`MUTED` mode)
 - When call ends (`inCall=false`) → restores keyword detection (`KEYWORD` mode)
 
@@ -324,6 +291,34 @@ adb logcat | grep -E "AudioPolicy|CanBus|PhoneCall"
 
 **Status:** ✅ **WORKING** — Call detection verified, microphone mutes during calls, resumes after
 
+### 2026-05-21 - SpeechRecognizer Mode Management (SUCCESS!)
+
+**Enhancement:** Added mode management to `SpeechRecognizer` for external control.
+
+**Changes:**
+1. Added public `getMode(): Mode` method — returns current recognition state
+2. Added `setModeSafe(newMode: Mode)` — coroutine-based safe mode switching from external threads
+
+**Implementation:**
+```kotlin
+// SpeechRecognizer.kt (current)
+enum class Mode {
+    KEYWORD,   // Ждём ключевое слово
+    COMMAND,   // Ждём команду
+    MUTED      // TTS активен — игнорируем вход
+}
+
+override fun getMode(): Mode = mode
+
+override fun setModeSafe(newMode: Mode) {
+    scope.launch {
+        setMode(newMode)
+    }
+}
+```
+
+**Why:** `PhoneCallPoller` runs in separate coroutine scope and needs thread-safe access to change recognition mode.
+
 ### 2026-05-21 - AudioPolicyManager Approach (SUCCESS!)
 
 **Discovery:** Found `AudioPolicyManager.isInCall()` in BluetoothPhone-release-signed logs:
@@ -344,29 +339,31 @@ boolean isInCall(String callingPackage);
 **Files Modified:**
 - `app/src/main/java/ru/voboost/voice/audio/AudioPolicyServiceManager.kt` - NEW (connects to AudioPolicy service)
 - `app/src/main/aidl/com/qinggan/audiopolicy/IAudioPolicyService.aidl` - AIDL interface definition
-- `app/src/main/java/ru/voboost/voice/canbus/PhoneCallPoller.kt` - NEW (polls AudioPolicyManager)
+- `app/src/main/java/ru/voboost/voice/canbus/PhoneCallPoller.kt` - NEW (polls AudioPolicyManager, moved to audio/)
 - `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` - Updated to use PhoneCallPoller
-- `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` - Added mode management
+- `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` - Added public getMode() and setModeSafe()
 
-**Current Implementation Details:**
+**Current Implementation (2026-05-23):**
 ```kotlin
-// AudioPolicyServiceManager.kt
-class AudioPolicyServiceManager(context: Context) {
-    fun isInCall(): Boolean = 
-        audioPolicyService?.isInCall(CALLING_PACKAGE_NAME) ?: false
-}
+// PhoneCallPoller.kt (full implementation)
+class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
+                      private val audioPolicyManager: AudioPolicyServiceManager) {
+    companion object {
+        const val TAG = "PhoneCallPoller"
+        private const val CHECK_INTERVAL_MS = 500L
+    }
 
-// PhoneCallPoller.kt (simplified)
-class PhoneCallPoller(private val context: Context,
-                      private var speechRecognizer: ISpeechRecognizer?) {
-    fun start() { /* polling loop */ }
+    private val scope = CoroutineScope(Dispatchers.IO + Job())
+    private var pollingJob: Job? = null
+
+    fun start() { /* polling loop with delay */ }
     fun stop() { /* cleanup */ }
 }
 ```
 
 **Next Steps:**
-1. Enable and test PhoneCallPoller polling logic in VoboostVoiceService
-2. Test with Bluetooth call to verify echo cancellation works
+1. ✅ Enable and test PhoneCallPoller polling logic in VoboostVoiceService - **COMPLETED 2026-05-23**
+2. ✅ Test with Bluetooth call to verify echo cancellation works - **WORKING**
 3. Add more detailed logging to debug call state detection
 
 ### 2026-05-21 - Documentation: Hidden API Policy
@@ -409,6 +406,22 @@ adb shell settings get global hidden_api_policy  # Should return: 1
 7. Starts service
 
 **Status:** ✅ Created, committed, and pushed to GitHub
+
+### 2026-05-23 - Sherpa-ONNX Version Clarification
+
+**Discovery:** After testing, confirmed thatSherpa v1.13 causes ONNX runtime conflicts.
+
+**Current Configuration:**
+| Component | Engine | Version | Status |
+|-----------|--------|---------|--------|
+| TTS | Sherpa-ONNX | v1.12.34 (local JAR) | ✅ Working |
+| ASR | Vosk | 0.3.45 | ✅ Working |
+| NLU | Parser | Regex-based | ✅ Working |
+
+**Why v1.12.34 is Used:**
+- v1.13 bundles `libonnxruntime.so` causing `OrtGetApiBase` error
+- Local JAR (v1.12.34) works without conflicts
+- TTS functionality identical between versions
 
 ### 2026-05-20 - Echo Cancellation Implementation (WIP)
 - Added `PhoneCallStateHandler` to detect phone calls via CAN bus and mute microphone (❌ events not arriving)
