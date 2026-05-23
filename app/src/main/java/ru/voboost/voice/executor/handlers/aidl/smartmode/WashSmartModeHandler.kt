@@ -2,7 +2,7 @@ package ru.voboost.voice.executor.handlers.aidl.smartmode
 
 import android.util.Log
 import com.qinggan.canbus.VehicleState
-import ru.voboost.voice.canbus.CanBusServiceManager
+import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 class WashSmartModeHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {

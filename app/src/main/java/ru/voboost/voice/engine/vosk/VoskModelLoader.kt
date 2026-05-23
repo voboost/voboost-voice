@@ -3,10 +3,9 @@ package ru.voboost.voice.engine.vosk
 import android.util.Log
 import org.vosk.Model
 import ru.voboost.voice.config.ExternalStoragePaths
-import ru.voboost.voice.speech.IModelLoader
 import java.io.File
 
-public class VoskModelLoader() : IModelLoader {
+public class VoskModelLoader {
 
     companion object {
         const val TAG = "VoskModelLoader"
@@ -17,7 +16,7 @@ public class VoskModelLoader() : IModelLoader {
      * @param modelPath Путь к директории модели
      * @return Model объект Vosk
      */
-    override fun loadModel(): Any {
+    fun loadModel(): Any {
         val modelPath = getModelPath()
         val modelDir = File(modelPath)
         return Model(modelDir.absolutePath)

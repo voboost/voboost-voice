@@ -2,7 +2,7 @@ package ru.voboost.voice.executor
 
 import android.content.Context
 import android.util.Log
-import ru.voboost.voice.canbus.CanBusServiceManager
+import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 import ru.voboost.voice.executor.handlers.aidl.airconditioner.AirConditionerCloseHandler
 import ru.voboost.voice.executor.handlers.aidl.airconditioner.AirConditionerOpenHandler

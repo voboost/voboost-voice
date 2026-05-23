@@ -1,7 +1,7 @@
 package ru.voboost.voice.executor.handlers.aidl.window
 
 import com.qinggan.canbus.VehicleState
-import ru.voboost.voice.canbus.CanBusServiceManager
+import ru.voboost.voice.services.canbus.CanBusServiceManager
 
 /**
  * Открыть все окна

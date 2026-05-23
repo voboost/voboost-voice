@@ -6,14 +6,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import ru.voboost.voice.core.ISpeechRecognizer
-import ru.voboost.voice.speech.SpeechRecognizer
+import ru.voboost.voice.services.audiopolicy.AudioPolicyServiceManager
+import ru.voboost.voice.services.recognition.IRecognitionService
+import ru.voboost.voice.services.recognition.RecognitionService
 
 /**
  * Поллинг состояния телефона через AudioPolicyManager
  * Периодически проверяет isInCall() и переключает speechRecognizer в MUTED режим
  */
-class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
+class PhoneCallPoller(private var speechRecognizer: IRecognitionService,
                       private val audioPolicyManager: AudioPolicyServiceManager) {
     companion object {
         const val TAG = "PhoneCallPoller"
@@ -43,16 +44,16 @@ class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
 
                     if (inCall) { // В звонке - мьютим распознавание
                         val currentMode = speechRecognizer.getMode()
-                        if (currentMode != SpeechRecognizer.Mode.MUTED) {
+                        if (currentMode != RecognitionService.Mode.MUTED) {
                             Log.i(TAG, "📞 Call active - muting recognizer")
-                            speechRecognizer.setModeSafe(SpeechRecognizer.Mode.MUTED)
+                            speechRecognizer.setModeSafe(RecognitionService.Mode.MUTED)
                         }
                     }
                     else { // Нет звонка - возвращаем KEYWORD режим
                         val currentMode = speechRecognizer.getMode()
-                        if (currentMode == SpeechRecognizer.Mode.MUTED) {
+                        if (currentMode == RecognitionService.Mode.MUTED) {
                             Log.i(TAG, "📞 Call ended - restoring keyword mode")
-                            speechRecognizer.setModeSafe(SpeechRecognizer.Mode.KEYWORD)
+                            speechRecognizer.setModeSafe(RecognitionService.Mode.KEYWORD)
                         }
                     }
 

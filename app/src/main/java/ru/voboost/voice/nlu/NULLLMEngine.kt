@@ -8,6 +8,7 @@ import ru.voboost.voice.R
 import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.config.ExternalStoragePaths
+import ru.voboost.voice.executor.CommandData
 
 /**
  * LLM-based NLU Engine (MediaPipe) — ТОЛЬКО парсинг через модель.
@@ -69,7 +70,7 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
      * Парсит команду через LLM.
      * @return RecognizedCommand если успешно, null если не распознано или ошибка
      */
-    override fun parseCommand(text: String): RecognizedCommand? {
+    override fun parseCommand(text: String): CommandData? {
         return try {
             val json = generateJsonResponse(text)
 
@@ -140,15 +141,15 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
         return cleaned.substring(start)
     }
 
-    private fun buildRecognizedCommand(llm: LLMOutput, originalText: String): RecognizedCommand? {
+    private fun buildRecognizedCommand(llm: LLMOutput, originalText: String): CommandData? {
         val config = configManager.getConfig().commands.find { it.id == llm.id } ?: run {
             Log.w(TAG, "Config not found for id: '${llm.id}'")
             return null
         }
-        return RecognizedCommand(id = llm.id,
-                                 config = config,
-                                 matchedPattern = "llm:${llm.id}",
-                                 extractedParams = llm.params.mapValues { it.value.toString() })
+        return CommandData(id = llm.id,
+                           config = config,
+                           matchedPattern = "llm:${llm.id}",
+                           extractedParams = llm.params.mapValues { it.value.toString() })
     }
 
     // === Подтверждения — только быстрые ключевые слова, БЕЗ LLM ===

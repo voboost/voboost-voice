@@ -9,7 +9,7 @@ import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.config.ExternalStoragePaths
 import ru.voboost.voice.nlu.INLUEngine
-import ru.voboost.voice.nlu.RecognizedCommand
+import ru.voboost.voice.executor.CommandData
 import java.io.FileNotFoundException
 import java.nio.LongBuffer
 import java.util.concurrent.locks.ReentrantLock
@@ -73,7 +73,7 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager) :
         }
     }
 
-    override fun parseCommand(text: String): RecognizedCommand? {
+    override fun parseCommand(text: String): CommandData? {
         return try {
             val queryEmbedding = embedText(text)
             var bestId: String? = null
@@ -203,12 +203,12 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager) :
     }
 
     private fun buildRecognizedCommand(id: String,
-                                       params: Map<String, String>): RecognizedCommand? {
+                                       params: Map<String, String>): CommandData? {
         val config = configManager.getConfig().commands.find { it.id == id } ?: return null
-        return RecognizedCommand(id = id,
-                                 config = config,
-                                 matchedPattern = "onnx:${id}",
-                                 extractedParams = params)
+        return CommandData(id = id,
+                           config = config,
+                           matchedPattern = "onnx:${id}",
+                           extractedParams = params)
     }
 
     // === Интерфейс подтверждения (без изменений) ===

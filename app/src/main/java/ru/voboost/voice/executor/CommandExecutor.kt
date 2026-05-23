@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioManager
 import android.util.Log
 import ru.voboost.voice.config.CommandConfig
-import ru.voboost.voice.nlu.RecognizedCommand
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.ui.OverlayManager
 import kotlinx.coroutines.CoroutineScope
@@ -12,7 +11,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import ru.voboost.voice.core.QueueSpeechSynthesis
+import ru.voboost.voice.services.speech.ISpeechService
+import ru.voboost.voice.services.speech.SpeechService
 
 /**
  * Выполнение команд
@@ -21,7 +21,7 @@ import ru.voboost.voice.core.QueueSpeechSynthesis
  * @param vehicleCommandExecutor Реализация выполнения команд (Intent или Shell)
  */
 class CommandExecutor(private val context: Context,
-                      private val queueSpeech: QueueSpeechSynthesis,
+                      private val speechService: ISpeechService,
                       private val overlayManager: OverlayManager,
                       private val coroutineScope: CoroutineScope,
                       private val vehicleCommandExecutor: IVehicleCommandExecutor,
@@ -42,9 +42,9 @@ class CommandExecutor(private val context: Context,
     /**
      * Выполнить команду
      */
-    suspend fun executeCommand(recognizedCommand: RecognizedCommand) {
-        val commandConfig = recognizedCommand.config
-        val zone = recognizedCommand.zone
+    suspend fun executeCommand(commandData: CommandData) {
+        val commandConfig = commandData.config
+        val zone = commandData.zone
 
         Log.i(TAG, "Executing command: ${commandConfig.id} (zone=$zone)")
 
@@ -56,7 +56,7 @@ class CommandExecutor(private val context: Context,
 
         try { // Добавляем зону в voiceParams для команд климата
             val voiceParamsWithZone =
-                recognizedCommand.extractedParams + ("_zone" to (zone ?: "center"))
+                    commandData.extractedParams + ("_zone" to (zone ?: "center"))
 
             // Выполнение действия
             val success = executeAction(commandConfig, voiceParamsWithZone)
@@ -67,12 +67,12 @@ class CommandExecutor(private val context: Context,
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.SUCCESS)
 
                 // Подстановка параметров в фразу
-                val finalPhrase = substituteParams(successPhrase, recognizedCommand.extractedParams)
+                val finalPhrase = substituteParams(successPhrase, commandData.extractedParams)
 
                 // Голос + Overlay (если включено)
                 if (!finalPhrase.isNullOrEmpty() && showNotification) {
                     val queueSpeechJob = coroutineScope.async {
-                        queueSpeech.enqueueAsync(finalPhrase)
+                        speechService.enqueueAsync(finalPhrase)
                     }
                     overlayManager.showToast(finalPhrase)
                     queueSpeechJob.await()
@@ -87,7 +87,7 @@ class CommandExecutor(private val context: Context,
                 // Голос + Overlay (если включено)
                 if (!failurePhrase.isNullOrEmpty() && showNotification) {
                     val queueSpeechJob = coroutineScope.async {
-                        queueSpeech.enqueueAsync(failurePhrase)
+                        speechService.enqueueAsync(failurePhrase)
                     }
                     overlayManager.showToast(failurePhrase)
                     queueSpeechJob.await()
@@ -100,7 +100,7 @@ class CommandExecutor(private val context: Context,
             val errorPhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
             if (!errorPhrase.isNullOrEmpty() && showNotification) {
                 val queueSpeechJob = coroutineScope.async {
-                    queueSpeech.enqueueAsync(errorPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
+                    speechService.enqueueAsync(errorPhrase, SpeechService.PRIOR_HIGH)
                 }
                 overlayManager.showToast(errorPhrase)
                 queueSpeechJob.await()
@@ -197,7 +197,7 @@ class CommandExecutor(private val context: Context,
         // Показывать уведомление для нераспознанных команд (по умолчанию true)
         if (!notUnderstoodPhrase.isNullOrEmpty()) {
             val queueSpeechJob = coroutineScope.async {
-                queueSpeech.enqueueAsync(notUnderstoodPhrase, QueueSpeechSynthesis.PRIOR_MEDIUM)
+                speechService.enqueueAsync(notUnderstoodPhrase, SpeechService.PRIOR_MEDIUM)
             }
             overlayManager.showToast(notUnderstoodPhrase)
             queueSpeechJob.await()

@@ -2,7 +2,6 @@ package ru.voboost.voice.engine.sherpa
 
 import android.util.Log
 import ru.voboost.voice.config.ExternalStoragePaths
-import ru.voboost.voice.speech.IModelLoader
 
 /**
  * Загрузчик моделей Sherpa-ONNX
@@ -11,7 +10,7 @@ import ru.voboost.voice.speech.IModelLoader
  * Модель загружается из внешнего хранилища:
  * /storage/emulated/0/voboost/models/sherpa/asr-ru-model/
  */
-class SherpaModelLoader() : IModelLoader {
+class SherpaModelLoader {
 
     companion object {
         const val TAG = "SherpaModelLoader"
@@ -22,7 +21,7 @@ class SherpaModelLoader() : IModelLoader {
      * @param modelPath Путь к директории модели
      * @return Путь к модели (String)
      */
-    override fun loadModel(): Any {
+    fun loadModel(): Any {
         return getModelPath()
     }
 

@@ -1,6 +1,7 @@
 package ru.voboost.voice.nlu
 
 import ru.voboost.voice.config.CommandConfig
+import ru.voboost.voice.executor.CommandData
 
 interface INLUEngine {
 
@@ -26,7 +27,7 @@ interface INLUEngine {
                                 "nah")
     }
 
-    fun parseCommand(text: String): RecognizedCommand?
+    fun parseCommand(text: String): CommandData?
     fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean
     fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean
     fun requiresConfirmation(commandConfig: CommandConfig): Boolean

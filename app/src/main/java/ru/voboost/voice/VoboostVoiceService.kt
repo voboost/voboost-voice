@@ -17,33 +17,32 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import ru.voboost.voice.config.ConfigManager
-import ru.voboost.voice.core.ISpeechSynthesis
-import ru.voboost.voice.core.SpeechEngineFactory
-import ru.voboost.voice.core.SpeechEngineFactory.RecognitionEngine
+import ru.voboost.voice.services.speech.SpeechServiceFactory
 import ru.voboost.voice.executor.CommandExecutor
 import ru.voboost.voice.ui.OverlayManager
-import ru.voboost.voice.canbus.CanBusServiceManager
-import ru.voboost.voice.canbus.handlers.TSRSpeedLimitHandler
-import ru.voboost.voice.speech.state.StateMachine
-import ru.voboost.voice.speech.state.StateContext
-import ru.voboost.voice.speech.state.IdleState
-import ru.voboost.voice.speech.CommandHandler
+import ru.voboost.voice.services.canbus.CanBusServiceManager
+import ru.voboost.voice.services.canbus.handlers.TSRSpeedLimitHandler
+import ru.voboost.voice.states.StateMachine
+import ru.voboost.voice.states.StateContext
+import ru.voboost.voice.states.state.IdleState
 import kotlinx.coroutines.*
 import android.Manifest
 import android.content.pm.ServiceInfo
-import ru.voboost.voice.audio.AudioPolicyServiceManager
+import ru.voboost.voice.services.audiopolicy.AudioPolicyServiceManager
 import ru.voboost.voice.audio.IAudioSource
 import ru.voboost.voice.audio.AudioSourceFactory
 import ru.voboost.voice.audio.VolumeManager
-import ru.voboost.voice.canbus.handlers.TestCanBusServiceHandler
-import ru.voboost.voice.canbus.handlers.VoiceButtonHandler
+import ru.voboost.voice.services.canbus.handlers.TestCanBusServiceHandler
+import ru.voboost.voice.services.canbus.handlers.VoiceButtonHandler
 import ru.voboost.voice.audio.PhoneCallPoller
 import ru.voboost.voice.services.qgbus.QGBusServiceManager
-import ru.voboost.voice.core.ISpeechRecognizer
-import ru.voboost.voice.core.QueueSpeechSynthesis
+import ru.voboost.voice.services.recognition.IRecognitionService
 import ru.voboost.voice.executor.VehicleCommandExecutor
 import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.nlu.NLUEngineFactory
+import ru.voboost.voice.services.recognition.RecognitionServiceFactory
+import ru.voboost.voice.services.recognition.RecognitionServiceFactory.RecognitionEngine
+import ru.voboost.voice.services.speech.ISpeechService
 
 /**
  * Главный сервис голосового помощника
@@ -66,13 +65,11 @@ class VoboostVoiceService : Service() {
     // Компоненты системы
     private lateinit var configManager: ConfigManager
     private lateinit var stateMachine: StateMachine  // < IState Machine
-    private lateinit var speechRecognizer: ISpeechRecognizer  // < Распознавание речи
-    private lateinit var commandHandler: CommandHandler  // < Обработка команд
+    private lateinit var recognitionService: IRecognitionService  // < Распознавание речи
     private lateinit var nluEngine: INLUEngine
     private lateinit var commandExecutor: CommandExecutor
     private lateinit var overlayManager: OverlayManager
-    private lateinit var speechSynthesis: ISpeechSynthesis  // < Интерфейс
-    private lateinit var queueSpeech: QueueSpeechSynthesis
+    private lateinit var speechService: ISpeechService  // < Интерфейс
     private lateinit var soundEffectManager: SoundEffectManager
     // IAudioSource - единый источник аудио данных
     private lateinit var audioSource: IAudioSource
@@ -141,19 +138,13 @@ class VoboostVoiceService : Service() {
         val speechConfig = configManager.getConfig().tts
         // TTS Engine (используем системный как стабильный, можно заменить на Sherpa)
         try {
-            speechSynthesis = SpeechEngineFactory.createSynthesisEngine(this,
-                                                                        configManager)
-            // Инициализация TTS (обязательно для Sherpa)
-            speechSynthesis.initialize()
-            // Настройки rate/pitch из конфига
-            speechSynthesis.setRate(speechConfig.offline.rate)
-            speechSynthesis.setPitch(speechConfig.offline.pitch)
+            speechService = SpeechServiceFactory.create(this, configManager)
             Log.i(TAG,"TTS engine initialized (engine=${speechConfig.offline.engine}, rate=${speechConfig.offline.rate}, pitch=${speechConfig.offline.pitch})")
         }
         catch (e: Exception) {
             Log.e(TAG, "Failed to initialize TTS engine", e)
         }
-        queueSpeech = QueueSpeechSynthesis(speechSynthesis)
+
         nluEngine = NLUEngineFactory.create(this, configManager)
         overlayManager = OverlayManager(this, configManager)
         soundEffectManager = SoundEffectManager(this)
@@ -167,9 +158,8 @@ class VoboostVoiceService : Service() {
         // Voice Button Handler - регистрация обработчика кнопки на руле
         voiceButtonHandler = VoiceButtonHandler(serviceScope, configManager)
         // TSR Speed Limit Handler — регистрируем через callback подключения
-        tsrSpeedLimitHandler = TSRSpeedLimitHandler(queueSpeech)
-        testCanBusServiceHandler = TestCanBusServiceHandler(queueSpeech)
-
+        tsrSpeedLimitHandler = TSRSpeedLimitHandler(speechService)
+        testCanBusServiceHandler = TestCanBusServiceHandler(speechService)
 
         canBusManager = CanBusServiceManager(this)
         Log.i(TAG, "CanBusServiceManager initialized")
@@ -184,32 +174,30 @@ class VoboostVoiceService : Service() {
         // Создаём VehicleCommandExecutor через фабрику
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
         commandExecutor = CommandExecutor(context = this,
-                                          queueSpeech = queueSpeech,
+                                          speechService = speechService,
                                           overlayManager = overlayManager,
                                           coroutineScope = serviceScope,
                                           vehicleCommandExecutor = vehicleCommandExecutor,
                                           configManager = configManager)
-        // Command Handler - обработка команд
-        commandHandler = CommandHandler(nluEngine, commandExecutor)
         Log.i(TAG, "CommandHandler initialized")
         // SpeechRecognizer - распознавание речи (утилита без состояний)
         // Зона определяется автоматически через MultiChannelAudioSource или TDOA
-        speechRecognizer = SpeechEngineFactory.createSpeechRecognizer(engine = ASR_ENGINE_TYPE,
-                                                                      audioSource = audioSource,
-                                                                      configManager = configManager)
+        recognitionService = RecognitionServiceFactory.create(engine = ASR_ENGINE_TYPE,
+                                                              audioSource = audioSource,
+                                                              configManager = configManager)
         Log.i(TAG, "SpeechRecognizer initialized")
         // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
-        phoneCallPoller = PhoneCallPoller(speechRecognizer, audioPolicyManager)
+        phoneCallPoller = PhoneCallPoller(recognitionService, audioPolicyManager)
 
         // QGBus Service Manager для отправки уведомлений через шину событий
         qgbusServiceManager = QGBusServiceManager(this)
         
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
-                                   speechRecognizer = speechRecognizer,
+                                   recognitionService = recognitionService,
                                    overlayManager = overlayManager,
                                    volumeManager = volumeManager,
-                                   queueSpeech = queueSpeech,
+                                   speechService = speechService,
                                    configManager = configManager,
                                    nluEngine = nluEngine,
                                    commandExecutor = commandExecutor)
@@ -345,14 +333,14 @@ class VoboostVoiceService : Service() {
         }
 
         stateMachine.stop()
-        speechRecognizer.shutdown()
+        recognitionService.shutdown()
         
         // Освобождаем Phone Call Poller (после shutdown speechRecognizer)
         phoneCallPoller.release()
         Log.d(TAG, "PhoneCallPoller released")
         
-        queueSpeech.cancelAll()
-        speechSynthesis.shutdown()
+        speechService.release()
+
         soundEffectManager.release()
 
         // Освобождаем NLU Engine (ONNX модель и токенайзер)
@@ -380,7 +368,7 @@ class VoboostVoiceService : Service() {
             val currentService = this@VoboostVoiceService
             try {
                 Log.i(TAG, "Starting keyword spotting (waiting for activation phrase)...")
-                speechRecognizer.start()  // Запускаем непрерывный поток распознавания
+                recognitionService.start()  // Запускаем непрерывный поток распознавания
                 stateMachine.start()      // Запускаем IState Machine
             }
             catch (e: Exception) {

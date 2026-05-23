@@ -3,6 +3,7 @@ package ru.voboost.voice.nlu
 import android.util.Log
 import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
+import ru.voboost.voice.executor.CommandData
 import java.util.regex.Pattern
 
 
@@ -19,7 +20,7 @@ class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
      * Распарсить команду из текста
      * @return RecognizedCommand или null если команда не найдена
      */
-    override fun parseCommand(text: String): RecognizedCommand? {
+    override fun parseCommand(text: String): CommandData? {
         val normalizedText = text.lowercase().trim()
         Log.d(TAG, "Parsing command: '$text' -> normalized: '$normalizedText'")
 
@@ -34,10 +35,10 @@ class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
                 val matchResult = matchPattern(normalizedText, pattern)
 
                 if (matchResult != null) { // Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
-                    return RecognizedCommand(id = commandConfig.id,
-                                             config = commandConfig,
-                                             matchedPattern = pattern,
-                                             extractedParams = matchResult)
+                    return CommandData(id = commandConfig.id,
+                                       config = commandConfig,
+                                       matchedPattern = pattern,
+                                       extractedParams = matchResult)
                 }
             }
         }
