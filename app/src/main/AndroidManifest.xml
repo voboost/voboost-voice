@@ -46,6 +46,11 @@
         <intent>
             <action android:name="com.qinggan.canbus.CanBusService" />
         </intent>
+
+        <!-- QGBus Service для отправки уведомлений -->
+        <intent>
+            <action android:name="com.qinggan.QGBus.QGBusService" />
+        </intent>
     </queries>
 
     <application

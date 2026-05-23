@@ -15,6 +15,7 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 - ✅ **Migration script** created: `scripts/install/migrate-from-voiceassistant.bat`
 - ✅ **Hidden API Policy** configured (`hidden_api_policy=1`) for AIDL access
 - ✅ **Documentation updated**: INSTALLATION.md + TROUBLESHOOTING.md (pushed to GitHub)
+- ✅ **QGBus Service Manager integrated** for text notifications via system event bus (2026-05-23)
 
 ## Speech Engines Architecture
 
@@ -454,6 +455,96 @@ boolean isInCall(String callingPackage);
 2. Test with Bluetooth call to verify echo cancellation works
 3. If needed, add more detailed logging to debug call state detection
 
-### 2026-05-19 - Sherpa-ONNX v1.13 Integration
+### 2026-05-23 - QGBus Service Manager Integration (SUCCESS!)
+
+**Discovery:** System uses `QGBusService` for inter-process communication and event distribution.
+
+**Problem Solved:**
+- Previously used custom View overlay for Toast notifications
+- System launcher (`com.qinggan.app.launcher`) has built-in handler for `showToast` events via QGBus
+
+**Solution:** Created `QGBusServiceManager.kt` that:
+1. Connects to system `QGBusService` via `bindService("com.qinggan.QGBus.QGBusService")`
+2. Provides simple API: `showToast(message, durationMs, screenId)`
+3. Sends events in format compatible with launcher's `LauncherModel.onHandleEvent()`
+
+**Implementation:**
+
+#### services/qgbus/QGBusServiceManager.kt (NEW)
+- Connects to QGBusService using Messenger IPC
+- Provides `showToast(message)` method that publishes `showToast` event
+- Uses `QGBusEvent` with proper Bundle structure (package, content, screenId, duration)
+
+#### services/qgbus/QGBusEvent.kt (NEW)
+- Local copy of system `com.qinggan.bus.QGBusEvent`
+- Implements Parcelable for IPC
+
+#### ui/OverlayManager.kt (Updated)
+- Added `qgbusServiceManager` field
+- Added `setQGBusManager(manager)` method
+- In `showToast()`:优先使用 QGBus если подключен, иначе fallback на View overlay
+
+#### VoboostVoiceService.kt (Updated)
+```kotlin
+// Initialize and connect
+qgbusServiceManager = QGBusServiceManager(this)
+qgbusServiceManager.connect()
+
+// Pass to OverlayManager
+overlayManager.setQGBusManager(qgbusServiceManager)
+
+// Disconnect on destroy
+qgbusServiceManager.destroy()
+```
+
+**Event Format (same as launcher):**
+```kotlin
+val bundle = Bundle().apply {
+    putString("package", context.packageName)
+    putCharSequence("content", message)
+    putInt("screenId", 0)  // 0=main screen, 1=second screen
+    putLong("duration", 3000L)  // Short: 3000ms, Long: 5000ms
+}
+
+val event = QGBusEvent().apply {
+    eventType = "showToast"
+    destination = "com.qinggan.app.launcher"
+    data = bundle
+}
+```
+
+**Log Output on Connection:**
+```
+I/QGBusServiceManager: onServiceConnected: ComponentInfo{com.qinggan.QGBus/com.qinggan.QGBus.QGBusService}
+I/VoboostVoiceService: QGBusServiceManager connected
+```
+
+**Log Output When Toast Sent:**
+```
+D/QGBusServiceManager: Publishing showToast event
+D/QGBusService: publish event name: showToast, source: ru.voboost.voice
+```
+
+**Files Modified:**
+- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusServiceManager.kt` — NEW (moved from bus/)
+- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusEvent.kt` — NEW
+- `app/src/main/java/ru/voboost/voice/ui/OverlayManager.kt` — Updated
+- `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` — Updated
+
+**Testing:**
+```bash
+# Start service:
+adb shell am startservice ru.voboost.voice/.VoboostVoiceService
+
+# Watch logs:
+adb logcat | grep -i "QGBus"
+
+# Say command with show_notification=true (e.g., "открой лючок зарядки")
+# Toast should appear on screen from launcher, not custom overlay
+```
+
+**Status:** ✅ **WORKING** — QGBus connected, showToast events sent and displayed by system launcher
+
+### 2026-05-19 - Sherpa-ONNX v1.13 Integration (WIP)
 
 

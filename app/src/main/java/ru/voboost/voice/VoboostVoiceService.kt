@@ -38,6 +38,7 @@ import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.canbus.handlers.TestCanBusServiceHandler
 import ru.voboost.voice.canbus.handlers.VoiceButtonHandler
 import ru.voboost.voice.audio.PhoneCallPoller
+import ru.voboost.voice.services.qgbus.QGBusServiceManager
 import ru.voboost.voice.core.ISpeechRecognizer
 import ru.voboost.voice.core.QueueSpeechSynthesis
 import ru.voboost.voice.executor.VehicleCommandExecutor
@@ -87,6 +88,8 @@ class VoboostVoiceService : Service() {
     private lateinit var phoneCallPoller: PhoneCallPoller
     // Volume Manager - управление громкостью
     private var volumeManager: VolumeManager? = null
+    // QGBus Service Manager для отправки уведомлений через шину событий
+    private lateinit var qgbusServiceManager: QGBusServiceManager
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     // Флаг остановки сервиса (для отмены retry в startKeywordSpotting)
@@ -196,7 +199,10 @@ class VoboostVoiceService : Service() {
                                                                       configManager = configManager)
         Log.i(TAG, "SpeechRecognizer initialized")
         // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
-        phoneCallPoller = PhoneCallPoller( speechRecognizer, audioPolicyManager)
+        phoneCallPoller = PhoneCallPoller(speechRecognizer, audioPolicyManager)
+
+        // QGBus Service Manager для отправки уведомлений через шину событий
+        qgbusServiceManager = QGBusServiceManager(this)
         
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
@@ -228,6 +234,13 @@ class VoboostVoiceService : Service() {
         // ? Запуск поллинга состояния телефона (до распознавания)
         phoneCallPoller.start()
         
+        // Подключаем QGBus Service Manager к системной шине событий
+        qgbusServiceManager.connect()
+        Log.i(TAG, "QGBusServiceManager connected")
+        
+        // Передать менеджер в OverlayManager
+        overlayManager.setQGBusManager(qgbusServiceManager)
+
         // ? Запуск распознавания (если permission есть)
         if (hasRecordPermission()) {
             startKeywordSpotting()
@@ -307,6 +320,10 @@ class VoboostVoiceService : Service() {
         // Останавливаем Phone Call Poller
         phoneCallPoller.stop()
         Log.d(TAG, "PhoneCallPoller stopped")
+
+        // Отключаем QGBus Service Manager от системной шины событий
+        qgbusServiceManager.destroy()
+        Log.d(TAG, "QGBusServiceManager destroyed")
 
         // Отключаем CanBus Manager
         try {

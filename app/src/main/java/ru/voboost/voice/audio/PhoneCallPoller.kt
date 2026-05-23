@@ -40,20 +40,19 @@ class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
             while (isPolling) {
                 try {
                     val inCall = audioPolicyManager.isInCall() // Get reference to speechRecognizer to avoid concurrent mutation issues
-                    val recognizer = speechRecognizer
 
                     if (inCall) { // В звонке - мьютим распознавание
-                        val currentMode = recognizer.getMode()
+                        val currentMode = speechRecognizer.getMode()
                         if (currentMode != SpeechRecognizer.Mode.MUTED) {
                             Log.i(TAG, "📞 Call active - muting recognizer")
-                            recognizer.setModeSafe(SpeechRecognizer.Mode.MUTED)
+                            speechRecognizer.setModeSafe(SpeechRecognizer.Mode.MUTED)
                         }
                     }
                     else { // Нет звонка - возвращаем KEYWORD режим
-                        val currentMode = recognizer.getMode()
+                        val currentMode = speechRecognizer.getMode()
                         if (currentMode == SpeechRecognizer.Mode.MUTED) {
                             Log.i(TAG, "📞 Call ended - restoring keyword mode")
-                            recognizer.setModeSafe(SpeechRecognizer.Mode.KEYWORD)
+                            speechRecognizer.setModeSafe(SpeechRecognizer.Mode.KEYWORD)
                         }
                     }
 

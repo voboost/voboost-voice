@@ -48,6 +48,9 @@ class CommandExecutor(private val context: Context,
 
         Log.i(TAG, "Executing command: ${commandConfig.id} (zone=$zone)")
 
+        // Показывать ли уведомление через системный лаунчер
+        val showNotification = commandConfig.showNotification
+
         // Приглушить звук (Audio Ducking)
         duckAudio(true)
 
@@ -66,8 +69,8 @@ class CommandExecutor(private val context: Context,
                 // Подстановка параметров в фразу
                 val finalPhrase = substituteParams(successPhrase, recognizedCommand.extractedParams)
 
-                // Голос + Overlay (всегда!)
-                if (!finalPhrase.isNullOrEmpty()) {
+                // Голос + Overlay (если включено)
+                if (!finalPhrase.isNullOrEmpty() && showNotification) {
                     val queueSpeechJob = coroutineScope.async {
                         queueSpeech.enqueueAsync(finalPhrase)
                     }
@@ -81,8 +84,8 @@ class CommandExecutor(private val context: Context,
                 val failurePhrase = commandConfig.phrases?.failure
                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
 
-                // Голос + Overlay (всегда!)
-                if (!failurePhrase.isNullOrEmpty()) {
+                // Голос + Overlay (если включено)
+                if (!failurePhrase.isNullOrEmpty() && showNotification) {
                     val queueSpeechJob = coroutineScope.async {
                         queueSpeech.enqueueAsync(failurePhrase)
                     }
@@ -95,7 +98,7 @@ class CommandExecutor(private val context: Context,
         catch (e: Exception) {
             Log.e(TAG, "Error executing command", e)
             val errorPhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE)
-            if (!errorPhrase.isNullOrEmpty()) {
+            if (!errorPhrase.isNullOrEmpty() && showNotification) {
                 val queueSpeechJob = coroutineScope.async {
                     queueSpeech.enqueueAsync(errorPhrase, QueueSpeechSynthesis.PRIOR_HIGH)
                 }
@@ -191,6 +194,7 @@ class CommandExecutor(private val context: Context,
         val notUnderstoodPhrase =
             configManager.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD)
 
+        // Показывать уведомление для нераспознанных команд (по умолчанию true)
         if (!notUnderstoodPhrase.isNullOrEmpty()) {
             val queueSpeechJob = coroutineScope.async {
                 queueSpeech.enqueueAsync(notUnderstoodPhrase, QueueSpeechSynthesis.PRIOR_MEDIUM)

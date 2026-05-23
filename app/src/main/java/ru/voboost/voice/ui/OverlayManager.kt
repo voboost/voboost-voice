@@ -12,6 +12,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import ru.voboost.voice.R
 import ru.voboost.voice.config.ConfigManager
+import ru.voboost.voice.services.qgbus.QGBusServiceManager
 
 /**
  * Менеджер UI оверлеев
@@ -34,6 +35,16 @@ class OverlayManager(private val context: Context,
 
     private var voiceClickView: View? = null
     private var isAnimationShowing = false
+
+    // QGBus Service Manager для отправки уведомлений через системную шину событий
+    private var qgbusServiceManager: QGBusServiceManager? = null
+
+    /**
+     * Установить менеджер QGBus для отправки уведомлений
+     */
+    fun setQGBusManager(manager: QGBusServiceManager) {
+        this.qgbusServiceManager = manager
+    }
 
     /**
      * Показать анимацию голосового помощника
@@ -117,15 +128,21 @@ class OverlayManager(private val context: Context,
     }
 
     /**
-     * Показать Toast уведомление
+     * Показать Toast уведомление (через QGBus или View overlay)
      */
-    @Suppress("DEPRECATION")
     fun showToast(message: String) {
         handler.post {
             try {
-                val config = configManager.getConfig()
+                // Если QGBus доступен — отправить через шину событий
+                qgbusServiceManager?.let { manager ->
+                    if (manager.isConnected()) {
+                        manager.showToast(message)
+                        Log.d(TAG, "Toast shown via QGBus: $message")
+                        return@post
+                    }
+                }
 
-                // Создаем кастомный Toast
+                // Fallback к View overlay (если QGBus недоступен или не подключен)
                 val inflater = LayoutInflater.from(context)
                 val view = inflater.inflate(R.layout.toast_voice, null)
 
@@ -141,7 +158,7 @@ class OverlayManager(private val context: Context,
                 }
                 toast.show()
 
-                Log.d(TAG, "Toast shown: $message")
+                Log.d(TAG, "Toast shown via View overlay: $message")
 
             }
             catch (e: Exception) {

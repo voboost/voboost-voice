@@ -190,6 +190,7 @@
         "включи климат",
         "включи обогрев"
       ],
+      "show_notification": false,
       "confirmation": {
         "required": false
       },
@@ -207,6 +208,7 @@
         "выключи климат",
         "отключи обогрев"
       ],
+      "show_notification": false,
       "confirmation": {
         "required": false
       },
@@ -300,6 +302,7 @@
         "открой окно",
         "открыть окно"
       ],
+      "show_notification": false,
       "confirmation": {
         "required": false
       },
@@ -315,6 +318,7 @@
         "закрой окно",
         "закрыть окно"
       ],
+      "show_notification": false,
       "confirmation": {
         "required": false
       },
