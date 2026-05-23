@@ -240,46 +240,6 @@ class QGBusServiceManager(context: Context) {
      */
     fun isConnected(): Boolean = isOnline && serviceMessenger != null
 
-    /**
-     * Показать текстовое уведомление через QGBus (как showToast в системном лаунчере).
-     */
-    fun showToast(message: String, durationMs: Long = 3000L, screenId: Int = 0) {
-        val bundle = Bundle().apply {
-            putString("package", componentName)
-            putCharSequence("content", message)
-            putInt("screenId", screenId)
-            putLong("duration", durationMs)
-        }
-
-        val event = createEvent(
-            eventType = "showToast",
-            source = componentName,
-            data = bundle,
-            destination = "com.qinggan.app.launcher"
-        )
-
-        publish(event)
-    }
-
-    /**
-     * Утилита: создать простое событие.
-     */
-    fun createEvent(
-        eventType: String,
-        source: String = componentName,
-        data: Bundle? = null,
-        sticky: Boolean = false,
-        destination: String? = null
-    ): QGBusEvent {
-        val event = QGBusEvent()
-        event.eventType = eventType
-        event.source = source
-        event.data = data
-        event.destination = destination  // Прямой доступ к полю, не вызываем setDestination()
-        event.setSticky(sticky)
-        return event
-    }
-
     // ==================== ВНУТРЕННЯЯ ЛОГИКА ====================
 
     /**

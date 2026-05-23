@@ -16,6 +16,7 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 - ✅ **Hidden API Policy** configured (`hidden_api_policy=1`) for AIDL access
 - ✅ **Documentation updated**: INSTALLATION.md + TROUBLESHOOTING.md (pushed to GitHub)
 - ✅ **QGBus Service Manager integrated** for text notifications via system event bus (2026-05-23)
+- ✅ **ToastMessengerManager refactored** - clean code with proper constants and null-checking
 
 ## Speech Engines Architecture
 
@@ -528,7 +529,8 @@ D/QGBusService: publish event name: showToast, source: ru.voboost.voice
 **Files Modified:**
 - `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusServiceManager.kt` — NEW (moved from bus/)
 - `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusEvent.kt` — NEW
-- `app/src/main/java/ru/voboost/voice/ui/OverlayManager.kt` — Updated
+- `app/src/main/java/ru/voboost/voice/ui/VoceAnimationManager.kt` — Added QGBus integration
+- `app/src/main/java/ru/voboost/voice/ui/ToastMessengerManager.kt` — Refactored (clean code, proper constants)
 - `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` — Updated
 
 **Testing:**
@@ -537,13 +539,59 @@ D/QGBusService: publish event name: showToast, source: ru.voboost.voice
 adb shell am startservice ru.voboost.voice/.VoboostVoiceService
 
 # Watch logs:
-adb logcat | grep -i "QGBus"
+adb logcat | grep -i "QGBus\|ToastMessenger"
 
 # Say command with show_notification=true (e.g., "открой лючок зарядки")
 # Toast should appear on screen from launcher, not custom overlay
 ```
 
 **Status:** ✅ **WORKING** — QGBus connected, showToast events sent and displayed by system launcher
+
+### 2026-05-23 - ToastMessengerManager Refactoring (CLEANUP)
+
+**Improvements made:**
+1. Removed unused imports (`Handler`, `Looper`)
+2. Added proper constructor parameters
+3. Added constants for Bundle keys (`KEY_PACKAGE`, `KEY_CONTENT`, etc.)
+4. Changed `DURATION` → `DURATION_MS` with clear comment
+5. Added null-check: if QGBus not connected, logs warning and returns early
+6. Added KotlinDoc documentation
+7. Simplified code structure (removed unnecessary nested blocks)
+
+**Before:**
+```kotlin
+class ToastMessengerManager(context: Context, ...) {
+    private val handler = Handler(Looper.getMainLooper())
+    
+    fun show(message: String) {
+        handler.post {
+            qgbusServiceManager.let { manager ->
+                if (manager.isConnected()) {
+                    // ... nested block with hardcoded keys
+                }
+            }
+        }
+    }
+}
+```
+
+**After:**
+```kotlin
+class ToastMessengerManager(
+    context: Context,
+    private val qgbusServiceManager: QGBusServiceManager
+) {
+    fun show(message: String) {
+        if (!qgbusServiceManager.isConnected()) {
+            Log.w(TAG, "QGBus not connected, skipping toast")
+            return
+        }
+        // ... clean code with named constants
+    }
+}
+```
+
+**Status:** ✅ **CLEANED UP**
 
 ### 2026-05-19 - Sherpa-ONNX v1.13 Integration (WIP)
 

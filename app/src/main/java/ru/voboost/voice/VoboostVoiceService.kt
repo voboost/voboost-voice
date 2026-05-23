@@ -19,7 +19,7 @@ import androidx.core.app.NotificationCompat
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.services.speech.SpeechServiceFactory
 import ru.voboost.voice.executor.CommandExecutor
-import ru.voboost.voice.ui.OverlayManager
+import ru.voboost.voice.ui.VoceAnimationManager
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.services.canbus.handlers.TSRSpeedLimitHandler
 import ru.voboost.voice.states.StateMachine
@@ -43,6 +43,7 @@ import ru.voboost.voice.nlu.NLUEngineFactory
 import ru.voboost.voice.services.recognition.RecognitionServiceFactory
 import ru.voboost.voice.services.recognition.RecognitionServiceFactory.RecognitionEngine
 import ru.voboost.voice.services.speech.ISpeechService
+import ru.voboost.voice.ui.ToastMessengerManager
 
 /**
  * Главный сервис голосового помощника
@@ -68,7 +69,7 @@ class VoboostVoiceService : Service() {
     private lateinit var recognitionService: IRecognitionService  // < Распознавание речи
     private lateinit var nluEngine: INLUEngine
     private lateinit var commandExecutor: CommandExecutor
-    private lateinit var overlayManager: OverlayManager
+    private lateinit var voceAnimationManager: VoceAnimationManager
     private lateinit var speechService: ISpeechService  // < Интерфейс
     private lateinit var soundEffectManager: SoundEffectManager
     // IAudioSource - единый источник аудио данных
@@ -87,6 +88,7 @@ class VoboostVoiceService : Service() {
     private var volumeManager: VolumeManager? = null
     // QGBus Service Manager для отправки уведомлений через шину событий
     private lateinit var qgbusServiceManager: QGBusServiceManager
+    private lateinit var toastMessengerManager: ToastMessengerManager
     // Coroutines
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     // Флаг остановки сервиса (для отмены retry в startKeywordSpotting)
@@ -146,7 +148,7 @@ class VoboostVoiceService : Service() {
         }
 
         nluEngine = NLUEngineFactory.create(this, configManager)
-        overlayManager = OverlayManager(this, configManager)
+        voceAnimationManager = VoceAnimationManager(this)
         soundEffectManager = SoundEffectManager(this)
         // IAudioSource - создаётся ОДИН раз и передаётся в движок распознавания
         audioSource = AudioSourceFactory.create(this, AUDIO_SOURCE_TYPE)
@@ -175,7 +177,8 @@ class VoboostVoiceService : Service() {
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
         commandExecutor = CommandExecutor(context = this,
                                           speechService = speechService,
-                                          overlayManager = overlayManager,
+                                          voceAnimationManager = voceAnimationManager,
+                                          toastMessengerManager = toastMessengerManager,
                                           coroutineScope = serviceScope,
                                           vehicleCommandExecutor = vehicleCommandExecutor,
                                           configManager = configManager)
@@ -191,11 +194,12 @@ class VoboostVoiceService : Service() {
 
         // QGBus Service Manager для отправки уведомлений через шину событий
         qgbusServiceManager = QGBusServiceManager(this)
+        toastMessengerManager = ToastMessengerManager(this, qgbusServiceManager)
         
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,
                                    recognitionService = recognitionService,
-                                   overlayManager = overlayManager,
+                                   voceAnimationManager = voceAnimationManager,
                                    volumeManager = volumeManager,
                                    speechService = speechService,
                                    configManager = configManager,
@@ -226,9 +230,6 @@ class VoboostVoiceService : Service() {
         qgbusServiceManager.connect()
         Log.i(TAG, "QGBusServiceManager connected")
         
-        // Передать менеджер в OverlayManager
-        overlayManager.setQGBusManager(qgbusServiceManager)
-
         // ? Запуск распознавания (если permission есть)
         if (hasRecordPermission()) {
             startKeywordSpotting()

@@ -104,7 +104,7 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
         }
 
-        context.overlayManager?.hideAnimation()
+        context.voceAnimationManager?.hide()
         context.volumeManager?.restoreMedia()
 
         cancelled("ListeningCommandState cancelled by user")

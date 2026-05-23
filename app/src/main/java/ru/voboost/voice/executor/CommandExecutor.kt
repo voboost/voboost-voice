@@ -5,7 +5,7 @@ import android.media.AudioManager
 import android.util.Log
 import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
-import ru.voboost.voice.ui.OverlayManager
+import ru.voboost.voice.ui.VoceAnimationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -13,6 +13,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.services.speech.SpeechService
+import ru.voboost.voice.ui.ToastMessengerManager
 
 /**
  * Выполнение команд
@@ -22,7 +23,8 @@ import ru.voboost.voice.services.speech.SpeechService
  */
 class CommandExecutor(private val context: Context,
                       private val speechService: ISpeechService,
-                      private val overlayManager: OverlayManager,
+                      private val voceAnimationManager: VoceAnimationManager,
+                      private val toastMessengerManager: ToastMessengerManager,
                       private val coroutineScope: CoroutineScope,
                       private val vehicleCommandExecutor: IVehicleCommandExecutor,
                       private val configManager: ConfigManager) {
@@ -74,7 +76,7 @@ class CommandExecutor(private val context: Context,
                     val queueSpeechJob = coroutineScope.async {
                         speechService.enqueueAsync(finalPhrase)
                     }
-                    overlayManager.showToast(finalPhrase)
+                    toastMessengerManager.show(finalPhrase)
                     queueSpeechJob.await()
                 }
 
@@ -89,7 +91,7 @@ class CommandExecutor(private val context: Context,
                     val queueSpeechJob = coroutineScope.async {
                         speechService.enqueueAsync(failurePhrase)
                     }
-                    overlayManager.showToast(failurePhrase)
+                    toastMessengerManager.show(failurePhrase)
                     queueSpeechJob.await()
                 }
             }
@@ -102,7 +104,7 @@ class CommandExecutor(private val context: Context,
                 val queueSpeechJob = coroutineScope.async {
                     speechService.enqueueAsync(errorPhrase, SpeechService.PRIOR_HIGH)
                 }
-                overlayManager.showToast(errorPhrase)
+                toastMessengerManager.show(errorPhrase)
                 queueSpeechJob.await()
             }
 
@@ -199,12 +201,12 @@ class CommandExecutor(private val context: Context,
             val queueSpeechJob = coroutineScope.async {
                 speechService.enqueueAsync(notUnderstoodPhrase, SpeechService.PRIOR_MEDIUM)
             }
-            overlayManager.showToast(notUnderstoodPhrase)
+            toastMessengerManager.show(notUnderstoodPhrase)
             queueSpeechJob.await()
         }
         else {
             Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
-            overlayManager.showToast("Команда не распознана")
+            toastMessengerManager.show("Команда не распознана")
         }
     }
 

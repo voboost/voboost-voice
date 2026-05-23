@@ -8,7 +8,8 @@ import ru.voboost.voice.executor.CommandExecutor
 import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.executor.CommandData
 import ru.voboost.voice.services.speech.ISpeechService
-import ru.voboost.voice.ui.OverlayManager
+import ru.voboost.voice.ui.ToastMessengerManager
+import ru.voboost.voice.ui.VoceAnimationManager
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - ? IState Machine не знает о бизнес-логике
  */
 data class StateContext(var recognitionService: IRecognitionService? = null,
-                        var overlayManager: OverlayManager? = null,
+                        var voceAnimationManager: VoceAnimationManager? = null,
                         var volumeManager: VolumeManager? = null,
                         var speechService: ISpeechService? = null,
                         var configManager: ConfigManager? = null,

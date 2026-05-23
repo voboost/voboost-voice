@@ -26,7 +26,7 @@ class IdleState(private val context: StateContext) : BaseState() {
         Log.i(TAG, "Entering IDLE IState - waiting for keyword...")
 
         try {
-            context.overlayManager?.hideAnimation()
+            context.voceAnimationManager?.hide()
             context.volumeManager?.restoreMedia()
 
             // Ждём ключевое слово из SharedFlow

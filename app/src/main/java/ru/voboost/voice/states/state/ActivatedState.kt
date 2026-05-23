@@ -6,7 +6,6 @@ import kotlinx.coroutines.delay
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.speech.SpeechService
-import ru.voboost.voice.states.state.BaseState
 import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.StateResult
 import ru.voboost.voice.states.StateType
@@ -36,7 +35,7 @@ class ActivatedState(private val context: StateContext) : BaseState() {
             context.soundEffectManager?.playStartSoundAsync()
 
             // Показать анимацию и приглушить музыку
-            context.overlayManager?.showAnimation()
+            context.voceAnimationManager?.show()
             context.volumeManager?.duckMedia(targetVolume = 1)
 
             // ОТКЛЮЧИТЬ распознавание пока TTS говорит (чтобы не было ЭХО)
@@ -94,7 +93,7 @@ class ActivatedState(private val context: StateContext) : BaseState() {
                 isCancelling.set(false)
             }
 
-            context.overlayManager?.hideAnimation()
+            context.voceAnimationManager?.hide()
             context.volumeManager?.restoreMedia()
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
 

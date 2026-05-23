@@ -36,7 +36,7 @@ class TimeoutState(private val context: StateContext) : BaseState() {
                 context.speechService?.enqueueAsync(cancelPhrase, SpeechService.PRIOR_HIGH)
             }
 
-            context.overlayManager?.hideAnimation()
+            context.voceAnimationManager?.hide()
             context.volumeManager?.restoreMedia()
 
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
