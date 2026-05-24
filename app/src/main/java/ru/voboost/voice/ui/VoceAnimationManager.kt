@@ -38,24 +38,20 @@ class VoceAnimationManager(private val context: Context) {
             try {
                 // Создаем VoiceClickView с frame-by-frame анимацией
                 voiceClickView = VoiceClickView(context)
-
                 // Параметры окна
                 val params = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
                                                         WindowManager.LayoutParams.WRAP_CONTENT,
                                                         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                                                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                                                         PixelFormat.TRANSLUCENT)
-
                 // Позиция: верх, X=0 (центрируем после layout)
                 params.gravity = Gravity.TOP or Gravity.START
                 params.x = 0
                 params.y = 0
-
                 // Добавляем view
                 windowManager.addView(voiceClickView, params)
                 (voiceClickView as? VoiceClickView)?.startAnimation()
                 isAnimationShowing = true
-
                 // Центрируем после того как View измерен
                 voiceClickView?.post {
                     val viewWidth = voiceClickView?.width ?: 0
@@ -67,9 +63,7 @@ class VoceAnimationManager(private val context: Context) {
                     voiceClickView?.let { windowManager.updateViewLayout(it, newParams) }
                     Log.d(TAG, "Centered: screen=$screenWidth, view=$viewWidth, x=$centerX")
                 }
-
                 Log.d(TAG, "Animation shown at top-center")
-
             }
             catch (e: Exception) {
                 Log.e(TAG, "Failed to show animation", e)

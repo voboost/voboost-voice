@@ -18,7 +18,8 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  * Примечание: команда закрытия бензобака в config.json отсутствует
  * Если понадобится — добавить FuelTankCloseHandler по аналогии
  */
-class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
+class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "ScuttleCommand"

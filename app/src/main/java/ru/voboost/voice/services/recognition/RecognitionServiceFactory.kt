@@ -41,7 +41,6 @@ object RecognitionServiceFactory {
                 if (model !is Model) {
                     throw IllegalArgumentException("Expected Vosk Model, got ${model::class.simpleName}")
                 }
-
                 val recognizer = Recognizer(model, 16000f)
                 VoskRecognitionEngine(recognizer)
             }
@@ -53,11 +52,9 @@ object RecognitionServiceFactory {
                 if (model !is String) {
                     throw IllegalArgumentException("Expected model path (String), got ${model::class.simpleName}")
                 }
-
                 SherpaRecognitionEngine.Companion.create(model)
             }
         }
-
         return RecognitionService(audioSource = audioSource,
                                   recognitionEngine = recognitionEngine,
                                   keywordChecker = keywordChecker)

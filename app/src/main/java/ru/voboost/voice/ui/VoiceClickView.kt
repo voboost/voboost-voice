@@ -11,16 +11,14 @@ import ru.voboost.voice.R
  * Использует оригинальные кадры из Ivoka (voice_right000..040)
  * Зацикленная frame-by-frame анимация
  */
-class VoiceClickView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : ImageView(context, attrs, defStyleAttr) {
+class VoiceClickView @JvmOverloads constructor(context: Context,
+                                               attrs: AttributeSet? = null,
+                                               defStyleAttr: Int = 0)
+    : ImageView(context, attrs, defStyleAttr) {
 
     private var animationDrawable: AnimationDrawable? = null
 
-    init {
-        // Устанавливаем ресурс анимации
+    init { // Устанавливаем ресурс анимации
         setBackgroundResource(R.drawable.anim_voice_effect)
         animationDrawable = background as? AnimationDrawable
     }

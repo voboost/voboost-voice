@@ -20,7 +20,6 @@ interface IAudioSource {
         const val CHANNELS = 1
         const val BITS_PER_SAMPLE = 16
     }
-
     /**
      * Слушатель аудио-данных
      * @param data PCM данные (16-bit, mono, 16000 Hz)
@@ -30,38 +29,31 @@ interface IAudioSource {
     fun interface Listener {
         fun onAudioData(data: ByteArray, bytesRead: Int, zone: String)
     }
-    
     /**
      * Инициализация аудио-источника
      * @return true если успешно
      */
     fun initialize(): Boolean
-    
     /**
      * Начать запись аудио
      */
     fun start()
-    
     /**
      * Остановить запись аудио
      */
     fun stop()
-    
     /**
      * Освободить ресурсы
      */
     fun release()
-    
     /**
      * Добавить слушатель аудио-данных
      */
     fun addListener(listener: Listener)
-    
     /**
      * Удалить слушатель аудио-данных
      */
     fun removeListener(listener: Listener)
-    
     /**
      * Проверка состояния
      * @return true если запись активна

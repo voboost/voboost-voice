@@ -37,11 +37,9 @@ import ru.voboost.voice.executor.handlers.intent.phone.PhoneCallNumberIntentHand
  * @param handlers Реестр команд: commandId > ICommandHandler
  * @param isConnectedChecker Функция проверки подключения
  */
-class VehicleCommandExecutor(
-    private val context: Context,
-    private val canBusManager: CanBusServiceManager,
-
-) : IVehicleCommandExecutor {
+class VehicleCommandExecutor(private val context: Context,
+                             private val canBusManager: CanBusServiceManager)
+    : IVehicleCommandExecutor {
 
     private val handlers: Map<String, ICommandHandler> = mapOf(
 
@@ -78,7 +76,7 @@ class VehicleCommandExecutor(
         "leisure_smart_mode" to LeisureSmartModeHandler(canBusManager),
         "child_smart_mode" to ChildSmartModeHandler(canBusManager),
         "romantic_smart_mode" to RomanticSmartModeHandler(canBusManager),
-    )
+                                                              )
 
     companion object {
         const val TAG = "VehicleCommandExec"
@@ -88,22 +86,23 @@ class VehicleCommandExecutor(
         it.javaClass.simpleName.replace("Handler", "")
     } ?: "Unknown"
 
-    override fun executeByCommandId(
-        commandId: String,
-        voiceParams: Map<String, Any>
-    ): Boolean {
+    override fun executeByCommandId(commandId: String,
+                                    voiceParams: Map<String, Any>)
+    : Boolean {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected")
             return false
         }
 
-        val handler = handlers[commandId]
-            ?: return false.also { Log.w(TAG, "No handler for command: '$commandId'") }
+        val handler = handlers[commandId] ?: return false.also {
+            Log.w(TAG,"No handler for command: '$commandId'")
+        }
 
         Log.d(TAG, "Executing: commandId='$commandId', handler=${handler.javaClass.simpleName}")
         return try {
             handler.execute(voiceParams)
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Exception during command execution: $commandId", e)
             false
         }

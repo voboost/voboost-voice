@@ -4,6 +4,7 @@ import android.util.Log
 import ru.voboost.voice.services.speech.ISpeechServiceCallback
 
 abstract class BaseSpeechEngine : ISpeechEngine {
+
     private val callbacks = mutableSetOf<ISpeechServiceCallback>()
 
     override fun addCallback(callback: ISpeechServiceCallback) {

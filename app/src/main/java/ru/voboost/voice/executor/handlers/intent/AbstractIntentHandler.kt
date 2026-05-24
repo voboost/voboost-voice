@@ -14,7 +14,6 @@ abstract class AbstractIntentHandler(protected val context: Context) : ICommandH
 
         // Action для звонков через BluetoothPhone (тот же что использует Ivoka)
         const val ACTION_IVOKA_PHONE_CALL = "com.qinggan.broadcast.action.ivokaphonecall"
-
         // Параметры которые ожидает BluetoothPhone
         const val EXTRA_IVOKA_CALL_INFO = "Ivoka_CallInfo"
         const val EXTRA_SCREEN_INT = "screen_int"
@@ -23,11 +22,8 @@ abstract class AbstractIntentHandler(protected val context: Context) : ICommandH
 
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         return try {
-            val intent = buildIntent(voiceParams)
+            val intent = buildIntent(voiceParams) ?: return false
 
-            if (intent == null) {
-                return false;
-            }
             context.sendBroadcast(intent)
             Log.d(TAG, "Broadcast sent: action='${intent.action}'")
             Log.d(TAG, "  Extras: ${intent.extras?.keySet()?.joinToString(", ")}")

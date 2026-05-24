@@ -6,10 +6,10 @@ import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 abstract class AbstractSOCModeHandler(protected val canBusManager: CanBusServiceManager,
-                                      private val modeId: Int) : ICommandHandler {
+                                      private val modeId: Int)
+    : ICommandHandler {
     companion object {
         const val TAG = "SOCModeCommand"
-
         const val ELECTRO = 2
         const val HYBRID = 3
         const val SAVE = 4

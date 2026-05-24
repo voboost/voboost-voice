@@ -8,6 +8,7 @@ import ru.voboost.voice.states.StateResult
  * Состояние вызывает finish() или cancelled() когда готово перейти дальше.
  */
 abstract class BaseState : IState {
+
     private var completionCallback: ((StateResult) -> Unit)? = null
     private var cancellationCallback: ((String) -> Unit)? = null
 
@@ -18,7 +19,6 @@ abstract class BaseState : IState {
     override fun setCancellationCallback(callback: (String) -> Unit) {
         cancellationCallback = callback
     }
-
     /**
      * Вызывается когда состояние завершилось нормально.
      */
@@ -27,7 +27,6 @@ abstract class BaseState : IState {
             throw IllegalStateException("completionCallback not set in ${this::class.simpleName}")
         }
     }
-
     /**
      * Вызывается когда состояние отменено (пользователь/таймаут/ошибка).
      */
@@ -36,7 +35,6 @@ abstract class BaseState : IState {
             throw IllegalStateException("cancellationCallback not set in ${this::class.simpleName}")
         }
     }
-
     /**
      * Сбросить состояние по умолчанию — ничего не делает.
      * Переопределите если нужно сбросить внутренние поля.

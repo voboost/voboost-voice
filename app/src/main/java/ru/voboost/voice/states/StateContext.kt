@@ -1,5 +1,6 @@
 package ru.voboost.voice.states
 
+import kotlinx.coroutines.CoroutineScope
 import ru.voboost.voice.SoundEffectManager
 import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.config.ConfigManager

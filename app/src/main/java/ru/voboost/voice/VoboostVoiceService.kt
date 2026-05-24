@@ -169,17 +169,15 @@ class VoboostVoiceService : Service() {
         tsrSpeedLimitHandler?.let {  canBusManager.registerConnectionCallback(it)}
         testCanBusServiceHandler?.let {  canBusManager.registerConnectionCallback(it)}
 
+        // QGBus Service Manager для отправки уведомлений через шину событий
+        qgbusServiceManager = QGBusServiceManager(this)
+        toastMessengerManager = ToastMessengerManager(this, qgbusServiceManager)
         // Подключаемся к AudioPolicyService после инициализации CanBus
         audioPolicyManager = AudioPolicyServiceManager(this)
-
-
         // Создаём VehicleCommandExecutor через фабрику
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
-        commandExecutor = CommandExecutor(context = this,
-                                          speechService = speechService,
-                                          voceAnimationManager = voceAnimationManager,
+        commandExecutor = CommandExecutor(speechService = speechService,
                                           toastMessengerManager = toastMessengerManager,
-                                          coroutineScope = serviceScope,
                                           vehicleCommandExecutor = vehicleCommandExecutor,
                                           configManager = configManager)
         Log.i(TAG, "CommandHandler initialized")
@@ -192,9 +190,7 @@ class VoboostVoiceService : Service() {
         // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
         phoneCallPoller = PhoneCallPoller(recognitionService, audioPolicyManager)
 
-        // QGBus Service Manager для отправки уведомлений через шину событий
-        qgbusServiceManager = QGBusServiceManager(this)
-        toastMessengerManager = ToastMessengerManager(this, qgbusServiceManager)
+
         
         // State Machine - управление состояниями
         val context = StateContext(soundEffectManager = soundEffectManager,

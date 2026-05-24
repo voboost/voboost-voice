@@ -13,8 +13,12 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  * @param commandId Уникальный ID команды (совпадает с config.json)
  * @param canBusManager Менеджер CAN-шины для отправки команд
  */
-abstract class AbstractWindowHandler(protected val canBusManager: CanBusServiceManager) :
-        ICommandHandler {
+abstract class AbstractWindowHandler(protected val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
+
+    companion object {
+        const val TAG = "WindowCommand"
+    }
 
     override fun execute(voiceParams: Map<String, Any>): Boolean {
         if (!canBusManager.isConnected()) {
@@ -22,9 +26,9 @@ abstract class AbstractWindowHandler(protected val canBusManager: CanBusServiceM
             return false
         }
 
-        val (IState, value) = getWindowStateAndValue()
-        Log.d(TAG, "Window command: IState=$IState (ordinal=${IState.ordinal}), value=$value")
-        return canBusManager.setVehicleState(IState, value)
+        val (state, value) = getWindowStateAndValue()
+        Log.d(TAG, "Window command: IState=$state (ordinal=${state.ordinal}), value=$value")
+        return canBusManager.setVehicleState(state, value)
     }
 
     /**
@@ -32,10 +36,6 @@ abstract class AbstractWindowHandler(protected val canBusManager: CanBusServiceM
      * Каждый конкретный обработчик возвращает свои значения
      */
     protected abstract fun getWindowStateAndValue(): Pair<VehicleState, Int>
-
-    companion object {
-        const val TAG = "WindowCommand"
-    }
 }
 
 

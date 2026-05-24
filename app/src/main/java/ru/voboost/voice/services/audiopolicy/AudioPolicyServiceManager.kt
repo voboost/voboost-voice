@@ -7,7 +7,6 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import com.qinggan.audiopolicy.IAudioPolicyService
-import ru.voboost.voice.services.audiopolicy.IAudioPolicyServiceConnectionCallback
 
 class AudioPolicyServiceManager(private val context: Context) {
 
@@ -31,17 +30,14 @@ class AudioPolicyServiceManager(private val context: Context) {
     }
 
     private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            this@AudioPolicyServiceManager.onServiceConnected(name, service)
-        }
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) =
+            this@AudioPolicyServiceManager.handleOnServiceConnected(name, service)
 
-        override fun onServiceDisconnected(name: ComponentName?) {
-            this@AudioPolicyServiceManager.onServiceDisconnected(name)
-        }
+        override fun onServiceDisconnected(name: ComponentName?) =
+            this@AudioPolicyServiceManager.handleOnServiceDisconnected(name)
 
-        override fun onBindingDied(name: ComponentName?) {
-            this@AudioPolicyServiceManager.onBindingDied(name)
-        }
+        override fun onBindingDied(name: ComponentName?) =
+            this@AudioPolicyServiceManager.handleOnBindingDied(name)
     }
 
     fun isConnected(): Boolean = isBound && audioPolicyService != null
@@ -73,7 +69,7 @@ class AudioPolicyServiceManager(private val context: Context) {
         }
     }
 
-    private fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+    private fun handleOnServiceConnected(name: ComponentName?, service: IBinder?) {
         Log.i(TAG, "Connected to AudioPolicyService")
         audioPolicyService = IAudioPolicyService.Stub.asInterface(service)
         isBound = true
@@ -82,21 +78,21 @@ class AudioPolicyServiceManager(private val context: Context) {
         onConnected()
     }
 
-    private fun onServiceDisconnected(name: ComponentName?) {
+    private fun handleOnServiceDisconnected(name: ComponentName?) {
         Log.w(TAG, "Disconnected from AudioPolicyService")
         audioPolicyService = null
         isBound = false // Уведомляем callback'и
         onDisconnected()
     }
 
-    private fun onBindingDied(name: ComponentName?) {
+    private fun handleOnBindingDied(name: ComponentName?) {
         Log.e(TAG, "Binding died for AudioPolicyService")
         isBound = false
         isConnecting = false
         audioPolicyService = null
     }
 
-    public fun isInCall(): Boolean =
+    fun isInCall(): Boolean =
             audioPolicyService?.isInCall(CALLING_PACKAGE_NAME) ?: false
 
     fun registerConnectionCallback(callback: IAudioPolicyServiceConnectionCallback) =
@@ -107,12 +103,23 @@ class AudioPolicyServiceManager(private val context: Context) {
     fun unregisterConnectionCallback(callback: IAudioPolicyServiceConnectionCallback) =
             connectionCallbacks.remove(callback)
 
-    fun onConnected() =
-            connectionCallbacks.forEach { it.handlerConnected(this) }
-    fun onDisconnected() =
-            connectionCallbacks.forEach { it.handlerDisconnected(this) }
-    private fun onConnectionFailed(error: String) =
-            connectionCallbacks.forEach {it.handlerConnectionFailed(this, error)}
+    fun onConnected() {
+        connectionCallbacks.forEach {
+            it.handlerConnected(this)
+        }
+    }
+
+    fun onDisconnected() {
+        connectionCallbacks.forEach {
+            it.handlerDisconnected(this)
+        }
+    }
+
+    private fun onConnectionFailed(error: String) {
+        connectionCallbacks.forEach {
+            it.handlerConnectionFailed(this, error)
+        }
+    }
 
     /**
      * Отключиться от сервиса
@@ -139,9 +146,7 @@ class AudioPolicyServiceManager(private val context: Context) {
      */
     private fun ensureConnected(): Boolean {
         if (isConnected()) return true
-
-        Log.w(TAG,
-              "Not connected to AudioPolicyService, attempting to use anyway")
+        Log.w(TAG,"Not connected to AudioPolicyService, attempting to use anyway")
         return false
     }
 

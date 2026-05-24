@@ -25,7 +25,6 @@ object SpeechServiceFactory {
      * @param speakerId ID спикера для Sherpa (0-4)
      */
     suspend fun create(context: Context, configManager: ConfigManager): ISpeechService {
-
         val speechConfig = configManager.getConfig().tts
         val engine = when (speechConfig.offline.engine.lowercase()) {
             "sherpa" -> {
@@ -52,11 +51,7 @@ object SpeechServiceFactory {
             }
         }
 
-        speechEngine.initialize()
-        // Настройки rate/pitch из конфига
-        speechEngine.setRate(speechConfig.offline.rate)
-        speechEngine.setPitch(speechConfig.offline.pitch)
-
+        speechEngine.initialize(speechConfig.offline.rate, speechConfig.offline.pitch)
         return SpeechService(speechEngine)
     }
 }

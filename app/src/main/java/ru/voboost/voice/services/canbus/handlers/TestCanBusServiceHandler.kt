@@ -9,8 +9,8 @@ import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.services.canbus.ICanBusServiceConnectionCallback
 import ru.voboost.voice.services.speech.ISpeechService
 
-class TestCanBusServiceHandler(private val speechService: ISpeechService) :
-        ICanBusServiceConnectionCallback {
+class TestCanBusServiceHandler(private val speechService: ISpeechService)
+    : ICanBusServiceConnectionCallback {
 
     companion object {
         const val TAG = "TestSpeedLimitHandler"
@@ -22,34 +22,27 @@ class TestCanBusServiceHandler(private val speechService: ISpeechService) :
 
     private val mCanBusListener = object : CanBusListener() {
 
-        override fun onVehicleStateChanged(vehicle: VehicleState, state: Int) {
+        override fun onVehicleStateChanged(vehicle: VehicleState, state: Int) =
             this@TestCanBusServiceHandler.handleVehicleStateChanged(vehicle, state)
-        }
 
-        override fun onVehicleSceneModeChanged(mode: Int) {
+        override fun onVehicleSceneModeChanged(mode: Int) =
             this@TestCanBusServiceHandler.handleVehicleSceneModeChanged(mode)
-        }
 
-        override fun onAlarmDataChanged(state: Int) {
+        override fun onAlarmDataChanged(state: Int) =
             this@TestCanBusServiceHandler.handleAlarmDataChanged(state)
-        }
 
-        override fun onRealityWarningInfoChange(realityWarningInfo: RealityWarningInfo) {
+        override fun onRealityWarningInfoChange(realityWarningInfo: RealityWarningInfo) =
             this@TestCanBusServiceHandler.handleRealityWarningInfoChange(realityWarningInfo)
-        }
 
         @Override // com.qinggan.canbus.ICanBusServiceCallback
-        override fun onRealityWarningInfoChanged(key: Int, value: Int) {
+        override fun onRealityWarningInfoChanged(key: Int, value: Int) =
             this@TestCanBusServiceHandler.handleRealityWarningInfoChanged(key, value)
-        }
 
-        //        override fun onCanRawDataChanged(canID: Int, data: Bundle) {
-        //            this@TestCanBusServiceHandler.handleCanRawDataChanged(canID, data)
-        //        }
+        //override fun onCanRawDataChanged(canID: Int, data: Bundle) =
+        //    this@TestCanBusServiceHandler.handleCanRawDataChanged(canID, data)
 
-        override fun onHEVSystemModelChanged(hevMode: Int) {
+        override fun onHEVSystemModelChanged(hevMode: Int) =
             this@TestCanBusServiceHandler.handleHEVSystemModelChanged(hevMode)
-        }
     }
 
     private fun handleVehicleStateChanged(vehicle: VehicleState, state: Int) {
@@ -83,25 +76,24 @@ class TestCanBusServiceHandler(private val speechService: ISpeechService) :
         if (vehicle == VehicleState.RIGHT_VERTICAL_POSITION) return
         if (vehicle == VehicleState.BMS_REMAIN_CHARGE_TIME) return
 
-        Log.d(TAG, "вљ пёЏ VehicleStateChanged: $vehicle val: $state")
+        Log.d(TAG, "событие VehicleStateChanged: $vehicle val: $state")
     }
 
     private fun handleVehicleSceneModeChanged(mode: Int) {
-        Log.d(TAG, "вљ пёЏ VehicleSceneModeChanged: $mode")
+        Log.d(TAG, "событие VehicleSceneModeChanged: $mode")
     }
 
     private fun handleAlarmDataChanged(state: Int) {
-        Log.d(TAG, "вљ пёЏ AlarmDataChanged: $state")
+        Log.d(TAG, "событие AlarmDataChanged: $state")
     }
 
     private fun handleRealityWarningInfoChange(realityWarningInfo: RealityWarningInfo) {
-        Log.d(TAG, "вљ пёЏ RealityWarningInfo: $realityWarningInfo")
+        Log.d(TAG, "событие RealityWarningInfo: $realityWarningInfo")
     }
 
     private fun handleRealityWarningInfoChanged(key: Int, value: Int) {
-        Log.d(TAG, "вљ пёЏ RealityWarningInfoChanged: $key -> $value")
+        Log.d(TAG, "событие RealityWarningInfoChanged: $key -> $value")
     }
-
 
     private fun handleCanRawDataChanged(canID: Int, data: Bundle) {
 
@@ -115,11 +107,11 @@ class TestCanBusServiceHandler(private val speechService: ISpeechService) :
 
         val hexPayload = payload.joinToString(" ") { "%02X".format(it and 0xFF) }
 
-        Log.d(TAG, "вљ пёЏ CanRawDataChanged: $canID -> $hexPayload")
+        Log.d(TAG, "событие CanRawDataChanged: $canID -> $hexPayload")
     }
 
     private fun handleHEVSystemModelChanged(hevMode: Int) {
-        Log.d(TAG, "вљ пёЏ HEVSystemModelChanged: $hevMode")
+        Log.d(TAG, "событие HEVSystemModelChanged: $hevMode")
     }
 
     override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
@@ -134,8 +126,7 @@ class TestCanBusServiceHandler(private val speechService: ISpeechService) :
         Log.d(TAG, "unregistered")
     }
 
-    override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager,
-                                         error: String) {
+    override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager, error: String) {
     }
 
     private fun register(): Boolean {

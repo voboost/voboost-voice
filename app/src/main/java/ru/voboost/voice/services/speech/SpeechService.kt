@@ -4,8 +4,9 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import ru.voboost.voice.engine.ISpeechEngine
 
-class SpeechService(private val speechEngine: ISpeechEngine) : ISpeechServiceCallback,
-                                                               ISpeechService {
+class SpeechService(private val speechEngine: ISpeechEngine)
+    : ISpeechServiceCallback, ISpeechService {
+
     companion object {
         const val TAG = "PriorityTtsQueue"
         const val PRIOR_LOW = 1
@@ -64,11 +65,9 @@ class SpeechService(private val speechEngine: ISpeechEngine) : ISpeechServiceCal
                 startNextItem()
                 return
             }
-
             // 🔹 БЕЗ ПРЕРЫВАНИЯ: если что-то уже говорится — просто добавляем в очередь
             // Но сортируем по приоритету среди ожидающих
             insertByPriority(item)
-
             // Если вдруг освободилось (маловероятно, но на всякий случай)
             if (!isSpeaking) {
                 startNextItem()
@@ -119,7 +118,6 @@ class SpeechService(private val speechEngine: ISpeechEngine) : ISpeechServiceCal
     override fun handleSpeechFinished() {
         synchronized(queueLock) {
             val finishedItem = currentItem
-
             // ✅ Завершаем ожидающую корутину, если она была
             finishedItem?.completion?.complete(Unit)
 
@@ -144,11 +142,11 @@ class SpeechService(private val speechEngine: ISpeechEngine) : ISpeechServiceCal
     override fun release() {
         synchronized(queueLock) { // Завершаем все ожидающие корутины
             queue.forEach {
-                it.completion?.completeExceptionally(kotlinx.coroutines.CancellationException("Queue cancelled"))
+                it.completion?.completeExceptionally(kotlinx.coroutines
+                                                         .CancellationException("Queue cancelled"))
             }
-            currentItem?.completion?.completeExceptionally(kotlinx.coroutines.CancellationException(
-                "Queue cancelled"))
-
+            currentItem?.completion?.completeExceptionally(kotlinx.coroutines
+                                                               .CancellationException("Queue cancelled"))
             speechEngine.stop()
             queue.clear()
             currentItem = null

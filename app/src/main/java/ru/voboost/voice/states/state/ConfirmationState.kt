@@ -2,7 +2,6 @@ package ru.voboost.voice.states.state
 
 import android.util.Log
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.recognition.RecognitionServiceResult
 import kotlinx.coroutines.flow.first
@@ -22,7 +21,7 @@ import ru.voboost.voice.states.StateType
  */
 class ConfirmationState(private val context: StateContext) : BaseState() {
     companion object {
-        const val TAG = "Confirmation"
+        const val TAG = "ConfirmationState"
     }
 
     override val canCancel = true
@@ -33,21 +32,19 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
             finish(StateResult.Next(StateType.IDLE))
             return
         }
-
         Log.i(TAG, "Entering CONFIRMATION IState for: ${commandData.id}")
-
         try {
             context.recognitionService?.setMode(RecognitionService.Mode.COMMAND)
-
             // Спрашиваем подтверждение
             val question = context.nluEngine?.getConfirmationQuestion(commandData.config)
             if (!question.isNullOrEmpty()) {
                 context.speechService?.enqueueAsync(question)
             }
-
             // Ждём ответ
             val result = context.recognitionService?.results?.first {
-                it is RecognitionServiceResult.CommandReceived || it is RecognitionServiceResult.Timeout || it is RecognitionServiceResult.Error
+                it is RecognitionServiceResult.CommandReceived ||
+                it is RecognitionServiceResult.Timeout ||
+                it is RecognitionServiceResult.Error
             }
 
             when (result) {
@@ -62,29 +59,24 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
                         finish(StateResult.Next(StateType.IDLE))
                     }
                 }
-
                 is RecognitionServiceResult.Timeout -> {
                     Log.w(TAG, "Confirmation timeout")
                     finish(StateResult.Next(StateType.IDLE))
                 }
-
                 is RecognitionServiceResult.Error -> {
                     Log.e(TAG, "Confirmation error: ${result.message}")
                     finish(StateResult.Next(StateType.COMMAND_ERROR))
                 }
-
                 else -> {
                     Log.w(TAG, "Unexpected result during confirmation: $result")
                     finish(StateResult.Next(StateType.IDLE))
                 }
             }
-
         }
         catch (e: CancellationException) {
             Log.d(TAG, "ConfirmationState cancelled")
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             throw e
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error in ConfirmationState", e)
@@ -94,7 +86,6 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
 
     override suspend fun cancel() {
         context.soundEffectManager?.playEndSoundAsync()
-        delay(400)
         val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
         if(!cancelPhrase.isNullOrEmpty())
         {

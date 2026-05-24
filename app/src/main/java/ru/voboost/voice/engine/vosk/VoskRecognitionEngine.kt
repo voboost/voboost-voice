@@ -15,14 +15,15 @@ import org.vosk.Recognizer
  * НЕ управляет состоянием, НЕ работает с IAudioSource
  * Только PCM > Text
  */
-class VoskRecognitionEngine(private val recognizer: Recognizer) : IRecognitionEngine {
+class VoskRecognitionEngine(private val recognizer: Recognizer)
+    : IRecognitionEngine {
+
     companion object {
         const val TAG = "VoskStream"
     }
 
     @Volatile
     private var needsRecreation = false
-
     // Блокировка для защиты от race condition между reset() и acceptWaveform()
     private val recognizerLock = Any()
 

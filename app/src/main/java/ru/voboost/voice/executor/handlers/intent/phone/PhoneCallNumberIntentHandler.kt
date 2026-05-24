@@ -19,9 +19,7 @@ class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler(con
     override fun buildIntent(voiceParams: Map<String, Any>): Intent? {
         val phoneNumber = voiceParams["number"] as? String ?: ""
 
-        Log.d(TAG, "Phone call to number: '$phoneNumber'")
-        Log.d(TAG, "  Action: $ACTION_IVOKA_PHONE_CALL")
-        Log.d(TAG, "  Extra Ivoka_CallInfo: '$phoneNumber'")
+        Log.d(TAG, "Phone call to number: '$phoneNumber' Action: $ACTION_IVOKA_PHONE_CALL")
 
         if (phoneNumber.isNullOrEmpty()) {
             return null;

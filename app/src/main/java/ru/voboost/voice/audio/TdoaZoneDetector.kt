@@ -20,17 +20,13 @@ import kotlin.math.min
  * @param micSpacing Расстояние между микрофонами в метрах (по умолчанию 15 см)
  * @param sampleRate Частота дискретизации (по умолчанию 16000 Гц)
  */
-class TdoaZoneDetector(
-    private val micSpacing: Float = 0.15f,  // 15 см между микрофонами
-    private val sampleRate: Int = 16000
-) {
+class TdoaZoneDetector(private val micSpacing: Float = 0.15f,  // 15 см между микрофонами
+                       private val sampleRate: Int = 16000) {
     companion object {
         const val TAG = "TdoaZoneDetector"
         private const val SPEED_OF_SOUND = 343.0f  // м/с при 20°C
-        
         // Максимальная ожидаемая задержка в сэмплах (~1.25мс для 15см)
         private const val MAX_DELAY_SAMPLES = 10
-        
         // Порог энергии для детектирования активности речи
         private const val ENERGY_THRESHOLD = 10000.0f
     }
@@ -45,21 +41,17 @@ class TdoaZoneDetector(
             Log.w(TAG, "Not enough channels: ${channels.size}, need 4")
             return "front_left"
         }
-
         // Вычисляем энергию каждого канала для проверки активности
         val energies = channels.map { calculateEnergy(it) }
         Log.d(TAG, "Energies: ${energies.map { "%.0f".format(it) }}")
-
         // Проверяем, есть ли вообще звук
         val maxEnergy = energies.maxOrNull() ?: 0f
         if (maxEnergy < ENERGY_THRESHOLD) {
             Log.d(TAG, "Low energy, no speech detected")
             return "front_left"  // По умолчанию
         }
-
         // Находим канал с максимальной энергией
         val maxEnergyIndex = energies.indexOfMaxOrNull() ?: 0
-
         // Вычисляем задержки между парами микрофонов
         val delay12 = crossCorrelationDelay(channels[0], channels[1])  // передние
         val delay34 = crossCorrelationDelay(channels[2], channels[3])  // задние
@@ -70,7 +62,6 @@ class TdoaZoneDetector(
 
         // Определяем зону по комбинации задержек и энергий
         val zone = determineZone(delay12, delay34, delay13, delay24, energies, maxEnergyIndex)
-        
         Log.d(TAG, "🎯 Zone detected: $zone (maxEnergyIndex=$maxEnergyIndex)")
         return zone
     }
@@ -93,7 +84,6 @@ class TdoaZoneDetector(
     private fun crossCorrelationDelay(signal1: ShortArray, signal2: ShortArray): Int {
         var bestLag = 0
         var maxCorrelation = Float.NEGATIVE_INFINITY
-
         // Ищем задержку в диапазоне [-MAX_DELAY_SAMPLES, +MAX_DELAY_SAMPLES]
         for (lag in -MAX_DELAY_SAMPLES..MAX_DELAY_SAMPLES) {
             var correlation = 0.0f
@@ -123,29 +113,26 @@ class TdoaZoneDetector(
     /**
      * Определить зону по задержкам и энергиям
      */
-    private fun determineZone(
-        delay12: Int,  // между передними микрофонами
-        delay34: Int,  // между задними микрофонами
-        delay13: Int,  // между левыми микрофонами
-        delay24: Int,  // между правыми микрофонами
-        energies: List<Float>,
-        maxEnergyIndex: Int
-    ): String {
-        // Если максимальная энергия на переднем левом (водитель)
+    private fun determineZone(delay12: Int,  // между передними микрофонами
+                              delay34: Int,  // между задними микрофонами
+                              delay13: Int,  // между левыми микрофонами
+                              delay24: Int,  // между правыми микрофонами
+                              energies: List<Float>,
+                              maxEnergyIndex: Int): String { // Если максимальная энергия на переднем левом (водитель)
         if (maxEnergyIndex == 0) {
             return if (delay12 > 2) "front_right" else "front_left"
         }
-        
+
         // Если максимальная энергия на переднем правом (пассажир)
         if (maxEnergyIndex == 1) {
             return if (delay12 < -2) "front_left" else "front_right"
         }
-        
+
         // Если максимальная энергия на заднем левом
         if (maxEnergyIndex == 2) {
             return if (delay34 > 2) "second_right" else "second_left"
         }
-        
+
         // Если максимальная энергия на заднем правом
         if (maxEnergyIndex == 3) {
             return if (delay34 < -2) "second_left" else "second_right"
@@ -168,16 +155,12 @@ class TdoaZoneDetector(
      * @param delay Задержка между микрофонами в сэмплах
      * @return Угол от -90° (слева) до +90° (справа)
      */
-    fun calculateAngle(delay: Int): Float {
-        // Время задержки
+    fun calculateAngle(delay: Int): Float { // Время задержки
         val timeDelay = delay / sampleRate.toFloat()
-        
         // Расстояние, которое прошёл звук
         val distance = timeDelay * SPEED_OF_SOUND
-
         // Ограничиваем, чтобы не вышло за пределы физики
         val ratio = min(1.0f, max(-1.0f, distance / micSpacing))
-
         // θ = arcsin((c * Δt) / d)
         val angleRad = acos(ratio) - (Math.PI / 2).toFloat()
 
@@ -189,7 +172,7 @@ class TdoaZoneDetector(
      */
     fun ensureLength(signal: ShortArray, minLength: Int): ShortArray {
         if (signal.size >= minLength) return signal
-        
+
         return signal.copyOf(minLength)
     }
 

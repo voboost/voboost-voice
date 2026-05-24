@@ -27,7 +27,8 @@ import kotlin.math.max
  * если они доступны на устройстве.
  */
 class AndroidAudioSource(private val context: Context,
-                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE) : IAudioSource {
+                         private val sampleRate: Int = IAudioSource.SAMPLE_RATE)
+    : IAudioSource {
 
     companion object {
         const val TAG = "AndroidAudioSource"
@@ -40,13 +41,10 @@ class AndroidAudioSource(private val context: Context,
     private var noiseSuppressor: NoiseSuppressor? = null
     private var aec: AcousticEchoCanceler? = null
     private var agc: AutomaticGainControl? = null
-
     @Volatile private var isRecording = false
-
     @Volatile private var isInitialized = false
 
     override fun initialize(): Boolean {
-
         if (isInitialized) {
             Log.d(TAG, "Already initialized")
             return true
@@ -59,12 +57,9 @@ class AndroidAudioSource(private val context: Context,
                 Log.e(TAG, "? AudioRecord failed to initialize after retries")
                 return false
             }
-
             Log.i(TAG, "? AudioRecord state=${audioRecord?.state}")
-
             // Применяем аудио-эффекты (как в MyVoya)
             applyAudioEffects()
-
             isInitialized = true
             Log.i(TAG, "? AudioRecord initialized successfully")
             true
@@ -84,24 +79,19 @@ class AndroidAudioSource(private val context: Context,
         var attempts = 1
 
         while (true) { // Бесконечный цикл
-
             Log.d(TAG, "Attempt #$attempts: creating AudioRecord...")
 
             if (checkPermission()) {
-
                 val record = tryCreateAudioRecord()
-
                 if (record != null) {
                     Log.i(TAG, "? AudioRecord created on attempt #$attempts, state=${record.state}")
                     return record
                 }
-
                 attempts++
             }
             else {
                 Log.w(TAG, "? No permission yet, waiting...")
             }
-
             Log.w(TAG, "? Waiting before retry (AudioFlinger needs time to release session)...")
             Thread.sleep(minOf(1000L * attempts, 60000L))
         }
@@ -121,8 +111,7 @@ class AndroidAudioSource(private val context: Context,
             }
             // Используем минимум 2x от системного минимума для стабильности
             bufferSize = max(bufferSize * 2, sampleRate * 2 * BUFFER_SIZE_MS / 1000)
-            Log.d(TAG,
-                  "Creating AudioRecord via Builder: source=${MediaRecorder.AudioSource.VOICE_RECOGNITION}, sampleRate=$sampleRate, bufferSize=$bufferSize")
+            Log.d(TAG,"Creating AudioRecord via Builder: source=${MediaRecorder.AudioSource.VOICE_RECOGNITION}, sampleRate=$sampleRate, bufferSize=$bufferSize")
 
             val format = AudioFormat.Builder()
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -140,8 +129,7 @@ class AndroidAudioSource(private val context: Context,
             Log.d(TAG, "AudioRecord created: state=$state (0=UNINITIALIZED, 1=INITIALIZED)")
 
             if (state == AudioRecord.STATE_INITIALIZED) {
-                Log.i(TAG,
-                      "? AudioRecord initialized with source=${MediaRecorder.AudioSource.VOICE_RECOGNITION} (via Builder)")
+                Log.i(TAG,"? AudioRecord initialized with source=${MediaRecorder.AudioSource.VOICE_RECOGNITION} (via Builder)")
                 return record
             }
             else {
@@ -170,9 +158,7 @@ class AndroidAudioSource(private val context: Context,
      */
     private fun applyAudioEffects() {
         val sessionId = audioRecord?.audioSessionId ?: return
-        
         Log.i(TAG, "?? Applying audio effects to session=$sessionId")
-
         // ? 1. NoiseSuppressor - подавление шума
         if (NoiseSuppressor.isAvailable()) {
             noiseSuppressor = NoiseSuppressor.create(sessionId)
@@ -187,7 +173,6 @@ class AndroidAudioSource(private val context: Context,
         else {
             Log.d(TAG, "NoiseSuppressor not available")
         }
-
         // ? 2. AcousticEchoCanceler - подавление эха (КРИТИЧНО!)
         if (AcousticEchoCanceler.isAvailable()) {
             aec = AcousticEchoCanceler.create(sessionId)
@@ -203,7 +188,6 @@ class AndroidAudioSource(private val context: Context,
         else {
             Log.d(TAG, "AcousticEchoCanceler not available")
         }
-
         // ? 3. AutomaticGainControl - авто-гейн
         if (AutomaticGainControl.isAvailable()) {
             agc = AutomaticGainControl.create(sessionId)
@@ -230,30 +214,23 @@ class AndroidAudioSource(private val context: Context,
             Log.e(TAG, "Not initialized, call initialize() first")
             return
         }
-
         if (isRecording) {
             Log.w(TAG, "Already recording")
             return
         }
-
         val recorder = audioRecord ?: run {
             Log.e(TAG, "AudioRecord is null")
             return
         }
-
         try {
             recorder.startRecording()
-
             isRecording = true
-
             // Запускаем поток чтения аудио
             recordThread = Thread(AudioRecordRunnable(recorder), "AudioRecord-Thread").apply {
                 priority = Thread.MAX_PRIORITY
                 start()
             }
-
             Log.i(TAG, "? Recording started")
-
         }
         catch (e: Exception) {
             Log.e(TAG, "? Failed to start recording", e)
@@ -266,16 +243,12 @@ class AndroidAudioSource(private val context: Context,
             Log.w(TAG, "Not recording")
             return
         }
-
         isRecording = false
-
         try {
             recordThread?.join(1000) // Ждём завершения потока
             recordThread = null
-
             audioRecord?.stop()
             Log.i(TAG, "? Recording stopped")
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error stopping recording", e)
@@ -284,16 +257,13 @@ class AndroidAudioSource(private val context: Context,
 
     override fun release() {
         stop()
-
         try {
             noiseSuppressor?.release()
             aec?.release()
             agc?.release()
-
             audioRecord?.release()
             audioRecord = null
             isInitialized = false
-
             Log.i(TAG, "AudioRecord released")
         }
         catch (e: Exception) {
@@ -313,7 +283,6 @@ class AndroidAudioSource(private val context: Context,
 
     // Runnable для чтения аудио-данных в отдельном потоке
     private inner class AudioRecordRunnable(initialRecorder: AudioRecord) : Runnable {
-
         @Volatile private var recorder: AudioRecord = initialRecorder
 
         override fun run() {

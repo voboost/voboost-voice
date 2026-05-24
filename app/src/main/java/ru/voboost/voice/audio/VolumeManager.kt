@@ -30,14 +30,12 @@ class VolumeManager(private val context: Context) {
         const val TAG = "VolumeManager"
         private const val INTENT_VOLUME = "com.qinggan.qinglink.hu.VOLUME"
         private const val QGSPEECH_PACKAGE = "com.qinggan.sttservice"
-
         // Stream types
         const val STREAM_MEDIA = 3
         const val STREAM_NAVIGATION = 1
         const val STREAM_PHONE = 6
         const val STREAM_NOTIFICATION = 5
         const val STREAM_A2DP = 7
-
         // Duck volume levels
         const val DUCK_VOLUME = 1
         const val RESTORE_VOLUME = -1 // -1 = restore to previous
@@ -46,14 +44,11 @@ class VolumeManager(private val context: Context) {
     private var volumeService: IVolume? = null
     private var volumeListener: IVolumeListener.Stub? = null
     private val listeners = CopyOnWriteArrayList<ru.voboost.voice.audio.IVolumeListener>()
-
     @Volatile
     private var isConnected = false
-
     // Fallback на Android AudioManager
     private var audioManager: AudioManager? = null
     private var useAudioManagerFallback = false
-
     // Сохраняем предыдущую громкость для восстановления
     private var previousMediaVolume: Int = -1
 
@@ -63,10 +58,8 @@ class VolumeManager(private val context: Context) {
      */
     fun connect() {
         Log.d(TAG, "Connecting to Volume service...")
-
         val intent = Intent(INTENT_VOLUME)
         intent.setPackage(QGSPEECH_PACKAGE)
-
         try {
             val bound = context.bindService(intent, object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -74,7 +67,6 @@ class VolumeManager(private val context: Context) {
                     volumeService = IVolume.Stub.asInterface(service)
                     registerVolumeListener()
                 }
-
                 override fun onServiceDisconnected(name: ComponentName?) {
                     Log.w(TAG, "? Volume service disconnected")
                     volumeService = null
@@ -324,7 +316,6 @@ class VolumeManager(private val context: Context) {
                 false
             }
         }
-
         // Fallback на AudioManager
         if (useAudioManagerFallback && audioManager != null) {
             if (previousMediaVolume <= 0) {
@@ -341,7 +332,6 @@ class VolumeManager(private val context: Context) {
                 false
             }
         }
-
         Log.e(TAG, "Volume service not connected and no AudioManager fallback")
         return false
     }

@@ -12,11 +12,11 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  * @param modeId ID режима для отправки в CAN-шину
  */
 abstract class AbstractSmartModeHandler(protected val canBusManager: CanBusServiceManager,
-                                        private val modeId: Int) : ICommandHandler {
+                                        private val modeId: Int)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "SmartModeCommand"
-
         const val CHILD = 22
         const val LEISURE = 18
         const val ROMANTIC = 6

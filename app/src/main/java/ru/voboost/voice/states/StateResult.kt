@@ -25,7 +25,6 @@ sealed class StateResult {
      * Нормальное завершение > переход к следующему состоянию
      */
     data class Next(val stateType: StateType) : StateResult()
-
     /**
      * Отмена пользователем > всегда возврат в IdleState
      */

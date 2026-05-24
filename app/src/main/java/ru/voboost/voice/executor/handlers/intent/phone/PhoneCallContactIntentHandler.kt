@@ -24,23 +24,18 @@ class PhoneCallContactIntentHandler(context: Context) : AbstractIntentHandler(co
         const val CALL_PARAM_NUMBER = "number"
     }
 
-
     override fun buildIntent(voiceParams: Map<String, Any>): android.content.Intent? {
         val contactName = voiceParams["contact"] as? String ?: ""
-
         // Ищем номер телефона по имени контакта
         val phoneNumber = findPhoneNumberByName(contactName)
 
-        Log.d(TAG, "Phone call to contact: '$contactName' -> number: '$phoneNumber'")
-        Log.d(TAG, "  Action: $ACTION_IVOKA_PHONE_CALL")
-        Log.d(TAG, "  Extra Ivoka_CallInfo: '$phoneNumber'")
+        Log.d(TAG, "Phone call to contact: '$contactName' -> number: '$phoneNumber' Action: $ACTION_IVOKA_PHONE_CALL")
 
         if (phoneNumber.isNullOrEmpty()) {
             return null;
         }
 
-        return android.content.Intent(ACTION_IVOKA_PHONE_CALL)
-            .apply { // Если номер найден - отправляем его, иначе имя контакта (BluetoothPhone попытается набрать)
+        return android.content.Intent(ACTION_IVOKA_PHONE_CALL).apply { // Если номер найден - отправляем его, иначе имя контакта (BluetoothPhone попытается набрать)
                 putExtra(EXTRA_IVOKA_CALL_INFO, phoneNumber)
                 putExtra(EXTRA_SCREEN_INT, 0)
                 putExtra(EXTRA_MAC, "")
@@ -53,18 +48,17 @@ class PhoneCallContactIntentHandler(context: Context) : AbstractIntentHandler(co
      * Projection: ["name", "number"] (обязательно!)
      */
     private fun findPhoneNumberByName(contactName: String): String? {
-        val bluetoothMac =
-            getBluetoothMac() ?: return null.also { Log.e(TAG, "Cannot get Bluetooth MAC address") }
+        val bluetoothMac = getBluetoothMac() ?: return null.also {
+            Log.e(TAG, "Cannot get Bluetooth MAC address")
+        }
 
         val uri = "$CALL_URI/$bluetoothMac".toUri()
         val projection = arrayOf(CALL_PARAM_NAME, CALL_PARAM_NUMBER)
 
         return try {
-            Log.d(TAG, "Querying BluetoothPhone contacts: uri=$uri")
-            Log.d(TAG, "Looking for contact: '$contactName'")
-
-            val cursor = context.contentResolver.query(uri, projection, null, null, null)
-
+            Log.d(TAG, "Querying BluetoothPhone contacts: uri=$uri contact: '$contactName'")
+            val cursor = context.contentResolver.query(uri, projection, null,
+                                                       null, null)
             if (cursor == null) {
                 Log.e(TAG, "ContentResolver.query returned null")
                 return null

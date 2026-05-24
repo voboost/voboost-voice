@@ -12,7 +12,8 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  * - Если уже включён — ничего не делает
  * - Если выключен — отправляет команду включения
  */
-class AirConditionerOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
+class AirConditionerOpenHandler(private val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "AirConditionerOpen"

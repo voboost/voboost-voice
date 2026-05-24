@@ -20,8 +20,8 @@ import ru.voboost.voice.states.StateMachine
  * @param voiceAssistantCallback Callback для уведомления о нажатии кнопки
  */
 class VoiceButtonHandler(private val serviceScope: CoroutineScope,
-                         private val configManager: ConfigManager) :
-        ICanBusServiceConnectionCallback {
+                         private val configManager: ConfigManager)
+    : ICanBusServiceConnectionCallback {
 
     companion object {
         const val TAG = "VoiceButtonHandler"
@@ -34,14 +34,12 @@ class VoiceButtonHandler(private val serviceScope: CoroutineScope,
     private var isCallbackRegistered = false
 
     private val mCanBusListener = object : CanBusListener() {
-        override fun onCarKeyChanged(keycode: Int, keyStatus: Int) {
+        override fun onCarKeyChanged(keycode: Int, keyStatus: Int) =
             this@VoiceButtonHandler.handleCarKeyChanged(keycode, keyStatus)
-        }
     }
 
     private fun handleCarKeyChanged(keycode: Int, keyStatus: Int) {
-        val config =
-                configManager.getConfig(); // keycode 16, status 1 = нажатие кнопки голосового помощника
+        val config = configManager.getConfig(); // keycode 16, status 1 = нажатие кнопки голосового помощника
         if (keycode == config.activation.buttonKeycode && keyStatus == 1) {
             Log.i(TAG, "?? VOICE BUTTON PRESSED (keycode=$keycode, status=$keyStatus)")
 

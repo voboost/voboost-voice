@@ -23,8 +23,8 @@ class PhoneCallPoller(private var speechRecognizer: IRecognitionService,
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var pollingJob: Job? = null
-
     @Volatile private var isPolling = false
+    private var isCallStarted = false
 
     /**
      * Запустить поллинг состояния телефона
@@ -42,21 +42,22 @@ class PhoneCallPoller(private var speechRecognizer: IRecognitionService,
                 try {
                     val inCall = audioPolicyManager.isInCall() // Get reference to speechRecognizer to avoid concurrent mutation issues
 
-                    if (inCall) { // В звонке - мьютим распознавание
+                    if (!isCallStarted && inCall) { // В звонке - мьютим распознавание
+                        isCallStarted = true;
                         val currentMode = speechRecognizer.getMode()
                         if (currentMode != RecognitionService.Mode.MUTED) {
                             Log.i(TAG, "📞 Call active - muting recognizer")
                             speechRecognizer.setModeSafe(RecognitionService.Mode.MUTED)
                         }
                     }
-                    else { // Нет звонка - возвращаем KEYWORD режим
+                    if (isCallStarted && !inCall){ // Нет звонка - возвращаем KEYWORD режим
+                        isCallStarted = false;
                         val currentMode = speechRecognizer.getMode()
                         if (currentMode == RecognitionService.Mode.MUTED) {
                             Log.i(TAG, "📞 Call ended - restoring keyword mode")
                             speechRecognizer.setModeSafe(RecognitionService.Mode.KEYWORD)
                         }
                     }
-
                     delay(CHECK_INTERVAL_MS)
                 }
                 catch (e: Exception) {
@@ -65,7 +66,6 @@ class PhoneCallPoller(private var speechRecognizer: IRecognitionService,
                 }
             }
         }
-
         Log.i(TAG, "✅ Phone call polling started")
     }
 
@@ -76,6 +76,7 @@ class PhoneCallPoller(private var speechRecognizer: IRecognitionService,
         isPolling = false
         pollingJob?.cancel()
         pollingJob = null
+        isCallStarted = false
         Log.i(TAG, "❌ Phone call polling stopped")
     }
 

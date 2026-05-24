@@ -7,13 +7,11 @@ import ru.voboost.voice.services.speech.ISpeechServiceCallback
  * Позволяет легко менять реализации (Sherpa-ONNX, Vosk TTS, System TTS, Yandex SpeechKit)
  */
 interface ISpeechEngine {
-    suspend fun initialize()
+    suspend fun initialize(rate: Float, pitch: Float)
     fun isReady(): Boolean
     fun isAvailable(): Boolean
     fun speak(text: String)
     fun stop()
-    fun setRate(rate: Float)
-    fun setPitch(pitch: Float)
     fun shutdown()
     fun addCallback(callback: ISpeechServiceCallback)
     fun removeCallback(callback: ISpeechServiceCallback)

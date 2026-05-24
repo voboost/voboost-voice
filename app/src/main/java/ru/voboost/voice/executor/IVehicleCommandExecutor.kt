@@ -8,7 +8,6 @@ package ru.voboost.voice.executor
  * Все команды (включая телефонные) выполняются через единый executeByCommandId()
  */
 interface IVehicleCommandExecutor {
-
     /**
      * Выполнить команду по ID
      *
@@ -17,10 +16,7 @@ interface IVehicleCommandExecutor {
      * @param voiceParams Параметры, распознанные из голоса ({temp}, {contact}, {number})
      * @return true если команда успешно отправлена
      */
-    fun executeByCommandId(
-        commandId: String,
-        voiceParams: Map<String, Any> = emptyMap()
-    ): Boolean
+    fun executeByCommandId(commandId: String, voiceParams: Map<String, Any> = emptyMap()): Boolean
 
     /**
      * Название метода выполнения (для логирования)

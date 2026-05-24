@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.*
 import android.util.Log
+import com.qinggan.bus.QGBusEvent
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
@@ -47,83 +48,80 @@ class QGBusServiceManager(context: Context) {
     // Состояние подключения
     private var serviceMessenger: Messenger? = null
     private var isOnline = false
-
     // Обработчики событий: eventType -> callback
     private val eventHandlers = mutableMapOf<String, (QGBusEvent) -> Unit>()
-
     // Имя компонента (по умолчанию пакет приложения)
     private val componentName: String = context.packageName
-
     // WeakReference на Context для предотвращения утечек
     private val contextRef = WeakReference(context.applicationContext)
-
     // CoroutineScope для асинхронных операций
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     // Handler для входящих сообщений от сервиса (работает в главном потоке)
     private val incomingHandler = Handler(Looper.getMainLooper()) { msg ->
         when (msg.what) {
-            NOTIFY_EVENT -> {
-                // 🔑 Критично: событие лежит в message.obj, а не в data!
+            NOTIFY_EVENT -> { //Критично: событие лежит в message.obj, а не в data!
                 val bundle = msg.obj as? Bundle
-                bundle?.setClassLoader(QGBusEvent::class.java.classLoader)
                 // getParcelable() deprecated, но по-прежнему работает. В Android 13+ можно использовать getParcelableCompat()
-                @Suppress("DEPRECATION")
-                val event = bundle?.getParcelable<QGBusEvent>(KEY_EVENT)
+                bundle?.setClassLoader(QGBusEvent::class.java.classLoader)
+                @Suppress("DEPRECATION") val event = bundle?.getParcelable<QGBusEvent>(KEY_EVENT)
                 event?.let {
-                    eventHandlers[it.eventType]?.invoke(it)
+                    eventHandlers[it.mEventType]?.invoke(it)
                 }
             }
             HEART_BEAT_REQUEST -> {
-                // Автоматически отвечаем на heartbeat
                 sendHeartBeatResponse()
             }
         }
-        true // сообщение обработано
+        true
     }
-
     // Наш Messenger для отправки в сервис
     private val clientMessenger = Messenger(incomingHandler)
-
-    // ServiceConnection для bind/unbind
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            Log.d(TAG, "onServiceConnected: $name")
-            serviceMessenger = Messenger(service)
-            isOnline = true
-            registerHandler()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName) {
-            Log.d(TAG, "onServiceDisconnected: $name")
-            serviceMessenger = null
-            isOnline = false
-            // Можно добавить логику авто-реконнекта при необходимости
-        }
-
-        override fun onBindingDied(name: ComponentName?) {
-            Log.w(TAG, "onBindingDied: $name")
-            serviceMessenger = null
-            isOnline = false
-        }
-    }
-
-    // ==================== ПУБЛИЧНЫЙ API ====================
 
     /**
      * Подключиться к сервису. Вызывайте в onStart()/onCreate().
      */
     fun connect() {
         val context = contextRef.get() ?: return
-        val intent = Intent(SERVICE_ACTION).apply {
-            // 🔑 Обязательно для Android 12+ (API 31+)
+        val intent = Intent(SERVICE_ACTION).apply { //Обязательно для Android 12+ (API 31+)
             setPackage(SERVICE_PACKAGE)
         }
         try {
             context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Failed to bind service", e)
         }
+    }
+
+    // ServiceConnection для bind/unbind
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) =
+                this@QGBusServiceManager.handleOnServiceConnected(name, service)
+
+        override fun onServiceDisconnected(name: ComponentName) =
+                this@QGBusServiceManager.handleOnServiceDisconnected(name)
+
+        override fun onBindingDied(name: ComponentName?) =
+                this@QGBusServiceManager.handleOnBindingDied(name)
+    }
+
+    private fun handleOnServiceConnected(name: ComponentName, service: IBinder) {
+        Log.d(TAG, "onServiceConnected: $name")
+        serviceMessenger = Messenger(service)
+        isOnline = true
+        registerHandler()
+    }
+
+    private fun handleOnServiceDisconnected(name: ComponentName) {
+        Log.d(TAG, "onServiceDisconnected: $name")
+        serviceMessenger = null
+        isOnline = false // Можно добавить логику авто-реконнекта при необходимости
+    }
+
+    private fun handleOnBindingDied(name: ComponentName?) {
+        Log.w(TAG, "onBindingDied: $name")
+        serviceMessenger = null
+        isOnline = false
     }
 
     /**
@@ -133,8 +131,8 @@ class QGBusServiceManager(context: Context) {
         val context = contextRef.get() ?: return
         try {
             context.unbindService(connection)
-        } catch (e: IllegalArgumentException) {
-            // Уже отключено
+        }
+        catch (e: IllegalArgumentException) {
         }
         serviceMessenger = null
         isOnline = false
@@ -182,7 +180,6 @@ class QGBusServiceManager(context: Context) {
         }
         safeSend(msg)
 
-        // Удаляем локальные обработчики
         eventTypes.forEach { eventHandlers.remove(it) }
     }
 
@@ -195,7 +192,6 @@ class QGBusServiceManager(context: Context) {
             return
         }
 
-        // 🔑 Критично: для событий Bundle кладётся в message.obj, а не data!
         val bundle = Bundle().apply {
             setClassLoader(QGBusEvent::class.java.classLoader)
             putParcelable(KEY_EVENT, event)
@@ -229,7 +225,8 @@ class QGBusServiceManager(context: Context) {
         try {
             serviceMessenger?.send(msg)
             cont.resume(true)
-        } catch (e: RemoteException) {
+        }
+        catch (e: RemoteException) {
             Log.e(TAG, "Failed to send event", e)
             cont.resume(false)
         }
@@ -239,8 +236,6 @@ class QGBusServiceManager(context: Context) {
      * Проверка: подключён ли клиент к сервису.
      */
     fun isConnected(): Boolean = isOnline && serviceMessenger != null
-
-    // ==================== ВНУТРЕННЯЯ ЛОГИКА ====================
 
     /**
      * Регистрация нашего Messenger в сервисе.
@@ -272,12 +267,15 @@ class QGBusServiceManager(context: Context) {
     private fun safeSend(msg: Message) {
         try {
             serviceMessenger?.send(msg)
-        } catch (e: RemoteException) {
-            Log.e(TAG, "Failed to send message: ${msg.what}", e)
-            // Можно добавить логику реконнекта здесь
+        }
+        catch (e: RemoteException) {
+            Log.e(TAG,
+                  "Failed to send message: ${msg.what}",
+                  e) // Можно добавить логику реконнекта здесь
             isOnline = false
             serviceMessenger = null
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             Log.e(TAG, "Unexpected error sending message", e)
         }
     }

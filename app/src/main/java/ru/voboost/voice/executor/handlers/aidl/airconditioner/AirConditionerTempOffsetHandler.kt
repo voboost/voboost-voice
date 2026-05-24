@@ -19,7 +19,8 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  *   id: "ac_temp_down", classify: 5, command: 3
  */
 class AirConditionerTempOffsetHandler(private val canBusManager: CanBusServiceManager,
-                                      private val offsetDelta: Int) : ICommandHandler {
+                                      private val offsetDelta: Int)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "AirConditionerTempOffset"

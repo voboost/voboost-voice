@@ -23,8 +23,9 @@ import ru.voboost.voice.engine.BaseSpeechEngine
  *
  * Поддерживает загрузку моделей с SD-карты (внешнего хранилища)
  */
-class SherpaSpeechEngine(private val modelPath: String, private val speakerId: Int) :
-        BaseSpeechEngine() {
+class SherpaSpeechEngine(private val modelPath: String,
+                         private val speakerId: Int)
+    : BaseSpeechEngine() {
 
     companion object {
         const val TAG = "SherpaSynthesis"
@@ -32,37 +33,31 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
     }
 
     @Volatile private var isInitialized = false
-
     @Volatile private var rate = 1.0f
-
     @Volatile private var pitch = 1.0f
-
     @Volatile private var sampleRate = DEFAULT_SAMPLE_RATE
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val isPlaying = AtomicBoolean(false)
     private var currentJob: Job? = null
     private var offlineTts: OfflineTts? = null
 
-    override suspend fun initialize() {
+    override suspend fun initialize(rate: Float, pitch: Float) {
+
+        this.rate = rate.coerceIn(0.5f, 2.0f)
+        this.pitch = pitch.coerceIn(0.5f, 2.0f)
+
         withContext(Dispatchers.IO) {
             try {
-                Log.i(TAG, "Initializing Sherpa-ONNX TTS...")
-                Log.i(TAG, "Model path: $modelPath")
-                Log.i(TAG, "Speaker ID: $speakerId")
-
+                Log.i(TAG, "Initializing Sherpa-ONNX TTS... Model path: $modelPath Speaker ID: $speakerId")
                 val modelFile = File(modelPath)
-
                 if (!modelFile.exists()) {
                     throw IllegalStateException("Sherpa TTS model not found at: ${modelPath}\n" + "Please copy the model using copy-sherpa-models.bat script")
                 }
-
                 // Инициализация Sherpa-ONNX TTS
                 offlineTts = createTts(modelPath)
                 sampleRate = offlineTts?.sampleRate ?: DEFAULT_SAMPLE_RATE
-
                 isInitialized = true
                 Log.i(TAG, "Sherpa-ONNX TTS initialized successfully! (sample rate: $sampleRate)")
-
             }
             catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize Sherpa-ONNX TTS", e)
@@ -88,7 +83,6 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
         }
 
         Log.d(TAG, "TTS model path: $modelPathStr")
-
         // Для Sherpa-ONNX Piper моделей (ru_RU-ruslan-medium) используем tokens.txt + espeak
         // modelPath = /data/.../sherpa/tts-ru-model
         val modelDir = File(modelPath)
@@ -115,12 +109,11 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
             .setVits(vitsModelConfig)
             .setNumThreads(2)
             .setProvider("cpu")  // < CPU вместо NNAPI для совместимости
-            .setDebug(true)
+            .setDebug(false)
             .build()
 
         // Создаём основную конфигурацию TTS
         val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
-
         return OfflineTts(ttsConfig)
     }
 
@@ -153,16 +146,6 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
         Log.d(TAG, "Stopping TTS playback")
         currentJob?.cancel()
         isPlaying.set(false)
-    }
-
-    override fun setRate(rate: Float) {
-        this.rate = rate.coerceIn(0.5f, 2.0f)
-        Log.d(TAG, "Speech rate set to: $rate")
-    }
-
-    override fun setPitch(pitch: Float) {
-        this.pitch = pitch.coerceIn(0.5f, 2.0f)
-        Log.d(TAG, "Speech pitch set to: $pitch")
     }
 
     override fun isAvailable(): Boolean = isInitialized && offlineTts != null
@@ -208,24 +191,20 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
             val bufferSize = AudioTrack.getMinBufferSize(sampleRate,
                                                          AudioFormat.CHANNEL_OUT_MONO,
                                                          AudioFormat.ENCODING_PCM_FLOAT)
-
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ASSISTANT)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build()
-
             val audioFormat = AudioFormat.Builder()
                 .setSampleRate(sampleRate)
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                 .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
                 .build()
-
             val audioTrack = AudioTrack(audioAttributes,
                                         audioFormat,
                                         bufferSize,
                                         AudioTrack.MODE_STREAM,
                                         AudioManager.AUDIO_SESSION_ID_GENERATE)
-
             try {
                 audioTrack.play()
 
@@ -244,7 +223,6 @@ class SherpaSpeechEngine(private val modelPath: String, private val speakerId: I
                 audioTrack.stop()
                 audioTrack.flush()
                 Log.d(TAG, "Audio playback completed")
-
             }
             finally {
                 audioTrack.release()

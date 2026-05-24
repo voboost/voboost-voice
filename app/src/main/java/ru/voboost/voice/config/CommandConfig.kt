@@ -9,7 +9,7 @@ data class CommandConfig(
     @SerializedName("id") val id: String,
     @SerializedName("enabled") val enabled: Boolean,
     @SerializedName("patterns") val patterns: List<String>,
-    @SerializedName("show_notification") val showNotification: Boolean = true,
+    @SerializedName("show_notification") val showNotification: Boolean = false,
     @SerializedName("confirmation") val confirmation: ConfirmationCommandConfig,
     @SerializedName("phrases") val phrases: CommandPhrases?
 )

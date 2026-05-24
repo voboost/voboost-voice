@@ -17,34 +17,30 @@ import ru.voboost.voice.states.StateType
  * 2. > finish(StateResult.Next(StateType.IDLE))
  */
 class KeywordErrorState(private val context: StateContext) : BaseState() {
+
     companion object {
-        const val TAG = "KeywordError"
+        const val TAG = "KeywordErrorState"
     }
 
     override val canCancel = true
 
     override suspend fun execute() {
         Log.e(TAG, "Entering KEYWORD_ERROR IState")
-
         try {
             context.recognitionService?.setMode(RecognitionService.Mode.MUTED)
-
             val notUnderstoodPhrase =
                 context.configManager?.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD)
 
             if (!notUnderstoodPhrase.isNullOrEmpty()) {
                 context.speechService?.enqueueAsync(notUnderstoodPhrase, SpeechService.PRIOR_HIGH)
             }
-
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             finish(StateResult.Next(StateType.IDLE))
-
         }
         catch (e: CancellationException) {
             Log.d(TAG, "KeywordErrorState cancelled")
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             throw e
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error in KeywordErrorState", e)

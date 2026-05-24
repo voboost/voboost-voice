@@ -11,7 +11,9 @@ import java.util.regex.Pattern
  * NLU Engine - парсинг и понимание команд
  * Сопоставляет распознанный текст с шаблонами команд из конфига
  */
-class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
+class NLUEngine(private val configManager: ConfigManager)
+    : INLUEngine {
+
     companion object {
         const val TAG = "NLUEngine"
     }
@@ -143,7 +145,7 @@ class NLUEngine(private val configManager: ConfigManager) : INLUEngine {
             .replace(" ", "\\s+")  // Пробелы -> \s+
 
         val regex = "^$escapedPattern$"
-        Log.d(TAG, "Regex pattern: '$pattern' -> '$regex'")
+        //Log.d(TAG, "Regex pattern: '$pattern' -> '$regex'")
         return regex
     }
 

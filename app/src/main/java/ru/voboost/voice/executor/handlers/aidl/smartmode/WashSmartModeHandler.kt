@@ -5,11 +5,11 @@ import com.qinggan.canbus.VehicleState
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
-class WashSmartModeHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
+class WashSmartModeHandler(private val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "SmartModeCommand"
-
         const val ON = 1
     }
 

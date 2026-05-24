@@ -13,15 +13,13 @@ import kotlin.math.min
  * - ✅ Встроенный RMS-based silence detection
  * - ✅ Thread-safe через ReentrantLock (быстрее synchronized для частых операций)
  */
-class AudioBuffer(
-    val capacityBytes: Int = 256 * 1024, // 256KB ~ 8 сек @16kHz/16bit mono
-    private val sampleRate: Int = 16000,
-    private val bitsPerSample: Int = 16,
-    // Параметры детектора тишины
-    private var silenceThresholdDb: Float = -45f, // dBFS, типично -50..-40
-    private var minSilenceDurationMs: Int = 600,  // сколько тишины считать концом фразы
-    private val rmsWindowSizeMs: Int = 50         // окно для расчёта RMS
-                 ) {
+class AudioBuffer(val capacityBytes: Int = 256 * 1024, // 256KB ~ 8 сек @16kHz/16bit mono
+                  private val sampleRate: Int = 16000,
+                  private val bitsPerSample: Int = 16,
+                  // Параметры детектора тишины
+                  private var silenceThresholdDb: Float = -45f, // dBFS, типично -50..-40
+                  private var minSilenceDurationMs: Int = 600,  // сколько тишины считать концом фразы
+                  private val rmsWindowSizeMs: Int = 50 ) { // окно для расчёта RMS
     companion object {
         const val TAG = "AudioBuffer"
         private val LOCK = ReentrantLock()
@@ -31,7 +29,6 @@ class AudioBuffer(
     private var head: Int = 0 // откуда читать
     private var tail: Int = 0 // куда писать
     private var size: Int = 0 // сколько данных доступно
-
     // Состояние детектора тишины
     private var lastSpeechTimeMs: Long = 0
     private var rmsSum: Long = 0
@@ -60,13 +57,11 @@ class AudioBuffer(
                 size = min(size + toWrite, capacityBytes)
                 written += toWrite
             }
-
             // 2. Обновляем детектор тишины
             val now = System.currentTimeMillis()
             if (hasSpeechActivity(data, offset, length)) {
                 lastSpeechTimeMs = now
             }
-
             // 3. Проверяем, не прошла ли тишина дольше порога
             val silenceDuration = now - lastSpeechTimeMs
             return silenceDuration >= minSilenceDurationMs && size > 0
@@ -164,10 +159,8 @@ class AudioBuffer(
     /**
      * Конфигурация детектора тишины "на лету"
      */
-    fun updateSilenceParams(
-        thresholdDb: Float? = null,
-        minDurationMs: Int? = null
-                           ) {
+    fun updateSilenceParams(thresholdDb: Float? = null,
+                            minDurationMs: Int? = null) {
         LOCK.lock()
         try {
             thresholdDb?.let {

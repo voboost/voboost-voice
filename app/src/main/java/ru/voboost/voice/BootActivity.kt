@@ -23,12 +23,10 @@ class BootActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.i(TAG, "onCreate — starting VoboostVoiceService with foreground context")
-
         // Запускаем сервис из foreground context Activity
         val serviceIntent = Intent(this, VoboostVoiceService::class.java)
         startForegroundService(serviceIntent)
         Log.i(TAG, "? startForegroundService called from Activity context")
-
         // Ждём 5 секунд чтобы сервис успел вызвать startForeground() и инициализировать AudioRecord
         Handler(Looper.getMainLooper()).postDelayed({
             Log.i(TAG, "BootActivity finishing — service should have microphone access now")

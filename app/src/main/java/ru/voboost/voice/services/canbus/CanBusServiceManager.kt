@@ -33,15 +33,12 @@ class CanBusServiceManager(private val context: Context) {
         const val TAG = "CanBusServiceManager"
         private const val CANBUS_SERVICE_PACKAGE = "com.qinggan.canbus.service"
         private const val CANBUS_SERVICE_ACTION = "com.qinggan.canbus.CanBusService"
-
         // Время ожидания подключения к сервису (мс)
         private const val SERVICE_BIND_TIMEOUT_MS = 5000L
-
         // Константы для значений состояний
         const val VALUE_CLOSE = 2  // На этом авто 2=CLOSE (инвертировано)
         const val VALUE_OPEN = 1   // На этом авто 1=OPEN (проверено на бензобаке)
         const val VALUE_ACTIVE = 2
-
         // Окна — разные значения для одного и всех окон
         // ALL: 3=OPEN, 1=CLOSE (правильно)
         // DRIVER: 97=CLOSE, 51=OPEN (инвертировано — проверено экспериментально)
@@ -54,31 +51,25 @@ class CanBusServiceManager(private val context: Context) {
     // Состояние подключения
     private var isBound = false
     private var isConnecting = false
-
     // AIDL интерфейс сервиса
     private var canBusService: ICanBusService? = null
-
     // Callback'и для уведомления о подключении
     private val connectionCallbacks = mutableListOf<ICanBusServiceConnectionCallback>()
 
-    // ServiceConnection для подключения к CanBusService
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            this@CanBusServiceManager.onServiceConnected(name, service)
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            this@CanBusServiceManager.onServiceDisconnected(name)
-        }
-
-        override fun onBindingDied(name: ComponentName?) {
-            this@CanBusServiceManager.onBindingDied(name)
-        }
+    fun connect() {
+        bindToService(context)
     }
 
-    fun connect()
-    {
-        bindToService(context)
+    // ServiceConnection для подключения к CanBusService
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) =
+            this@CanBusServiceManager.onServiceConnected(name, service)
+
+        override fun onServiceDisconnected(name: ComponentName?) =
+            this@CanBusServiceManager.onServiceDisconnected(name)
+
+        override fun onBindingDied(name: ComponentName?) =
+            this@CanBusServiceManager.onBindingDied(name)
     }
 
     /**
@@ -271,7 +262,6 @@ class CanBusServiceManager(private val context: Context) {
      */
     fun setTemperatureByZone(zone: String?, temperature: Int): Boolean {
         if (!ensureConnected()) return false
-
         // Ivoka умножает на 10 перед отправкой: (int)(10.0f * state)
         val canValue = temperature * 10
 
@@ -329,10 +319,6 @@ class CanBusServiceManager(private val context: Context) {
         return setAirConditionState(AirConditionState.AC_POWER_SWITCH, AirConditionState.CLOSE)
     }
 
-    // ============================================================================
-    // МЕТОДЫ УПРАВЛЕНИЯ ОКНАМИ
-    // ============================================================================
-
     /**
      * Получить состояние окон
      *
@@ -362,10 +348,6 @@ class CanBusServiceManager(private val context: Context) {
     fun closeAllWindows(): Boolean {
         return setVehicleState(VehicleState.ALL_WINDOW_CONTROL, VALUE_CLOSE)
     }
-
-    // ============================================================================
-    // МЕТОДЫ УПРАВЛЕНИЯ ТЕЛЕФОНОМ (ЗВОНКИ)
-    // ============================================================================
 
     /**
      * Обновить информацию о телефоне (для звонков)
@@ -411,10 +393,8 @@ class CanBusServiceManager(private val context: Context) {
     /**
      * Создать PhoneInfo для звонка
      */
-    private fun createPhoneInfoForCall(
-        contact: String? = null,
-        number: String? = null
-    ): PhoneInfo {
+    private fun createPhoneInfoForCall(contact: String? = null,
+                                       number: String? = null): PhoneInfo {
         return PhoneInfo().apply {
             this.name = contact ?: ""
             this.phoneNum = number ?: ""
@@ -464,17 +444,23 @@ class CanBusServiceManager(private val context: Context) {
 
     private fun onConnected()
     {
-        connectionCallbacks.forEach { it.handlerConnected(this) }
+        connectionCallbacks.forEach {
+            it.handlerConnected(this)
+        }
     }
 
     fun onDisconnected()
     {
-        connectionCallbacks.forEach { it.handlerDisconnected(this) }
+        connectionCallbacks.forEach {
+            it.handlerDisconnected(this)
+        }
     }
 
     private fun onConnectionFailed(error: String)
     {
-        connectionCallbacks.forEach { it.handlerConnectionFailed(this, error) }
+        connectionCallbacks.forEach {
+            it.handlerConnectionFailed(this, error)
+        }
     }
 
     /**
@@ -495,16 +481,11 @@ class CanBusServiceManager(private val context: Context) {
         }
     }
 
-    // ============================================================================
-    // ВНУТРЕННИЕ МЕТОДЫ
-    // ============================================================================
-
     /**
      * Проверить подключение и попытаться подключиться если не подключено
      */
     private fun ensureConnected(): Boolean {
         if (isConnected()) return true
-
         Log.w(TAG, "Not connected to CanBusService, attempting to use anyway")
         return false
     }

@@ -1,7 +1,6 @@
 package ru.voboost.voice.states.state
 
 import android.util.Log
-import kotlinx.coroutines.delay
 import ru.voboost.voice.config.ConfigManager.PhraseType
 import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.states.StateContext
@@ -20,8 +19,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 3. Не найдена > COMMAND_ERROR
  */
 class RecognizedCommandState(private val context: StateContext) : BaseState() {
+
     companion object {
-        const val TAG = "RecognizedCommand"
+        const val TAG = "RecognizedCommandState"
     }
 
     override val canCancel = true
@@ -33,18 +33,13 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
             finish(StateResult.Next(StateType.COMMAND_ERROR))
             return
         }
-
         Log.i(TAG, "Processing command: '$text'")
-
         try { // Парсим текст через NLU
             val recognizedCommand = context.nluEngine?.parseCommand(text)
-
             if (recognizedCommand != null) {
-                Log.d(TAG,
-                      "Command parsed: ${recognizedCommand.id} (zone=${context.zone})") // Добавляем зону в команду
+                Log.d(TAG,"Command parsed: ${recognizedCommand.id} (zone=${context.zone})") // Добавляем зону в команду
                 val commandWithZone = recognizedCommand.copy(zone = context.zone)
                 context.commandData = commandWithZone
-
                 // Проверяем нужно ли подтверждение
                 if (recognizedCommand.config.confirmation.required) {
                     Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
@@ -60,7 +55,6 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
                 context.commandExecutor?.handleUnrecognizedCommand(text)
                 finish(StateResult.Next(StateType.IDLE))
             }
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error parsing command: '$text'", e)
@@ -72,7 +66,6 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
         if (isCancelling.compareAndSet(false, true)) {
             try {
                 context.soundEffectManager?.playEndSoundAsync()
-                delay(400)
                 val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
                 if(!cancelPhrase.isNullOrEmpty())
                 {

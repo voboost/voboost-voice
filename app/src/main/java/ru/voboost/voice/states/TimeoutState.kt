@@ -16,38 +16,33 @@ import ru.voboost.voice.states.state.BaseState
  * 2. > finish(StateResult.Next(StateType.IDLE))
  */
 class TimeoutState(private val context: StateContext) : BaseState() {
+
     companion object {
-        const val TAG = "Timeout"
+        const val TAG = "TimeoutState"
     }
 
     override val canCancel = true
 
     override suspend fun execute() {
         Log.w(TAG, "Entering TIMEOUT IState")
-
         try { // Звук окончания
             context.soundEffectManager?.playEndSoundAsync()
             delay(200)
-
             // Говорим "Отмена"
             val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
             if(!cancelPhrase.isNullOrEmpty())
             {
                 context.speechService?.enqueueAsync(cancelPhrase, SpeechService.PRIOR_HIGH)
             }
-
             context.voceAnimationManager?.hide()
             context.volumeManager?.restoreMedia()
-
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             finish(StateResult.Next(StateType.IDLE))
-
         }
         catch (e: CancellationException) {
             Log.d(TAG, "TimeoutState cancelled")
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             throw e
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error in TimeoutState", e)

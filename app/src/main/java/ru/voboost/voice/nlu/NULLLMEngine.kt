@@ -18,15 +18,14 @@ import ru.voboost.voice.executor.CommandData
  * - Если не распознана / ошибка / невалидный JSON → возвращает null
  * - Не делает фоллбэк, не знает о regex-парсере
  */
-class NULLLMEngine(private val context: Context, private val configManager: ConfigManager) :
-        INLUEngine {
+class NULLLMEngine(private val context: Context, private val configManager: ConfigManager)
+    : INLUEngine {
 
     companion object {
         const val TAG = "LLMNLUEngine"
         private const val MAX_TOKENS = 512
 
     }
-
 
     private val llmInference: LlmInference
     private val gson = Gson()

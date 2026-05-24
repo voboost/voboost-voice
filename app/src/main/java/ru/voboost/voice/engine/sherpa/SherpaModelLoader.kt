@@ -24,7 +24,6 @@ class SherpaModelLoader {
     fun loadModel(): Any {
         return getModelPath()
     }
-
     /**
      * Получить путь к модели Sherpa-ONNX из внешнего хранилища
      * @return Путь к директории модели
@@ -36,7 +35,6 @@ class SherpaModelLoader {
             Log.i(TAG, "Using Sherpa model from external storage: ${externalModelDir.absolutePath}")
             return externalModelDir.absolutePath
         }
-
         Log.w(TAG, "Sherpa model not found at: ${externalModelDir.absolutePath}")
         return ""
     }

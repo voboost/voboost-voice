@@ -17,8 +17,8 @@ import ru.voboost.voice.services.speech.SpeechService
  * @param canBusManager Менеджер CanBusService для регистрации callback
  * @param ttsCallback Callback для воспроизведения TTS предупреждений
  */
-class TSRSpeedLimitHandler(private val speechService: ISpeechService) :
-        ICanBusServiceConnectionCallback {
+class TSRSpeedLimitHandler(private val speechService: ISpeechService)
+    : ICanBusServiceConnectionCallback {
     private var canBusManager: CanBusServiceManager? = null
     private var currentSpeed = 0
     private var isaWarningEnabled = true
@@ -30,13 +30,11 @@ class TSRSpeedLimitHandler(private val speechService: ISpeechService) :
 
     private val mCanBusListener = object : CanBusListener() {
 
-        override fun onVehicleStateChanged(vehicle: VehicleState, state: Int) {
+        override fun onVehicleStateChanged(vehicle: VehicleState, state: Int) =
             this@TSRSpeedLimitHandler.handleVehicleStateChanged(vehicle, state)
-        }
 
-        override fun onVehicleSpeedChanged(speed: Int) {
+        override fun onVehicleSpeedChanged(speed: Int) =
             this@TSRSpeedLimitHandler.handleVehicleSpeedChanged(speed)
-        }
     }
 
     private fun handleVehicleStateChanged(vehicle: VehicleState, state: Int) {
@@ -58,8 +56,8 @@ class TSRSpeedLimitHandler(private val speechService: ISpeechService) :
         }
     }
 
-    private fun handleVehicleSpeedChanged(speed: Int) { // Log.w(TAG, "⚠️ Speed: ${speed}")
-        currentSpeed = speed // Log.d(TAG, "🚗 Скорость: $speed км/ч")
+    private fun handleVehicleSpeedChanged(speed: Int) {
+        currentSpeed = speed
     }
 
     override fun handlerConnected(canBusServiceManager: CanBusServiceManager) {
@@ -75,8 +73,7 @@ class TSRSpeedLimitHandler(private val speechService: ISpeechService) :
     }
 
     override fun handlerConnectionFailed(canBusServiceManager: CanBusServiceManager,
-                                         error: String) {
-    }
+                                         error: String) {}
 
     /**
      * Зарегистрировать callback

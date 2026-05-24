@@ -15,7 +15,8 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  *   VehicleState.IVI_CHRG_PORT_CAP (779)
  *   value: VALUE_OPEN (2)
  */
-class ChargportOpenHandler(private val canBusManager: CanBusServiceManager) : ICommandHandler {
+class ChargportOpenHandler(private val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "ChargportCommand"

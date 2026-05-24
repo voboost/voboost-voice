@@ -11,8 +11,8 @@ import ru.voboost.voice.executor.handlers.ICommandHandler
  * @param commandId Уникальный ID команды (совпадает с config.json)
  * @param canBusManager Менеджер CAN-шины
  */
-abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBusServiceManager) :
-        ICommandHandler {
+abstract class AbstractAirConditionerHandler(protected val canBusManager: CanBusServiceManager)
+    : ICommandHandler {
 
     companion object {
         const val TAG = "AirConditionerCmd"

@@ -14,8 +14,9 @@ import ru.voboost.voice.services.canbus.CanBusServiceManager
  *   VehicleState.DRIVER_WINDOW_CONTROL
  *   value: VALUE_WINDOW_DRIVER_CLOSE (51)
  */
-class WindowCloseDriverHandler(canBusManager: CanBusServiceManager) :
-        AbstractWindowHandler(canBusManager) {
+class WindowCloseDriverHandler(canBusManager: CanBusServiceManager)
+    : AbstractWindowHandler(canBusManager) {
+
     override fun getWindowStateAndValue(): Pair<VehicleState, Int> =
         VehicleState.DRIVER_WINDOW_CONTROL to CanBusServiceManager.VALUE_WINDOW_DRIVER_CLOSE
 }

@@ -24,11 +24,9 @@ class IdleState(private val context: StateContext) : BaseState() {
 
     override suspend fun execute() {
         Log.i(TAG, "Entering IDLE IState - waiting for keyword...")
-
         try {
             context.voceAnimationManager?.hide()
             context.volumeManager?.restoreMedia()
-
             // Ждём ключевое слово из SharedFlow
             val result =
                 context.recognitionService?.results?.first { it is RecognitionServiceResult.KeywordDetected }
@@ -36,15 +34,12 @@ class IdleState(private val context: StateContext) : BaseState() {
             val zone = result.zone
             Log.i(TAG, "?? Keyword detected: '$keywordText' (zone=$zone)")
             context.zone = zone
-
             // Ключевое слово получено > ACTIVATED
             finish(StateResult.Next(StateType.ACTIVATED))
-
         }
         catch (e: CancellationException) {
             Log.d(TAG, "IdleState coroutine cancelled (normal during activation)")
             throw e
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error in IdleState", e)

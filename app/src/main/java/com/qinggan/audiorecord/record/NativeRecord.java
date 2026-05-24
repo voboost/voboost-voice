@@ -1,4 +1,4 @@
-// рџ“Ѓ File: src/main/java/com/qinggan/audiorecord/record/NativeRecord.java
+//File: src/main/java/com/qinggan/audiorecord/record/NativeRecord.java
 package com.qinggan.audiorecord.record;
 
 import android.util.Log;
@@ -9,7 +9,6 @@ public class NativeRecord extends IRecord {
 
     private static final String TAG = "NativeRecord";
 
-    // ===== Static native methods (РєР°Рє РІ РѕСЂРёРіРёРЅР°Р»Рµ) =====
     private static native int registerRecordListener(IRecordListener listener);
     private static native int setChannelNum(int channels);
     private static native int startAudioRecord();

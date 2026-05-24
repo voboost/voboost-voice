@@ -13,13 +13,12 @@ import java.io.File
  * Использует Zipformer модель для распознавания
  */
 class SherpaRecognitionEngine private constructor(private val recognizer: OfflineRecognizer,
-                                                  private val reusableBuffer: FloatArray) : IRecognitionEngine {
-
+                                                  private val reusableBuffer: FloatArray)
+    : IRecognitionEngine {
     companion object {
         const val TAG = "SherpaStream"
         private const val SAMPLE_RATE = 16000
         const val MAX_CHUNK_SAMPLES = 3200
-
         /**
          * Создать SherpaStream из пути к модели
          */
@@ -105,10 +104,8 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
 
             val chunk = reusableBuffer.copyOf(samplesCount)
             stream.acceptWaveform(chunk,  SAMPLE_RATE)
-
             // Распознать
             recognizer.decode(stream)
-
             // Получить результат
             val result = recognizer.getResult(stream)
             val text = result.text.trim()
@@ -118,7 +115,6 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
                 RecognitionEngineResult(text = text, isFinal = true)
             }
             else null
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error recognizing waveform", e)

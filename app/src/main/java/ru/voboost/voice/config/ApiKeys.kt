@@ -14,7 +14,6 @@ object ApiKeys {
     // Yandex SpeechKit (STT - распознавание речи)
     const val YANDEX_SPEECH_API_KEY = ""  // Вставить API ключ
     const val YANDEX_FOLDER_ID = ""        // Вставить Folder ID из Yandex Cloud
-    
     // Yandex TTS (синтез речи)
     const val YANDEX_TTS_API_KEY = ""      // Вставить API ключ
     

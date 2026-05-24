@@ -5,7 +5,6 @@ import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.recognition.RecognitionServiceResult
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import ru.voboost.voice.config.ConfigManager.PhraseType
 import ru.voboost.voice.states.StateContext
@@ -21,20 +20,20 @@ import ru.voboost.voice.states.StateType
  */
 class ListeningCommandState(private val context: StateContext) : BaseState() {
     companion object {
-        const val TAG = "ListeningCommand"
+        const val TAG = "ListeningCommandState"
     }
 
     override val canCancel = true
 
     override suspend fun execute() {
         Log.i(TAG, "Entering LISTENING_COMMAND IState")
-
         try {
             context.recognitionService?.setMode(RecognitionService.Mode.COMMAND)
-
             // Ждём результат
             val result = context.recognitionService?.results?.first {
-                it is RecognitionServiceResult.CommandReceived || it is RecognitionServiceResult.Timeout || it is RecognitionServiceResult.Error
+                it is RecognitionServiceResult.CommandReceived ||
+                it is RecognitionServiceResult.Timeout ||
+                it is RecognitionServiceResult.Error
             }
 
             when (result) {
@@ -52,30 +51,25 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
                         finish(StateResult.Next(StateType.TIMEOUT))
                     }
                 }
-
                 is RecognitionServiceResult.Timeout -> {
                     Log.w(TAG, "Command timeout")
                     finish(StateResult.Next(StateType.TIMEOUT))
                 }
-
                 is RecognitionServiceResult.Error -> {
                     Log.e(TAG, "Recognition error: ${result.message}")
                     context.error = result.message
                     finish(StateResult.Next(StateType.COMMAND_ERROR))
                 }
-
                 else -> {
                     Log.w(TAG, "Unexpected result: $result")
                     finish(StateResult.Next(StateType.TIMEOUT))
                 }
             }
-
         }
         catch (e: CancellationException) {
             Log.d(TAG, "ListeningCommandState cancelled")
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             throw e
-
         }
         catch (e: Exception) {
             Log.e(TAG, "Error in ListeningCommandState", e)
@@ -86,18 +80,14 @@ class ListeningCommandState(private val context: StateContext) : BaseState() {
 
     override suspend fun cancel() {
         Log.i(TAG, "ListeningCommandState cancelled (button pressed)")
-
         try { // Звук отмены
             context.soundEffectManager?.playEndSoundAsync()
-            delay(400)
-
             // Говорим "Отмена" с высоким приоритетом
             val cancelPhrase = context.configManager?.getDefaultPhrase(PhraseType.CANCEL)
             if(!cancelPhrase.isNullOrEmpty())
             {
                 context.speechService?.enqueueAsync(cancelPhrase, SpeechService.PRIOR_HIGH)
             }
-
             Log.d(TAG, "Cancel speech initiated")
         }
         finally {

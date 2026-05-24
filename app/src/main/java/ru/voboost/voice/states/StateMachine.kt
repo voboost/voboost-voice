@@ -60,7 +60,6 @@ class StateMachine(private val scope: CoroutineScope,
             Log.w(TAG, "Already running, ignoring")
             return
         }
-
         mainJob = scope.launch {
             Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
             transitionTo(StateType.IDLE)
@@ -110,7 +109,6 @@ class StateMachine(private val scope: CoroutineScope,
                     Log.d(TAG, "Completion > ${result.stateType}")
                     transitionTo(result.stateType)
                 }
-
                 is StateResult.Cancel -> {
                     Log.d(TAG, "Completion with Cancel > IDLE")
                     transitionTo(StateType.IDLE)
@@ -149,18 +147,14 @@ class StateMachine(private val scope: CoroutineScope,
             Log.d(TAG, "Button ignored in ${current::class.simpleName}")
             return
         }
-
         if (context.isCancelling.get()) {
             Log.d(TAG, "Cancellation already in progress, ignoring")
             return
         }
-
         Log.i(TAG, "Button pressed > cancelling ${current::class.simpleName}")
-
         // Отменяем текущее выполнение
         executionJob?.cancel()
         executionJob = null
-
         // Вызываем cancel() состояния
         current.cancel()
     }

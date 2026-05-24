@@ -15,7 +15,8 @@ import java.nio.LongBuffer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.sqrt
 
-class NLUOrtEngine(context: Context, private val configManager: ConfigManager) : INLUEngine {
+class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
+    : INLUEngine {
 
     companion object {
         private const val TAG = "OnnxNluEngine"

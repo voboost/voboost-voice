@@ -5,7 +5,7 @@ import org.vosk.Model
 import ru.voboost.voice.config.ExternalStoragePaths
 import java.io.File
 
-public class VoskModelLoader {
+class VoskModelLoader {
 
     companion object {
         const val TAG = "VoskModelLoader"
@@ -33,7 +33,6 @@ public class VoskModelLoader {
             Log.i(TAG, "Using Vosk model from external storage: ${externalModelDir.absolutePath}")
             return externalModelDir.absolutePath
         }
-
         Log.w(TAG, "Vosk model not found at: ${externalModelDir.absolutePath}")
         return ""
     }

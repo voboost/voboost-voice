@@ -13,7 +13,7 @@ import com.google.gson.Gson
  *
  * Данные на внешнем хранилище не удаляются при перезагрузке или очистке данных приложения.
  */
-class ConfigManager private constructor(private val context: Context) {
+class ConfigManager private constructor(context: Context) {
     private var config: AppConfig? = null
     private val gson = Gson()
 
@@ -47,7 +47,6 @@ class ConfigManager private constructor(private val context: Context) {
             config = loadedConfig
             return loadedConfig
         }
-
         // Не найден — используем дефолтный
         return createDefaultConfig()
     }
@@ -166,19 +165,14 @@ class ConfigManager private constructor(private val context: Context) {
             when (type) {
                 PhraseType.SUCCESS -> phrases.success.takeUnless { it.isNullOrEmpty() }
                     ?: "Выполнено"
-
                 PhraseType.FAILURE -> phrases.failure.takeUnless { it.isNullOrEmpty() }
                     ?: "Произошла ошибка"
-
                 PhraseType.NOT_UNDERSTOOD -> phrases.notUnderstood.takeUnless { it.isNullOrEmpty() }
                     ?: "Не понял"
-
                 PhraseType.CONFIRM_QUESTION -> phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() }
                     ?: "Вы уверены?"
-
                 PhraseType.LISTENING -> phrases.listening.takeUnless { it.isNullOrEmpty() }
                     ?: "Слушаю"
-
                 PhraseType.CANCEL -> phrases.cancel.takeUnless { it.isNullOrEmpty() } ?: "Отмена"
             }
         }

@@ -7,18 +7,16 @@ import android.util.Log
 import ru.voboost.voice.engine.BaseSpeechEngine
 import java.util.*
 
-class SystemSpeechEngine(private val context: Context) : BaseSpeechEngine(),
-                                                         TextToSpeech.OnInitListener {
+class SystemSpeechEngine(private val context: Context)
+    : BaseSpeechEngine(), TextToSpeech.OnInitListener {
     companion object {
         const val TAG = "SystemTtsSynthesis"
         private const val RUSSIAN_LANG_TAG = "ru-RU"
     }
 
     private var tts: TextToSpeech? = null
-
     @Volatile
     private var isInitialized = false
-
     @Volatile
     private var isSpeaking = false
 
@@ -45,7 +43,9 @@ class SystemSpeechEngine(private val context: Context) : BaseSpeechEngine(),
         }
     }
 
-    override suspend fun initialize() { // Ждём пока onInit будет вызван
+    override suspend fun initialize(rate: Float, pitch: Float) {
+        tts?.setSpeechRate(rate)
+        tts?.setPitch(pitch)
         var waitCount = 0
         while (!isInitialized && waitCount < 50) {  // Ждём до 5 секунд
             kotlinx.coroutines.delay(100)
@@ -69,9 +69,7 @@ class SystemSpeechEngine(private val context: Context) : BaseSpeechEngine(),
             Log.w(TAG, "TTS not initialized, adding to queue")
             return
         }
-
         Log.d(TAG, "Speaking: $text")
-
         // Запустить воспроизведение если не играет
         if (!isSpeaking) {
             playSpeech(text)
@@ -82,16 +80,6 @@ class SystemSpeechEngine(private val context: Context) : BaseSpeechEngine(),
         Log.d(TAG, "Stopping TTS playback")
         tts?.stop()
         isSpeaking = false
-    }
-
-    override fun setRate(rate: Float) {
-        tts?.setSpeechRate(rate)
-        Log.d(TAG, "Speech rate set to: $rate")
-    }
-
-    override fun setPitch(pitch: Float) {
-        tts?.setPitch(pitch)
-        Log.d(TAG, "Speech pitch set to: $pitch")
     }
 
     override fun isAvailable(): Boolean = isInitialized && tts != null
@@ -108,27 +96,23 @@ class SystemSpeechEngine(private val context: Context) : BaseSpeechEngine(),
     private fun playSpeech(text: String) {
         try {
             val utteranceId = UUID.randomUUID().toString()
-
             // Установить listener для отслеживания завершения
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     Log.d(TAG, "Speech started: $utteranceId")
                     isSpeaking = true
                 }
-
                 override fun onDone(utteranceId: String?) {
                     Log.d(TAG, "Speech completed: $utteranceId")
                     isSpeaking = false // Вызываем обратные вызовы
                     onSpeechFinish()
                 }
-
                 override fun onError(utteranceId: String?) {
                     Log.e(TAG, "Speech error: $utteranceId")
                     isSpeaking = false // Вызываем обратные вызовы при ошибке
                     onSpeechFinish()
                 }
             })
-
             // Воспроизвести текст
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
 
