@@ -1,6 +1,5 @@
 package ru.voboost.voice.nlu
 
-import NLUOrtEngine
 import android.content.Context
 import android.util.Log
 import ru.voboost.voice.config.ConfigManager
@@ -35,7 +34,7 @@ object NLUEngineFactory {
         return when (nluEngineType) {
              NLUEngineType.PARSER -> NLUEngine(configManager)
             NLUEngineType.LLM -> NULLLMEngine(context, configManager)
-             NLUEngineType.ONNX -> NLUOrtEngine(context, configManager)
+             NLUEngineType.ONNX -> NLUOrtEngine(configManager)
          }
     }
 }

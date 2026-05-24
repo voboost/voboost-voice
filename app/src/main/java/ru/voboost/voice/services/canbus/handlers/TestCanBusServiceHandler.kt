@@ -75,6 +75,8 @@ class TestCanBusServiceHandler(private val speechService: ISpeechService)
         if (vehicle == VehicleState.FCWSwitch) return
         if (vehicle == VehicleState.RIGHT_VERTICAL_POSITION) return
         if (vehicle == VehicleState.BMS_REMAIN_CHARGE_TIME) return
+        if (vehicle == VehicleState.LEFT_VERTICAL_POSITION) return
+        if (vehicle == VehicleState.BMS_SOC_DISPLAY) return
 
         Log.d(TAG, "событие VehicleStateChanged: $vehicle val: $state")
     }

@@ -1,22 +1,21 @@
+package ru.voboost.voice.nlu
+
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer
 import ai.onnxruntime.OnnxJavaType
 import ai.onnxruntime.OnnxTensor
-import android.content.Context
 import android.util.Log
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.config.ExternalStoragePaths
-import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.executor.CommandData
 import java.io.FileNotFoundException
 import java.nio.LongBuffer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.sqrt
 
-class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
-    : INLUEngine {
+class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
 
     companion object {
         private const val TAG = "OnnxNluEngine"
@@ -32,7 +31,7 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
 
     init {
         Log.i(TAG, "Initializing ONNX NLU Engine...")
-        
+
         // Загрузка модели из внешнего хранилища
         val modelFile = ExternalStoragePaths.nluModelFile
         if (!modelFile.exists()) {
@@ -46,7 +45,7 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
         if (!tokenizerFile.exists()) {
             throw FileNotFoundException("Tokenizer not found: ${tokenizerFile.absolutePath}")
         }
-        val tokenizerStream = tokenizerFile.inputStream()
+        val tokenizerStream = tokenizerFile.inputStream() //        System.setProperty("ai.djl.huggingface.tokenizers.skip_init", "true") //        System.loadLibrary("tokenizers")
         this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, mapOf())
         tokenizerStream.close()
 
@@ -116,9 +115,9 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
             val encoding = tokenizer.encode(text)
 
             // Создаём тензоры
-            val inputIds = encoding.ids.map { it.toLong() }.toLongArray()
-            val attentionMask = encoding.attentionMask.map { it.toLong() }.toLongArray()
-            val tokenTypeIds = encoding.typeIds.map { it.toLong() }.toLongArray()
+            val inputIds = encoding.ids.map { it }.toLongArray()
+            val attentionMask = encoding.attentionMask.map { it }.toLongArray()
+            val tokenTypeIds = encoding.typeIds.map { it }.toLongArray()
 
             val inputIdsTensor = OnnxTensor.createTensor(ortEnv,
                                                          LongBuffer.wrap(inputIds),
@@ -144,18 +143,53 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
                 outputTensor = result.get(0) as OnnxTensor
 
                 require(outputTensor.info.type == OnnxJavaType.FLOAT) { "Expected FLOAT output" }
-                require(outputTensor.info.shape.size == 2) { "Expected 2D output [batch, embedding]" }
-                require(outputTensor.info.shape[1] == EMBEDDING_DIM.toLong()) {
-                    "Expected embedding dim $EMBEDDING_DIM, got ${outputTensor.info.shape[1]}"
+
+                val shape = outputTensor.info.shape
+                val embedding = FloatArray(EMBEDDING_DIM)
+
+                // Вариант 1: Если модель выдает 3D-тензор [1, sequence_length, hidden_size] (Большинство BERT/MiniLM)
+                if (shape.size == 3) {
+                    require(shape[2] == EMBEDDING_DIM.toLong()) {
+                        "Expected embedding dim $EMBEDDING_DIM, got ${shape[2]}"
+                    }
+
+                    // Извлекаем данные как трехмерный массив Float
+                    val outputs = outputTensor.value as Array<Array<FloatArray>>
+                    val tokenEmbeddings = outputs[0] // Массив векторов для каждого токена [sequence_length][EMBEDDING_DIM]
+
+                    // Делаем Mean Pooling (усредняем только значащие токены по attention_mask)
+                    var validTokensCount = 0
+                    for (i in tokenEmbeddings.indices) {
+                        if (i < attentionMask.size && attentionMask[i] == 1L) {
+                            validTokensCount++
+                            for (dim in 0 until EMBEDDING_DIM) {
+                                embedding[dim] += tokenEmbeddings[i][dim]
+                            }
+                        }
+                    }
+
+                    // Делим сумму на количество значащих токенов
+                    if (validTokensCount > 0) {
+                        for (dim in 0 until EMBEDDING_DIM) {
+                            embedding[dim] /= validTokensCount.toFloat()
+                        }
+                    }
+                } // Вариант 2: Если модель уже имеет встроенный пулинг и сразу выдает 2D [1, EMBEDDING_DIM]
+                else if (shape.size == 2) {
+                    require(shape[1] == EMBEDDING_DIM.toLong()) {
+                        "Expected embedding dim $EMBEDDING_DIM, got ${shape[1]}"
+                    }
+                    val buffer = outputTensor.floatBuffer
+                    buffer.get(embedding)
+                }
+                else {
+                    throw IllegalArgumentException("Unexpected output tensor shape: ${shape.joinToString()}")
                 }
 
-                val buffer = outputTensor.floatBuffer
-                val embedding = FloatArray(EMBEDDING_DIM)
-                buffer.get(embedding)
                 normalize(embedding)
                 embedding
             }
-            finally { // 🔥 Закрываем ВСЕ ресурсы в обратном порядке
+            finally {
                 outputTensor?.close()
                 result?.close()
                 inputIdsTensor.close()
@@ -181,8 +215,8 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
         return dot // Вектора уже нормализованы, поэтому dot product == cosine similarity
     }
 
-    private fun extractParams(pattern: String, text: String): Map<String, String> {
-        // 1. Извлекаем имена параметров
+    private fun extractParams(pattern: String,
+                              text: String): Map<String, String> { // 1. Извлекаем имена параметров
         val paramNames = "\\{(\\w+)\\}".toRegex()
             .findAll(pattern)
             .map { it.groupValues[1] }
@@ -190,8 +224,7 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
 
         // 2. Экранируем ВСЕ спецсимволы regex, кроме наших {параметров}
         var regexPattern = Regex.escape(pattern) // экранируем всё
-        for (param in paramNames) {
-            // Восстанавливаем наши группы: \{param\} → (?<param>[^}]+)
+        for (param in paramNames) { // Восстанавливаем наши группы: \{param\} → (?<param>[^}]+)
             regexPattern = regexPattern.replace("\\\\{\\Q$param\\E\\\\}", "(?<${param}>[^}]+)")
         }
 
@@ -203,8 +236,7 @@ class NLUOrtEngine(context: Context, private val configManager: ConfigManager)
         }.toMap()
     }
 
-    private fun buildRecognizedCommand(id: String,
-                                       params: Map<String, String>): CommandData? {
+    private fun buildRecognizedCommand(id: String, params: Map<String, String>): CommandData? {
         val config = configManager.getConfig().commands.find { it.id == id } ?: return null
         return CommandData(id = id,
                            config = config,

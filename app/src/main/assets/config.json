@@ -39,7 +39,7 @@
     }
   },
   "nlu": {
-    "engine": "parser"
+    "engine": "onnx"
   },
   "confirmation": {
     "default_timeout_sec": 5,

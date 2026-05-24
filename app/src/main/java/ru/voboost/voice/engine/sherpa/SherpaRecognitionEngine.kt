@@ -13,12 +13,13 @@ import java.io.File
  * Использует Zipformer модель для распознавания
  */
 class SherpaRecognitionEngine private constructor(private val recognizer: OfflineRecognizer,
-                                                  private val reusableBuffer: FloatArray)
-    : IRecognitionEngine {
+                                                  private val reusableBuffer: FloatArray) :
+        IRecognitionEngine {
     companion object {
         const val TAG = "SherpaStream"
         private const val SAMPLE_RATE = 16000
         const val MAX_CHUNK_SAMPLES = 3200
+
         /**
          * Создать SherpaStream из пути к модели
          */
@@ -36,35 +37,46 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
             Log.d(TAG, "Tokens: $tokensPath")
 
             // Создаём конфигурацию транседера
-            val transducerConfig = OfflineTransducerModelConfig.Builder()
-                .setEncoder(encoderPath)
-                .setDecoder(decoderPath)
-                .setJoiner(joinerPath)
-                .build()
-
-            // Создаём конфигурацию модели
-            val modelConfig = OfflineModelConfig.Builder()
-                .setTransducer(transducerConfig)
-                .setTokens(tokensPath)
-                .setNumThreads(2)
-                .setProvider("cpu")
-                .setDebug(true)
-                .build()
+            //            val transducerConfig = OfflineTransducerModelConfig.Builder()
+            //                .setEncoder(encoderPath)
+            //                .setDecoder(decoderPath)
+            //                .setJoiner(joinerPath)
+            //                .build()
+            val transducerConfig = OfflineTransducerModelConfig(encoder = encoderPath,
+                                                                decoder = decoderPath,
+                                                                joiner = joinerPath) // Создаём конфигурацию модели //            val modelConfig = OfflineModelConfig.Builder()
+            //                .setTransducer(transducerConfig)
+            //                .setTokens(tokensPath)
+            //                .setNumThreads(2)
+            //                .setProvider("cpu")
+            //                .setDebug(true)
+            //                .build()
+            val modelConfig = OfflineModelConfig(transducer = transducerConfig,
+                                                 tokens = tokensPath,
+                                                 numThreads = 2,
+                                                 provider = "cpu",
+                                                 debug = false)
 
             // Создаём конфигурацию фичей
-            val featureConfig = FeatureConfig.Builder()
-                .setSampleRate(SAMPLE_RATE)
-                .setFeatureDim(80)
-                .build()
+            //            val featureConfig = FeatureConfig.Builder()
+            //                .setSampleRate(SAMPLE_RATE)
+            //                .setFeatureDim(80)
+            //                .build()
+            val featureConfig = FeatureConfig(sampleRate = SAMPLE_RATE, featureDim = 80)
 
             // Создаём основную конфигурацию распознавания
-            val recognizerConfig = OfflineRecognizerConfig.Builder()
-                .setFeatureConfig(featureConfig)
-                .setOfflineModelConfig(modelConfig)
-                .setMaxActivePaths(4)
-                .build()
+            //            val recognizerConfig = OfflineRecognizerConfig.Builder()
+            //                .setFeatureConfig(featureConfig)
+            //                .setOfflineModelConfig(modelConfig)
+            //                .setMaxActivePaths(4)
+            //                .build()
 
-            val recognizer = OfflineRecognizer(recognizerConfig)
+            val recognizerConfig = OfflineRecognizerConfig(featConfig = featureConfig,
+                                                           modelConfig = modelConfig,
+                                                           maxActivePaths = 4)
+
+
+            val recognizer = OfflineRecognizer(config =recognizerConfig)
             val reusableBuffer = FloatArray(MAX_CHUNK_SAMPLES) // запас на большие чанки
 
             return SherpaRecognitionEngine(recognizer, reusableBuffer)
@@ -103,10 +115,8 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
             val samplesCount = pcmToFloats(pcm, start, end, reusableBuffer)
 
             val chunk = reusableBuffer.copyOf(samplesCount)
-            stream.acceptWaveform(chunk,  SAMPLE_RATE)
-            // Распознать
-            recognizer.decode(stream)
-            // Получить результат
+            stream.acceptWaveform(chunk, SAMPLE_RATE) // Распознать
+            recognizer.decode(stream) // Получить результат
             val result = recognizer.getResult(stream)
             val text = result.text.trim()
 
@@ -172,8 +182,8 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
         val samplesCount = bytesCount / 2 // 2 байта на 16-bit sample
 
         if (samplesCount > dst.size) {
-            Log.w(TAG, "Buffer too small: need $samplesCount, have ${dst.size}. Truncating.")
-            // Обработаем только то, что влезает
+            Log.w(TAG,
+                  "Buffer too small: need $samplesCount, have ${dst.size}. Truncating.") // Обработаем только то, что влезает
             return pcmToFloats(src, srcStart, srcStart + dst.size * 2, dst)
         }
 

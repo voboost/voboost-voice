@@ -35,7 +35,7 @@ class SherpaSpeechEngine(private val modelPath: String,
     @Volatile private var isInitialized = false
     @Volatile private var rate = 1.0f
     @Volatile private var pitch = 1.0f
-    @Volatile private var sampleRate = DEFAULT_SAMPLE_RATE
+    @Volatile private var sampleRate  = DEFAULT_SAMPLE_RATE
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val isPlaying = AtomicBoolean(false)
     private var currentJob: Job? = null
@@ -55,7 +55,7 @@ class SherpaSpeechEngine(private val modelPath: String,
                 }
                 // Инициализация Sherpa-ONNX TTS
                 offlineTts = createTts(modelPath)
-                sampleRate = offlineTts?.sampleRate ?: DEFAULT_SAMPLE_RATE
+                sampleRate =  DEFAULT_SAMPLE_RATE
                 isInitialized = true
                 Log.i(TAG, "Sherpa-ONNX TTS initialized successfully! (sample rate: $sampleRate)")
             }
@@ -95,26 +95,42 @@ class SherpaSpeechEngine(private val modelPath: String,
 
         // Создаём конфигурацию VITS модели для Sherpa-ONNX Piper
         // Передаём data_dir для eSpeak-ng (требуется для phonemization)
-        val vitsModelConfig = OfflineTtsVitsModelConfig.Builder()
-            .setModel(modelPathStr)
-            .setTokens(if (tokensFile.exists()) tokensFile.absolutePath else "")
-            .setDataDir(if (espeakDir.exists()) espeakDir.absolutePath else "")
-            .setNoiseScale(0.667f)
-            .setNoiseScaleW(0.8f)
-            .setLengthScale(1.0f)
-            .build()
+//        val vitsModelConfig = OfflineTtsVitsModelConfig.Builder()
+//            .setModel(modelPathStr)
+//            .setTokens(if (tokensFile.exists()) tokensFile.absolutePath else "")
+//            .setDataDir(if (espeakDir.exists()) espeakDir.absolutePath else "")
+//            .setNoiseScale(0.667f)
+//            .setNoiseScaleW(0.8f)
+//            .setLengthScale(1.0f)
+//            .build()
+
+        val vitsModelConfig = OfflineTtsVitsModelConfig(
+            model = modelPathStr,
+            tokens = if (tokensFile.exists()) tokensFile.absolutePath else "",
+            dataDir = if (espeakDir.exists()) espeakDir.absolutePath else "",
+            noiseScale = 0.667f,
+            noiseScaleW = 0.8f,
+            lengthScale = 1.0f)
+
 
         // Создаём обёртку модели
-        val ttsModelConfig = OfflineTtsModelConfig.Builder()
-            .setVits(vitsModelConfig)
-            .setNumThreads(2)
-            .setProvider("cpu")  // < CPU вместо NNAPI для совместимости
-            .setDebug(false)
-            .build()
+//        val ttsModelConfig = OfflineTtsModelConfig.Builder()
+//            .setVits(vitsModelConfig)
+//            .setNumThreads(2)
+//            .setProvider("cpu")  // < CPU вместо NNAPI для совместимости
+//            .setDebug(false)
+//            .build()
+
+        val ttsModelConfig = OfflineTtsModelConfig(
+            vits = vitsModelConfig,
+            numThreads = 2,
+            provider = "cpu",
+            debug = false)
 
         // Создаём основную конфигурацию TTS
-        val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
-        return OfflineTts(ttsConfig)
+        //val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
+        val ttsConfig = OfflineTtsConfig(   model = ttsModelConfig)
+        return OfflineTts(config = ttsConfig)
     }
 
     override fun isReady(): Boolean = isInitialized
