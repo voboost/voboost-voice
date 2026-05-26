@@ -16,7 +16,8 @@ import androidx.core.net.toUri
  *   - screen_int: текущий экран (int, по умолчанию 0)
  *   - mac: MAC-адрес Bluetooth (пустая строка)
  */
-class PhoneCallContactIntentHandler(context: Context) : AbstractIntentHandler(context) {
+class PhoneCallContactIntentHandler(context: Context)
+    : AbstractIntentHandler(context) {
 
     companion object {
         const val CALL_URI = "content://com.qinggan.bluetoothphone/contactsinfo"

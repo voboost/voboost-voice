@@ -19,7 +19,8 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
 
     companion object {
         private const val TAG = "OnnxNluEngine"
-        private const val SIMILARITY_THRESHOLD = 0.62f // Порог срабатывания
+        private const val SIMILARITY_THRESHOLD = 0.55 // Порог срабатывания
+        private const val MARGIN_THRESHOLD = 0.08
         private const val EMBEDDING_DIM = 384 // Размерность MiniLM-L12
     }
 
@@ -27,11 +28,10 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
     private val session: OrtSession
     private val tokenizer: HuggingFaceTokenizer
     private val lock = ReentrantLock()
-    private val commandPatterns = mutableMapOf<String, List<Pair<String, FloatArray>>>()
+    private val commandPatterns = mutableMapOf<String, List<FloatArray>>()
 
     init {
         Log.i(TAG, "Initializing ONNX NLU Engine...")
-
         // Загрузка модели из внешнего хранилища
         val modelFile = ExternalStoragePaths.nluModelFile
         if (!modelFile.exists()) {
@@ -45,7 +45,7 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         if (!tokenizerFile.exists()) {
             throw FileNotFoundException("Tokenizer not found: ${tokenizerFile.absolutePath}")
         }
-        val tokenizerStream = tokenizerFile.inputStream() //        System.setProperty("ai.djl.huggingface.tokenizers.skip_init", "true") //        System.loadLibrary("tokenizers")
+        val tokenizerStream = tokenizerFile.inputStream() //System.setProperty("ai.djl.huggingface.tokenizers.skip_init", "true") //        System.loadLibrary("tokenizers")
         this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, mapOf())
         tokenizerStream.close()
 
@@ -58,9 +58,9 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         for (cmd in commands) {
             val embeddings = cmd.patterns.mapNotNull { pattern ->
                 try {
-                    val cleanPattern = pattern.replace(Regex("\\{[^}]+\\}"), "").trim()
-                    if (cleanPattern.isEmpty()) null
-                    else Pair(pattern, embedText(cleanPattern))
+                    val normalizePattern = normalizePhrase(pattern)
+                    if (normalizePattern.isEmpty()) null
+                    else embedText(normalizePattern)
                 }
                 catch (e: Exception) {
                     Log.w(TAG, "Failed to embed pattern: $pattern", e)
@@ -75,31 +75,54 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
 
     override fun parseCommand(text: String): CommandData? {
         return try {
-            val queryEmbedding = embedText(text)
-            var bestId: String? = null
-            var bestScore = 0f
-            var bestPattern: String? = null
+            val normalized = normalizePhrase(text)
+            val queryEmbedding = embedText(normalized)
 
-            // Поиск максимального косинусного сходства
+            // Собираем сырые скоры и запоминаем лучший паттерн для extractParams
+            val cmdAggregatedScores = mutableMapOf<String, Double>()
+
             for ((cmdId, patterns) in commandPatterns) {
-                for ((pattern, cmdEmbedding) in patterns) {
+                val rawScores = mutableListOf<Double>()
+                var bestPatScore = -1.0
+
+                for (cmdEmbedding in patterns) {
                     val score = cosineSimilarity(queryEmbedding, cmdEmbedding)
-                    if (score > bestScore) {
-                        bestScore = score
-                        bestId = cmdId
-                        bestPattern = pattern
+                    rawScores.add(score)
+                    if (score > bestPatScore) {
+                        bestPatScore = score
                     }
                 }
+                // Агрегируем по Softmax
+                cmdAggregatedScores[cmdId] = computeSoftmaxScore(rawScores, temperature = 5.0)
             }
 
-            if (bestScore >= SIMILARITY_THRESHOLD && bestId != null) {
-                Log.d(TAG,
-                      "✅ Matched: '$text' → $bestId (score: ${String.format("%.3f", bestScore)})")
-                val params = extractParams(bestPattern!!, text)
-                buildRecognizedCommand(bestId, params)
+            if (cmdAggregatedScores.isEmpty()) {
+                Log.d(TAG, "❌ No match for: '$text'")
+                return null
+            }
+
+            // Сортируем команды по агрегированному скору
+            val sorted = cmdAggregatedScores.entries.sortedByDescending { it.value }
+            val bestId = sorted[0].key
+            val bestScore = sorted[0].value
+
+            val secondBestScore = if (sorted.size > 1) sorted[1].value else 0.0
+            val secondBestId = if (sorted.size > 1) sorted[1].key else "none"
+
+            val margin = bestScore - secondBestScore
+
+            if (bestScore >= SIMILARITY_THRESHOLD && margin >= MARGIN_THRESHOLD) {
+                Log.d(TAG,"✅ Matched: '$text' → $bestId (agg: ${String.format("%.3f", bestScore)}, margin vs $secondBestId: ${String.format("%.3f", margin)})")
+                val commandConfig = configManager.getCommandById(bestId)
+                if(commandConfig == null) {
+                    null
+                }
+                else {
+                    CommandData(data = commandConfig, phrase = text)
+                }
             }
             else {
-                Log.d(TAG, "❌ No match for: '$text' (best: ${String.format("%.3f", bestScore)})")
+                Log.d(TAG,"❌ Ambiguous/No match: '$text' (agg: $bestId=${String.format("%.3f", bestScore)}, 2nd: $secondBestId=${String.format("%.3f", secondBestScore)})")
                 null
             }
         }
@@ -109,10 +132,24 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
+    /**
+     * Softmax-взвешенная агрегация скоров паттернов одной команды.
+     * temperature: 3.0–5.0 → мягкое усреднение, 7.0–10.0 → ближе к max
+     */
+    private fun computeSoftmaxScore(scores: List<Double>, temperature: Double): Double {
+        if (scores.isEmpty()) return 0.0
+        val maxScore = scores.maxOrNull() ?: 0.0 // Численная стабилизация: вычитаем max, чтобы exp() не уходил в Infinity
+        val expScores = scores.map { kotlin.math.exp((it - maxScore) * temperature) }
+        val sumExp = expScores.sum()
+        if (sumExp == 0.0) return maxScore // Взвешенное среднее
+        return scores.zip(expScores).sumOf { (s, w) -> s * (w / sumExp) }
+    }
+
     private fun embedText(text: String): FloatArray {
         lock.lock()
         return try {
-            val encoding = tokenizer.encode(text)
+            val normalize = normalizePhrase(text)
+            val encoding = tokenizer.encode(normalize)
 
             // Создаём тензоры
             val inputIds = encoding.ids.map { it }.toLongArray()
@@ -209,44 +246,26 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
-    private fun cosineSimilarity(a: FloatArray, b: FloatArray): Float {
-        var dot = 0f
+    // Добавьте в класс NLUOrtEngine
+    private fun normalizePhrase(text: String): String {
+        return text.lowercase()
+            .replace(Regex("\\{temp\\}"), "<NUM>")
+            .replace(Regex("\\{contact\\}"), "<NAME>")
+            .replace(Regex("\\{number\\}"), "<PHONE>")
+            .replace(Regex("[^\\w\\s<>/\\-]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+    }
+
+    private fun cosineSimilarity(a: FloatArray, b: FloatArray): Double {
+        var dot = 0.0
         for (i in a.indices) dot += a[i] * b[i]
         return dot // Вектора уже нормализованы, поэтому dot product == cosine similarity
     }
 
-    private fun extractParams(pattern: String,
-                              text: String): Map<String, String> { // 1. Извлекаем имена параметров
-        val paramNames = "\\{(\\w+)\\}".toRegex()
-            .findAll(pattern)
-            .map { it.groupValues[1] }
-            .toList()
-
-        // 2. Экранируем ВСЕ спецсимволы regex, кроме наших {параметров}
-        var regexPattern = Regex.escape(pattern) // экранируем всё
-        for (param in paramNames) { // Восстанавливаем наши группы: \{param\} → (?<param>[^}]+)
-            regexPattern = regexPattern.replace("\\\\{\\Q$param\\E\\\\}", "(?<${param}>[^}]+)")
-        }
-
-        val regex = regexPattern.toRegex()
-        val match = regex.find(text) ?: return emptyMap()
-
-        return paramNames.mapNotNull { name ->
-            match.groups[name]?.value?.let { name to it.trim() }
-        }.toMap()
-    }
-
-    private fun buildRecognizedCommand(id: String, params: Map<String, String>): CommandData? {
-        val config = configManager.getConfig().commands.find { it.id == id } ?: return null
-        return CommandData(id = id,
-                           config = config,
-                           matchedPattern = "onnx:${id}",
-                           extractedParams = params)
-    }
-
     // === Интерфейс подтверждения (без изменений) ===
-    override fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean {
-        return ((commandConfig.confirmation.yesPatterns
+    override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
+        return ((commandConfig?.confirmation?.yesPatterns
                  ?: emptyList()) + INLUEngine.DEFAULT_YES).any {
             text.lowercase().trim() == it.lowercase().trim()
         }
@@ -259,12 +278,14 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
-    override fun requiresConfirmation(commandConfig: CommandConfig) = commandConfig.confirmation.required
-    override fun getConfirmationQuestion(commandConfig: CommandConfig) = commandConfig.confirmation.question
-                                                                         ?: "Подтверждаете?"
+    override fun requiresConfirmation(commandConfig: CommandConfig) =
+            commandConfig.confirmation.required
 
-    override fun getConfirmationTimeout(commandConfig: CommandConfig) = commandConfig.confirmation.timeoutSec
-                                                                        ?: 5
+    override fun getConfirmationQuestion(commandConfig: CommandConfig?) =
+            commandConfig?.confirmation?.question?: "Подтверждаете?"
+
+    override fun getConfirmationTimeout(commandConfig: CommandConfig) =
+            commandConfig.confirmation.timeoutSec?: 5
 
     /**
      * Освободить ресурсы (реализация интерфейса INLUEngine)

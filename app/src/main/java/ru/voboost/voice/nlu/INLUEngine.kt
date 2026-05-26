@@ -28,10 +28,10 @@ interface INLUEngine {
     }
 
     fun parseCommand(text: String): CommandData?
-    fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean
+    fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean
     fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean
     fun requiresConfirmation(commandConfig: CommandConfig): Boolean
-    fun getConfirmationQuestion(commandConfig: CommandConfig): String
+    fun getConfirmationQuestion(commandConfig: CommandConfig?): String
     fun getConfirmationTimeout(commandConfig: CommandConfig): Int
 
     /**

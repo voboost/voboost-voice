@@ -1,5 +1,7 @@
 package ru.voboost.voice.executor.handlers
 
+import ru.voboost.voice.executor.CommandData
+
 /**
  * Универсальный обработчик одной команды
  * Все команды (окна, кондиционер, телефон и т.д.) используют этот интерфейс
@@ -14,13 +16,20 @@ package ru.voboost.voice.executor.handlers
  */
 interface ICommandHandler {
 
+    companion object {
+       val NEGATIVE_RESULT = CommandResult(false)
+       val POSITIVE_RESULT = CommandResult(false)
+    }
     /**
      * Выполнить команду
      *
      * @param voiceParams Параметры, распознанные из голоса ({temp}, {contact}, {number} и т.д.)
      * @return true если команда успешно выполнена
      */
-    fun execute(voiceParams: Map<String, Any>): Boolean
+    fun execute(commandData: CommandData): CommandResult
 }
+
+data class CommandResult(val result: Boolean,
+                         val extractedParams: Map<String, String> = emptyMap())
 
 

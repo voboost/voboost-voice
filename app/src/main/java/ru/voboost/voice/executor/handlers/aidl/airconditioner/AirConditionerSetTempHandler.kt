@@ -2,6 +2,9 @@ package ru.voboost.voice.executor.handlers.aidl.airconditioner
 
 import android.util.Log
 import com.qinggan.canbus.AirConditionState
+import ru.voboost.voice.executor.CommandData
+import ru.voboost.voice.executor.handlers.CommandResult
+import ru.voboost.voice.executor.handlers.ICommandHandler
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 
 /**
@@ -81,25 +84,26 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
         return 22
     }
 
-    override fun getAirConditionStateAndValue(voiceParams: Map<String, Any>): Pair<AirConditionState, Int> {
-        val rawTemp = voiceParams["temp"]?.toString() ?: "22"
+    override fun getAirConditionStateAndValue(voiceParams: Map<String, String>): Pair<AirConditionState, Int> {
+        val rawTemp = voiceParams["temp"]?: "22"
         val temperature = parseTemperature(rawTemp)
         Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp')")
         return AirConditionState.AC_LEFT_TEMP to temperature
     }
 
-    override fun execute(voiceParams: Map<String, Any>): Boolean {
+    override fun execute(commandData: CommandData): CommandResult {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
-            return false
+            return ICommandHandler.NEGATIVE_RESULT
         }
-
-        val rawTemp = voiceParams["temp"]?.toString() ?: "22"
+        val parsParams = parsParams(commandData)
+        val rawTemp = parsParams["temp"]?: "22"
         val temperature = parseTemperature(rawTemp)
-        val zone = voiceParams["_zone"] as? String
+        val zone = parsParams["_zone"]
         Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp', zone=$zone)")
 
-        return canBusManager.setTemperatureByZone(zone, temperature)
+        val result = canBusManager.setTemperatureByZone(zone, temperature)
+        return CommandResult(result, parsParams)
     }
 }
 

@@ -1,6 +1,9 @@
 package ru.voboost.voice.executor.handlers.aidl.airconditioner
 
 import android.util.Log
+import ru.voboost.voice.audio.MultiChannelAudioSource
+import ru.voboost.voice.executor.CommandData
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
@@ -28,10 +31,10 @@ class AirConditionerTempOffsetHandler(private val canBusManager: CanBusServiceMa
         private const val TEMP_MAX = 32
     }
 
-    override fun execute(voiceParams: Map<String, Any>): Boolean {
+    override fun execute(commandData: CommandData): CommandResult {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
-            return false
+            return ICommandHandler.NEGATIVE_RESULT
         }
 
         val airCondition = canBusManager.getAirCondition()
@@ -39,11 +42,19 @@ class AirConditionerTempOffsetHandler(private val canBusManager: CanBusServiceMa
 
         val newTemp = (currentTemp + offsetDelta).coerceIn(TEMP_MIN, TEMP_MAX)
         val sign = if (offsetDelta > 0) "+" else ""
-        val zone = voiceParams["_zone"] as? String
+        val parsParams = parsParams(commandData)
+        val zone = parsParams["_zone"]
 
         Log.d(TAG, "Temp $sign${offsetDelta}: $currentTemp°C → $newTemp°C (zone=$zone)")
 
-        return canBusManager.setTemperatureByZone(zone, newTemp)
+        val result = canBusManager.setTemperatureByZone(zone, newTemp)
+        return CommandResult(result)
+    }
+
+    private fun parsParams(commandData: CommandData): Map<String, String> {
+        val paramsText : MutableMap<String, String> = mutableMapOf()
+        paramsText["_zone"] = commandData.zone ?: MultiChannelAudioSource.ZONE_FRONT_LEFT
+        return paramsText;
     }
 }
 

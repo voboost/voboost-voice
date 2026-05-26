@@ -14,7 +14,8 @@ import ru.voboost.voice.executor.handlers.intent.AbstractIntentHandler
  *   - screen_int: текущий экран (int, по умолчанию 0)
  *   - mac: MAC-адрес Bluetooth (пустая строка)
  */
-class PhoneCallNumberIntentHandler(context: Context) : AbstractIntentHandler(context) {
+class PhoneCallNumberIntentHandler(context: Context)
+    : AbstractIntentHandler(context) {
 
     override fun buildIntent(voiceParams: Map<String, Any>): Intent? {
         val phoneNumber = voiceParams["number"] as? String ?: ""

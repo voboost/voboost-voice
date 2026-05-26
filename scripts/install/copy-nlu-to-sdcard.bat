@@ -58,6 +58,8 @@ if exist "%TOKENIZER_PATH%" (
 )
 echo.
 
+REM shell "chmod -R 755 /storage/emulated/0/Android/data/ru.voboost.voice/files/models/nlu/"
+
 REM Финальная проверка ключевых файлов
 echo ============================================================================
 echo  Проверка целостности...

@@ -2,6 +2,8 @@ package ru.voboost.voice.executor.handlers.aidl.scuttle
 
 import android.util.Log
 import com.qinggan.canbus.VehicleState
+import ru.voboost.voice.executor.CommandData
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
@@ -25,16 +27,17 @@ class FuelTankOpenHandler(private val canBusManager: CanBusServiceManager)
         const val TAG = "ScuttleCommand"
     }
 
-    override fun execute(voiceParams: Map<String, Any>): Boolean {
+    override fun execute(commandData: CommandData): CommandResult {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
-            return false
+            return ICommandHandler.NEGATIVE_RESULT
         }
 
         val state = VehicleState.IVI_FUEL_PORT_CAP
         val value = CanBusServiceManager.VALUE_OPEN  // 1 для этого авто
         Log.d(TAG, "Scuttle command: IState=$state (ordinal=${state.ordinal}), value=$value")
-        return canBusManager.setVehicleState(state, value)
+        val result = canBusManager.setVehicleState(state, value)
+        return CommandResult(result)
     }
 }
 

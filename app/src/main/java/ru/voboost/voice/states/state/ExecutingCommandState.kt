@@ -31,12 +31,12 @@ class ExecutingCommandState(private val context: StateContext) : BaseState() {
             finish(StateResult.Next(StateType.COMMAND_ERROR))
             return
         }
-        Log.i(TAG, "Entering EXECUTING_COMMAND IState: ${commandData.id}")
+        Log.i(TAG, "Entering EXECUTING_COMMAND IState: ${commandData.data.id}")
         try { // ОТКЛЮЧИТЬ распознавание пока TTS говорит ответ (чтобы не было ЭХО)
             context.recognitionService?.setMode(RecognitionService.Mode.MUTED)
             // Выполняем команду (внутри TTS скажет "Закрываю окно")
             context.commandExecutor?.executeCommand(commandData)
-            Log.i(TAG, "Command executed successfully: ${commandData.id}")
+            Log.i(TAG, "Command executed successfully: ${commandData.data.id}")
             // ВКЛЮЧИТЬ распознавание ключевых слов (TTS закончил)
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             // Успех > возвращаемся к ожиданию ключевого слова
@@ -48,7 +48,7 @@ class ExecutingCommandState(private val context: StateContext) : BaseState() {
             throw e
         }
         catch (e: Exception) {
-            Log.e(TAG, "Error executing command: ${commandData.id}", e)
+            Log.e(TAG, "Error executing command: ${commandData.data.id}", e)
             context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
             finish(StateResult.Next(StateType.COMMAND_ERROR))
         }

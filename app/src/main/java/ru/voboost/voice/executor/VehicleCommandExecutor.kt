@@ -2,6 +2,7 @@ package ru.voboost.voice.executor
 
 import android.content.Context
 import android.util.Log
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 import ru.voboost.voice.executor.handlers.aidl.airconditioner.AirConditionerCloseHandler
@@ -82,29 +83,27 @@ class VehicleCommandExecutor(private val context: Context,
         const val TAG = "VehicleCommandExec"
     }
 
-    override val executionMethod: String = handlers.values.firstOrNull()?.let {
-        it.javaClass.simpleName.replace("Handler", "")
-    } ?: "Unknown"
+    override val executionMethod: String =
+            handlers.values.firstOrNull()?.let {it.javaClass.simpleName.replace("Handler", "")} ?: "Unknown"
 
-    override fun executeByCommandId(commandId: String,
-                                    voiceParams: Map<String, Any>)
-    : Boolean {
+    override fun executeByCommandId(commandData: CommandData)
+    : CommandResult {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected")
-            return false
+            return CommandResult(false)
         }
 
-        val handler = handlers[commandId] ?: return false.also {
-            Log.w(TAG,"No handler for command: '$commandId'")
+        val handler = handlers[commandData.data.id] ?: return CommandResult(false).also {
+            Log.w(TAG,"No handler for command: '${commandData.data.id}'")
         }
 
-        Log.d(TAG, "Executing: commandId='$commandId', handler=${handler.javaClass.simpleName}")
+        Log.d(TAG, "Executing: commandId='$commandData.id', handler=${handler.javaClass.simpleName}")
         return try {
-            handler.execute(voiceParams)
+            handler.execute(commandData)
         }
         catch (e: Exception) {
-            Log.e(TAG, "Exception during command execution: $commandId", e)
-            false
+            Log.e(TAG, "Exception during command execution: $commandData.id", e)
+            CommandResult(false)
         }
     }
 }

@@ -1,5 +1,7 @@
 package ru.voboost.voice.executor
 
+import ru.voboost.voice.executor.handlers.CommandResult
+
 /**
  * Интерфейс для выполнения команд автомобилю
  * Позволяет легко переключаться между разными способами отправки команд
@@ -16,12 +18,14 @@ interface IVehicleCommandExecutor {
      * @param voiceParams Параметры, распознанные из голоса ({temp}, {contact}, {number})
      * @return true если команда успешно отправлена
      */
-    fun executeByCommandId(commandId: String, voiceParams: Map<String, Any> = emptyMap()): Boolean
+    fun executeByCommandId(commandData: CommandData): CommandResult
 
     /**
      * Название метода выполнения (для логирования)
      */
     val executionMethod: String
 }
+
+
 
 

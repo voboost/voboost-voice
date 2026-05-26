@@ -39,7 +39,7 @@ class TdoaZoneDetector(private val micSpacing: Float = 0.15f,  // 15 см меж
     fun detectZone(channels: Array<ShortArray>): String {
         if (channels.size < 4) {
             Log.w(TAG, "Not enough channels: ${channels.size}, need 4")
-            return "front_left"
+            return MultiChannelAudioSource.ZONE_FRONT_LEFT
         }
         // Вычисляем энергию каждого канала для проверки активности
         val energies = channels.map { calculateEnergy(it) }
@@ -48,7 +48,7 @@ class TdoaZoneDetector(private val micSpacing: Float = 0.15f,  // 15 см меж
         val maxEnergy = energies.maxOrNull() ?: 0f
         if (maxEnergy < ENERGY_THRESHOLD) {
             Log.d(TAG, "Low energy, no speech detected")
-            return "front_left"  // По умолчанию
+            return MultiChannelAudioSource.ZONE_FRONT_LEFT  // По умолчанию
         }
         // Находим канал с максимальной энергией
         val maxEnergyIndex = energies.indexOfMaxOrNull() ?: 0

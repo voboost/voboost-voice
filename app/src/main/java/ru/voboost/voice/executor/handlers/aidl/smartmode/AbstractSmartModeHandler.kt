@@ -1,6 +1,8 @@
 package ru.voboost.voice.executor.handlers.aidl.smartmode
 
 import android.util.Log
+import ru.voboost.voice.executor.CommandData
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
@@ -23,14 +25,15 @@ abstract class AbstractSmartModeHandler(protected val canBusManager: CanBusServi
         const val WASH = 33
     }
 
-    override fun execute(voiceParams: Map<String, Any>): Boolean {
+    override fun execute(commandData: CommandData): CommandResult {
         if (!canBusManager.isConnected()) {
             Log.w(TAG, "Not connected to CanBusService")
-            return false
+            return ICommandHandler.NEGATIVE_RESULT
         }
 
         Log.d(TAG, "SmartMode command: modeId=$modeId")
-        return canBusManager.setVehicleSceneMode(modeId)
+        val result = canBusManager.setVehicleSceneMode(modeId)
+        return CommandResult(result)
     }
 }
 

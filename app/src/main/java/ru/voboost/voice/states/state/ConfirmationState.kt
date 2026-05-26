@@ -32,11 +32,12 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
             finish(StateResult.Next(StateType.IDLE))
             return
         }
-        Log.i(TAG, "Entering CONFIRMATION IState for: ${commandData.id}")
+        Log.i(TAG, "Entering CONFIRMATION IState for: ${commandData.data.id}")
         try {
             context.recognitionService?.setMode(RecognitionService.Mode.COMMAND)
             // Спрашиваем подтверждение
-            val question = context.nluEngine?.getConfirmationQuestion(commandData.config)
+            val config = context.configManager?.getCommandById(commandData.data.id)
+            val question = context.nluEngine?.getConfirmationQuestion(config)
             if (!question.isNullOrEmpty()) {
                 context.speechService?.enqueueAsync(question)
             }
@@ -50,7 +51,7 @@ class ConfirmationState(private val context: StateContext) : BaseState() {
             when (result) {
                 is RecognitionServiceResult.CommandReceived -> {
                     val answer = result.text.lowercase().trim()
-                    if (context.nluEngine?.isConfirmationYes(answer, commandData.config) == true) {
+                    if (context.nluEngine?.isConfirmationYes(answer, config) == true) {
                         Log.i(TAG, "Confirmation: YES")
                         finish(StateResult.Next(StateType.EXECUTING_COMMAND))
                     }

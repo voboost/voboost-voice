@@ -112,7 +112,7 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
     }
 
     private fun cleanJsonResponse(raw: String): String { // 1. Убираем markdown-обёртки
-        var cleaned = raw.trim().replace(Regex("```(?:json)?\\s*|```"), "").trim()
+        val cleaned = raw.trim().replace(Regex("```(?:json)?\\s*|```"), "").trim()
 
         // 2. Ищем первую '{'
         val start = cleaned.indexOf('{')
@@ -141,21 +141,20 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
     }
 
     private fun buildRecognizedCommand(llm: LLMOutput, originalText: String): CommandData? {
-        val config = configManager.getConfig().commands.find { it.id == llm.id } ?: run {
-            Log.w(TAG, "Config not found for id: '${llm.id}'")
+        val commandData = configManager.getCommandById(llm.id)
+        if(commandData == null) {
             return null
         }
-        return CommandData(id = llm.id,
-                           config = config,
-                           matchedPattern = "llm:${llm.id}",
-                           extractedParams = llm.params.mapValues { it.value.toString() })
+        else {
+            return CommandData(data = commandData, phrase = originalText)
+        }
     }
 
     // === Подтверждения — только быстрые ключевые слова, БЕЗ LLM ===
 
-    override fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean {
+    override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
         val normalized = text.lowercase().trim()
-        val patterns = commandConfig.confirmation.yesPatterns ?: emptyList()
+        val patterns = commandConfig?.confirmation?.yesPatterns ?: emptyList()
         return (patterns + INLUEngine.DEFAULT_YES).any { normalized == it.lowercase().trim() }
     }
 
@@ -169,8 +168,8 @@ class NULLLMEngine(private val context: Context, private val configManager: Conf
         return commandConfig.confirmation.required
     }
 
-    override fun getConfirmationQuestion(commandConfig: CommandConfig): String {
-        return commandConfig.confirmation.question ?: "Подтверждаете?"
+    override fun getConfirmationQuestion(commandConfig: CommandConfig?): String {
+        return commandConfig?.confirmation?.question ?: "Подтверждаете?"
     }
 
     override fun getConfirmationTimeout(commandConfig: CommandConfig): Int {

@@ -2,6 +2,7 @@ package ru.voboost.voice.states
 
 import kotlinx.coroutines.CoroutineScope
 import ru.voboost.voice.SoundEffectManager
+import ru.voboost.voice.audio.MultiChannelAudioSource
 import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.services.recognition.IRecognitionService
@@ -38,6 +39,6 @@ data class StateContext(var recognitionService: IRecognitionService? = null,
                         var commandData: CommandData? = null,
                         var commandText: String? = null,
                         var error: String? = null,
-                        var zone: String = "front_left",  // Зона говорящего: front_left, front_right, second_left, second_right
+                        var zone: String = MultiChannelAudioSource.ZONE_FRONT_LEFT,  // Зона говорящего: front_left, front_right, second_left, second_right
                         val isCancelling: AtomicBoolean = AtomicBoolean(false))
 

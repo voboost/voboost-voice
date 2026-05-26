@@ -6,7 +6,6 @@ import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.executor.CommandData
 import java.util.regex.Pattern
 
-
 /**
  * NLU Engine - парсинг и понимание команд
  * Сопоставляет распознанный текст с шаблонами команд из конфига
@@ -37,10 +36,7 @@ class NLUEngine(private val configManager: ConfigManager)
                 val matchResult = matchPattern(normalizedText, pattern)
 
                 if (matchResult != null) { // Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
-                    return CommandData(id = commandConfig.id,
-                                       config = commandConfig,
-                                       matchedPattern = pattern,
-                                       extractedParams = matchResult)
+                    return CommandData(data = commandConfig, phrase = text)
                 }
             }
         }
@@ -52,11 +48,11 @@ class NLUEngine(private val configManager: ConfigManager)
     /**
      * Проверить, является ли текст подтверждением "Да"
      */
-    override fun isConfirmationYes(text: String, commandConfig: CommandConfig): Boolean {
+    override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
         val normalizedText = text.lowercase().trim()
 
         // Проверяем паттерны из конфига команды
-        commandConfig.confirmation.yesPatterns?.forEach { pattern ->
+        commandConfig?.confirmation?.yesPatterns?.forEach { pattern ->
             if (normalizedText == pattern.lowercase().trim()) {
                 return true
             }
@@ -69,7 +65,6 @@ class NLUEngine(private val configManager: ConfigManager)
      */
     override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
         val normalizedText = text.lowercase().trim()
-
         // Проверяем паттерны из конфига команды
         commandConfig.confirmation.noPatterns?.forEach { pattern ->
             if (normalizedText == pattern.lowercase().trim()) {
@@ -82,57 +77,36 @@ class NLUEngine(private val configManager: ConfigManager)
     /**
      * Проверить, требует ли команда подтверждения
      */
-    override fun requiresConfirmation(commandConfig: CommandConfig): Boolean {
-        return commandConfig.confirmation.required
-    }
+    override fun requiresConfirmation(commandConfig: CommandConfig): Boolean =
+        commandConfig.confirmation.required
 
     /**
      * Получить вопрос для подтверждения
      */
-    override fun getConfirmationQuestion(commandConfig: CommandConfig): String {
-        return commandConfig.confirmation.question ?: "Подтверждаете выполнение команды?"
-    }
+    override fun getConfirmationQuestion(commandConfig: CommandConfig?): String =
+        commandConfig?.confirmation?.question ?: "Подтверждаете выполнение команды?"
 
     /**
      * Получить таймаут подтверждения
      */
-    override fun getConfirmationTimeout(commandConfig: CommandConfig): Int {
-        return commandConfig.confirmation.timeoutSec ?: 5
-    }
+    override fun getConfirmationTimeout(commandConfig: CommandConfig): Int =
+        commandConfig.confirmation.timeoutSec ?: 5
 
     /**
      * Сопоставить текст с шаблоном
      * @return Map с извлеченными параметрами или null если нет совпадения
      */
     private fun matchPattern(text: String,
-                             pattern: String): Map<String, String>? { // Простое точное совпадение
+                             pattern: String): Boolean { // Простое точное совпадение
         if (text == pattern.lowercase().trim()) {
-            return emptyMap()
+            return false
         }
-
         // Совпадение с параметрами в фигурных скобках {param}
         val regexPattern = buildRegex(pattern)
         val regex = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE)
         val matcher = regex.matcher(text)
 
-        if (matcher.matches()) {
-            val params = mutableMapOf<String, String>()
-            val paramNames = extractParamNames(pattern)
-
-            for ((index, paramName) in paramNames.withIndex()) {
-                try {
-                    val value = matcher.group(index + 1)?.trim() ?: ""
-                    if (value.isNotEmpty()) {
-                        params[paramName] = value
-                    }
-                }
-                catch (e: Exception) {
-                    Log.w(TAG, "Failed to extract parameter '$paramName'", e)
-                }
-            }
-            return params
-        }
-        return null
+        return matcher.matches()
     }
 
     /**
@@ -145,16 +119,7 @@ class NLUEngine(private val configManager: ConfigManager)
             .replace(" ", "\\s+")  // Пробелы -> \s+
 
         val regex = "^$escapedPattern$"
-        //Log.d(TAG, "Regex pattern: '$pattern' -> '$regex'")
         return regex
-    }
-
-    /**
-     * Извлечь имена параметров из шаблона
-     * Например: "поставь {temp} градусов" -> ["temp"]
-     */
-    private fun extractParamNames(pattern: String): List<String> {
-        return "\\{([^}]+)\\}".toRegex().findAll(pattern).map { it.groupValues[1] }.toList()
     }
 
     /**

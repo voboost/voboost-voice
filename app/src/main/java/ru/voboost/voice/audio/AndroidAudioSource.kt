@@ -300,7 +300,7 @@ class AndroidAudioSource(private val context: Context,
                         for (listener in listeners) {
                             try {
                                 CoroutineScope(Dispatchers.IO).launch { // AndroidAudioSource всегда возвращает front_left (водитель)
-                                    listener.onAudioData(dataCopy, bytesRead, "front_left")
+                                    listener.onAudioData(dataCopy, bytesRead, MultiChannelAudioSource.ZONE_FRONT_LEFT)
                                 }
                             }
                             catch (e: Exception) {

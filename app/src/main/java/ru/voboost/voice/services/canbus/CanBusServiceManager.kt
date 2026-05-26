@@ -18,6 +18,7 @@ import com.qinggan.canbus.WindowStatus
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import ru.voboost.voice.audio.MultiChannelAudioSource
 
 /**
  * Менеджер для работы с CanBusService через AIDL
@@ -267,11 +268,11 @@ class CanBusServiceManager(private val context: Context) {
 
         return try {
             when (zone) {
-                "front_left" -> {
+                MultiChannelAudioSource.ZONE_FRONT_LEFT -> {
                     canBusService?.setAirConditionState(AirConditionState.AC_LEFT_TEMP, canValue)
                     Log.d(TAG, "setTemperatureByZone: LEFT ${temperature}°C > CAN=$canValue")
                 }
-                "front_right" -> {
+                MultiChannelAudioSource.ZONE_FRONT_RIGHT -> {
                     canBusService?.setAirConditionState(AirConditionState.AC_RIGHT_TEMP, canValue)
                     Log.d(TAG, "setTemperatureByZone: RIGHT ${temperature}°C > CAN=$canValue")
                 }

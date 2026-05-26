@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import ru.voboost.voice.audio.AudioBuffer
 import ru.voboost.voice.audio.IAudioSource
+import ru.voboost.voice.audio.MultiChannelAudioSource
 import ru.voboost.voice.engine.IRecognitionEngine
 import ru.voboost.voice.engine.RecognitionEngineResult
 import ru.voboost.voice.nlu.NLUKeyword
@@ -33,7 +34,6 @@ class RecognitionService(private val audioSource: IAudioSource,
 
     companion object {
         const val TAG = "RecognitionService"
-        const val DEFAULT_ZONE = "front_left"
     }
 
     enum class Mode {
@@ -52,7 +52,7 @@ class RecognitionService(private val audioSource: IAudioSource,
     private val audioBuffer: AudioBuffer
     private val processingBuffer: ByteArray // переиспользуемый буфер для engine
     private val isRunning = AtomicBoolean(false)
-    private var currentZone: String = DEFAULT_ZONE
+    private var currentZone: String = MultiChannelAudioSource.ZONE_FRONT_LEFT
     private var timeoutStart: Long = 0
     private var phraseStartedAt: Long = 0 // для отладки/метрик
 

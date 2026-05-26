@@ -1,8 +1,8 @@
 package ru.voboost.voice.executor
 
 import android.util.Log
-import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.ui.ToastMessengerManager
@@ -29,22 +29,20 @@ class CommandExecutor(private val speechService: ISpeechService,
      * Выполнить команду
      */
     suspend fun executeCommand(commandData: CommandData) {
-        val commandConfig = commandData.config
+        val commandConfig = configManager.getCommandById(commandData.data.id)
         val zone = commandData.zone
 
-        Log.i(TAG,
-              "Executing command: ${commandConfig.id} (zone=$zone)") // Показывать ли уведомление через системный лаунчер
-        val showNotification = commandConfig.showNotification
+        Log.i(TAG, "Executing command: ${commandData.data.id} (zone=$zone)") // Показывать ли уведомление через системный лаунчер
+        val showNotification = commandConfig?.showNotification?:false
 
         try { // Добавляем зону в voiceParams для команд климата
-            val voiceParamsWithZone = commandData.extractedParams + ("_zone" to (zone?: "center")) // Выполнение действия
-            val success = executeAction(commandConfig, voiceParamsWithZone)
+            val commandResult = executeAction(commandData)
 
-            if (success) {
+            if (commandResult.result) {
                 Log.i(TAG, "Command executed successfully")
-                val successPhrase = commandConfig.phrases?.success
+                val successPhrase = commandConfig?.phrases?.success
                                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.SUCCESS) // Подстановка параметров в фразу
-                val finalPhrase = substituteParams(successPhrase, commandData.extractedParams) // Голос + Overlay (если включено)
+                val finalPhrase = substituteParams(successPhrase, commandResult.extractedParams) // Голос + Overlay (если включено)
                 if (!finalPhrase.isNullOrEmpty()) {
                     if (showNotification) {
                         toastMessengerManager.show(finalPhrase)
@@ -54,7 +52,7 @@ class CommandExecutor(private val speechService: ISpeechService,
             }
             else {
                 Log.w(TAG, "Command execution failed")
-                val failurePhrase = commandConfig.phrases?.failure
+                val failurePhrase = commandConfig?.phrases?.failure
                                     ?: configManager.getDefaultPhrase(ConfigManager.PhraseType.FAILURE) // Голос + Overlay (если включено)
                 if (!failurePhrase.isNullOrEmpty()) {
                     toastMessengerManager.show(failurePhrase)
@@ -76,23 +74,14 @@ class CommandExecutor(private val speechService: ISpeechService,
      * Выполнить действие команды
      * @return true если успешно
      */
-    private fun executeAction(commandConfig: CommandConfig,
-                              voiceParams: Map<String, Any>): Boolean {
-        Log.d(TAG, "Command: ${commandConfig.id} via: ${vehicleCommandExecutor.executionMethod}")
+    private fun executeAction(commandData: CommandData): CommandResult {
+        Log.d(TAG, "Command: ${commandData.data.id} via: ${vehicleCommandExecutor.executionMethod}")
         return try {
-            val success = vehicleCommandExecutor.executeByCommandId(commandId = commandConfig.id,
-                                                                    voiceParams = voiceParams)
-            if (success) {
-                Log.i(TAG, "Command executed successfully")
-            }
-            else {
-                Log.w(TAG, "Command execution failed")
-            }
-            success
+            vehicleCommandExecutor.executeByCommandId(commandData)
         }
         catch (e: Exception) {
             Log.e(TAG, "Failed to execute command", e)
-            false
+            CommandResult(false)
         }
     }
 

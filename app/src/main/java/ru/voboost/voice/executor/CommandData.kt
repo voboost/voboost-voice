@@ -5,10 +5,8 @@ import ru.voboost.voice.config.CommandConfig
 /**
  * Распознанная команда
  */
-data class CommandData(val id: String,
-                       val config: CommandConfig,
-                       val matchedPattern: String,
-                       val extractedParams: Map<String, String> = emptyMap(),
+data class CommandData(val data: CommandConfig,
+                       val phrase: String,
                        val zone: String? = null)
 
 

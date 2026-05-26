@@ -84,7 +84,6 @@ class SherpaSpeechEngine(private val modelPath: String,
 
         Log.d(TAG, "TTS model path: $modelPathStr")
         // Для Sherpa-ONNX Piper моделей (ru_RU-ruslan-medium) используем tokens.txt + espeak
-        // modelPath = /data/.../sherpa/tts-ru-model
         val modelDir = File(modelPath)
         val tokensFile = File(modelDir, "tokens.txt")
         val espeakDir = File(modelDir, "espeak-ng-data")
@@ -95,15 +94,6 @@ class SherpaSpeechEngine(private val modelPath: String,
 
         // Создаём конфигурацию VITS модели для Sherpa-ONNX Piper
         // Передаём data_dir для eSpeak-ng (требуется для phonemization)
-//        val vitsModelConfig = OfflineTtsVitsModelConfig.Builder()
-//            .setModel(modelPathStr)
-//            .setTokens(if (tokensFile.exists()) tokensFile.absolutePath else "")
-//            .setDataDir(if (espeakDir.exists()) espeakDir.absolutePath else "")
-//            .setNoiseScale(0.667f)
-//            .setNoiseScaleW(0.8f)
-//            .setLengthScale(1.0f)
-//            .build()
-
         val vitsModelConfig = OfflineTtsVitsModelConfig(
             model = modelPathStr,
             tokens = if (tokensFile.exists()) tokensFile.absolutePath else "",
@@ -112,15 +102,6 @@ class SherpaSpeechEngine(private val modelPath: String,
             noiseScaleW = 0.8f,
             lengthScale = 1.0f)
 
-
-        // Создаём обёртку модели
-//        val ttsModelConfig = OfflineTtsModelConfig.Builder()
-//            .setVits(vitsModelConfig)
-//            .setNumThreads(2)
-//            .setProvider("cpu")  // < CPU вместо NNAPI для совместимости
-//            .setDebug(false)
-//            .build()
-
         val ttsModelConfig = OfflineTtsModelConfig(
             vits = vitsModelConfig,
             numThreads = 2,
@@ -128,8 +109,7 @@ class SherpaSpeechEngine(private val modelPath: String,
             debug = false)
 
         // Создаём основную конфигурацию TTS
-        //val ttsConfig = OfflineTtsConfig.Builder().setModel(ttsModelConfig).build()
-        val ttsConfig = OfflineTtsConfig(   model = ttsModelConfig)
+        val ttsConfig = OfflineTtsConfig(model = ttsModelConfig)
         return OfflineTts(config = ttsConfig)
     }
 

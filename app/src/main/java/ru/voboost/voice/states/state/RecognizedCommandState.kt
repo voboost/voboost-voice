@@ -37,16 +37,17 @@ class RecognizedCommandState(private val context: StateContext) : BaseState() {
         try { // Парсим текст через NLU
             val recognizedCommand = context.nluEngine?.parseCommand(text)
             if (recognizedCommand != null) {
-                Log.d(TAG,"Command parsed: ${recognizedCommand.id} (zone=${context.zone})") // Добавляем зону в команду
+                Log.d(TAG,"Command parsed: ${recognizedCommand.data.id} (zone=${context.zone})") // Добавляем зону в команду
                 val commandWithZone = recognizedCommand.copy(zone = context.zone)
                 context.commandData = commandWithZone
                 // Проверяем нужно ли подтверждение
-                if (recognizedCommand.config.confirmation.required) {
-                    Log.i(TAG, "Confirmation required for: ${recognizedCommand.id}")
+                val config = context.configManager?.getCommandById(recognizedCommand.data.id)
+                if (config?.confirmation?.required?:false) {
+                    Log.i(TAG, "Confirmation required for: ${recognizedCommand.data.id}")
                     finish(StateResult.Next(StateType.CONFIRMATION))
                 }
                 else { // Выполняем команду без подтверждения
-                    Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.id}")
+                    Log.i(TAG, "Executing command without confirmation: ${recognizedCommand.data.id}")
                     finish(StateResult.Next(StateType.EXECUTING_COMMAND))
                 }
             }

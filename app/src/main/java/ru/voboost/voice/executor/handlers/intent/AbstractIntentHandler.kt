@@ -3,6 +3,9 @@ package ru.voboost.voice.executor.handlers.intent
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import ru.voboost.voice.audio.MultiChannelAudioSource
+import ru.voboost.voice.executor.CommandData
+import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.executor.handlers.ICommandHandler
 
 /**
@@ -20,22 +23,30 @@ abstract class AbstractIntentHandler(protected val context: Context) : ICommandH
         const val EXTRA_MAC = "mac"
     }
 
-    override fun execute(voiceParams: Map<String, Any>): Boolean {
+    override fun execute(commandData: CommandData): CommandResult {
         return try {
-            val intent = buildIntent(voiceParams) ?: return false
+
+            val parsParams = parsParams(commandData)
+            val intent = buildIntent(parsParams) ?: return ICommandHandler.NEGATIVE_RESULT
 
             context.sendBroadcast(intent)
             Log.d(TAG, "Broadcast sent: action='${intent.action}'")
             Log.d(TAG, "  Extras: ${intent.extras?.keySet()?.joinToString(", ")}")
-            true
+            CommandResult(true, parsParams)
         }
         catch (e: Exception) {
             Log.e(TAG, "Failed to send broadcast", e)
-            false
+            ICommandHandler.NEGATIVE_RESULT
         }
     }
 
     protected abstract fun buildIntent(voiceParams: Map<String, Any>): Intent?
+
+    protected fun parsParams(commandData: CommandData): Map<String, String> {
+        val paramsText : MutableMap<String, String> = mutableMapOf()
+        paramsText["_zone"] = commandData.zone ?: MultiChannelAudioSource.ZONE_FRONT_LEFT
+        return paramsText;
+    }
 }
 
 
