@@ -7,6 +7,7 @@ import ru.voboost.voice.config.CommandConfig
  */
 data class CommandData(val data: CommandConfig,
                        val phrase: String,
+                       val contextCmd: List<String> = emptyList(),
                        val zone: String? = null)
 
 

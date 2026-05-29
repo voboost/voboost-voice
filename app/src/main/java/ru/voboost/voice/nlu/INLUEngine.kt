@@ -27,7 +27,7 @@ interface INLUEngine {
                                 "nah")
     }
 
-    fun parseCommand(text: String): CommandData?
+    fun parseCommand(text: String, contextCmd: List<String> = emptyList()): CommandData?
     fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean
     fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean
     fun requiresConfirmation(commandConfig: CommandConfig): Boolean

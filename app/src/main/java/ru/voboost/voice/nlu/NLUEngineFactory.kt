@@ -33,7 +33,7 @@ object NLUEngineFactory {
 
         return when (nluEngineType) {
             NLUEngineType.PARSER -> NLUEngine(configManager)
-            NLUEngineType.LLM -> NULLLMEngine(context, configManager)
+            NLUEngineType.LLM -> NLUEngine(configManager)
             NLUEngineType.ONNX -> NLUOrtEngine(configManager)
         }
     }

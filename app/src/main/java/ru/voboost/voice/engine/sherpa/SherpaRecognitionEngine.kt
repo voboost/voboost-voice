@@ -36,40 +36,18 @@ class SherpaRecognitionEngine private constructor(private val recognizer: Offlin
             Log.d(TAG, "Joiner: $joinerPath")
             Log.d(TAG, "Tokens: $tokensPath")
 
-            // Создаём конфигурацию транседера
-            //            val transducerConfig = OfflineTransducerModelConfig.Builder()
-            //                .setEncoder(encoderPath)
-            //                .setDecoder(decoderPath)
-            //                .setJoiner(joinerPath)
-            //                .build()
             val transducerConfig = OfflineTransducerModelConfig(encoder = encoderPath,
                                                                 decoder = decoderPath,
                                                                 joiner = joinerPath) // Создаём конфигурацию модели //            val modelConfig = OfflineModelConfig.Builder()
-            //                .setTransducer(transducerConfig)
-            //                .setTokens(tokensPath)
-            //                .setNumThreads(2)
-            //                .setProvider("cpu")
-            //                .setDebug(true)
-            //                .build()
+
             val modelConfig = OfflineModelConfig(transducer = transducerConfig,
                                                  tokens = tokensPath,
                                                  numThreads = 2,
                                                  provider = "cpu",
                                                  debug = false)
+            //modelConfig.
 
-            // Создаём конфигурацию фичей
-            //            val featureConfig = FeatureConfig.Builder()
-            //                .setSampleRate(SAMPLE_RATE)
-            //                .setFeatureDim(80)
-            //                .build()
             val featureConfig = FeatureConfig(sampleRate = SAMPLE_RATE, featureDim = 80)
-
-            // Создаём основную конфигурацию распознавания
-            //            val recognizerConfig = OfflineRecognizerConfig.Builder()
-            //                .setFeatureConfig(featureConfig)
-            //                .setOfflineModelConfig(modelConfig)
-            //                .setMaxActivePaths(4)
-            //                .build()
 
             val recognizerConfig = OfflineRecognizerConfig(featConfig = featureConfig,
                                                            modelConfig = modelConfig,

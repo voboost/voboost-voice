@@ -42,7 +42,7 @@ abstract class AbstractIntentHandler(protected val context: Context) : ICommandH
 
     protected abstract fun buildIntent(voiceParams: Map<String, Any>): Intent?
 
-    protected fun parsParams(commandData: CommandData): Map<String, String> {
+    protected open fun parsParams(commandData: CommandData): Map<String, String> {
         val paramsText : MutableMap<String, String> = mutableMapOf()
         paramsText["_zone"] = commandData.zone ?: MultiChannelAudioSource.ZONE_FRONT_LEFT
         return paramsText;

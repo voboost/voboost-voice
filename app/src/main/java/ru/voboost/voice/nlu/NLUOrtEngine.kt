@@ -19,20 +19,36 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
 
     companion object {
         private const val TAG = "OnnxNluEngine"
-        private const val SIMILARITY_THRESHOLD = 0.55 // Порог срабатывания
-        private const val MARGIN_THRESHOLD = 0.08
-        private const val EMBEDDING_DIM = 384 // Размерность MiniLM-L12
+        private const val EMBEDDING_DIM = 384
+        private const val TEMPERATURE = 3.0
+        private const val ANTONYMS_PENALTY = 0.5
+        private const val CONTEXT_BONUS = 0.1
+        // Динамические пороги: (scoreThreshold, marginThreshold)
+        private val THRESHOLDS = mapOf(1 to Pair(0.75, 0.10),   // 1 слово: высокий score, маленький margin
+                                       2 to Pair(0.65, 0.10),   // 2-3 слова: средний
+                                       3 to Pair(0.60, 0.08),
+                                       4 to Pair(0.55, 0.05))    // 4+ слова: низкий score, маленький margin
+        // Антонимы: word -> opposite
+        private val ANTONYMS = mapOf("открой" to "закрой",
+                                     "закрой" to "открой",
+                                     "подними" to "опусти",
+                                     "опусти" to "подними",
+                                     "включи" to "выключи",
+                                     "выключи" to "включи",
+                                     "отключи" to "включи" )
     }
 
     private val ortEnv = OrtEnvironment.getEnvironment()
     private val session: OrtSession
     private val tokenizer: HuggingFaceTokenizer
     private val lock = ReentrantLock()
-    private val commandPatterns = mutableMapOf<String, List<FloatArray>>()
+
+    // Храним пары: (cmdId, patternText, embedding)
+    private val patternData = mutableListOf<Triple<String, String, FloatArray>>()
 
     init {
         Log.i(TAG, "Initializing ONNX NLU Engine...")
-        // Загрузка модели из внешнего хранилища
+
         val modelFile = ExternalStoragePaths.nluModelFile
         if (!modelFile.exists()) {
             throw FileNotFoundException("NLU model not found: ${modelFile.absolutePath}")
@@ -40,89 +56,122 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         val modelBytes = modelFile.readBytes()
         session = ortEnv.createSession(modelBytes, OrtSession.SessionOptions())
 
-        // Загрузка токенайзера из внешнего хранилища
         val tokenizerFile = ExternalStoragePaths.tokenizerFile
         if (!tokenizerFile.exists()) {
             throw FileNotFoundException("Tokenizer not found: ${tokenizerFile.absolutePath}")
         }
-        val tokenizerStream = tokenizerFile.inputStream() //System.setProperty("ai.djl.huggingface.tokenizers.skip_init", "true") //        System.loadLibrary("tokenizers")
+        val tokenizerStream = tokenizerFile.inputStream()
         this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, mapOf())
         tokenizerStream.close()
 
         precomputeCommandEmbeddings()
-        Log.i(TAG, "✅ ONNX NLU initialized. Commands indexed: ${commandPatterns.size}")
+        Log.i(TAG, "✅ ONNX NLU initialized. Commands indexed: ${
+            patternData.map { it.first }.toSet().size}")
     }
 
     private fun precomputeCommandEmbeddings() {
         val commands = configManager.getConfig().commands.filter { it.enabled }
         for (cmd in commands) {
-            val embeddings = cmd.patterns.mapNotNull { pattern ->
+            for (pattern in cmd.patterns) {
                 try {
-                    val normalizePattern = normalizePhrase(pattern)
-                    if (normalizePattern.isEmpty()) null
-                    else embedText(normalizePattern)
+                    val normalized = normalizeTemplatePattern(pattern)
+                    if (normalized.isEmpty()) continue
+
+                    val embedding = embedText(normalized)
+                    patternData.add(Triple(cmd.id, normalized, embedding))
                 }
                 catch (e: Exception) {
                     Log.w(TAG, "Failed to embed pattern: $pattern", e)
-                    null
                 }
-            }
-            if (embeddings.isNotEmpty()) {
-                commandPatterns[cmd.id] = embeddings
             }
         }
     }
 
-    override fun parseCommand(text: String): CommandData? {
+    override fun parseCommand(text: String,
+                              contextCmd: List<String>)
+    : CommandData? {
+
         return try {
-            val normalized = normalizePhrase(text)
-            val queryEmbedding = embedText(normalized)
+            val normalized = normalizeUserPhrase(text)
 
-            // Собираем сырые скоры и запоминаем лучший паттерн для extractParams
-            val cmdAggregatedScores = mutableMapOf<String, Double>()
-
-            for ((cmdId, patterns) in commandPatterns) {
-                val rawScores = mutableListOf<Double>()
-                var bestPatScore = -1.0
-
-                for (cmdEmbedding in patterns) {
-                    val score = cosineSimilarity(queryEmbedding, cmdEmbedding)
-                    rawScores.add(score)
-                    if (score > bestPatScore) {
-                        bestPatScore = score
-                    }
+            for ((cmdId, patternText, _) in patternData) {
+                // Проверяем exact match
+                if (patternText == normalized) {
+                    val commandConfig = configManager.getCommandById(cmdId)
+                    return commandConfig?.let { CommandData(data = it, phrase = text) }
                 }
-                // Агрегируем по Softmax
-                cmdAggregatedScores[cmdId] = computeSoftmaxScore(rawScores, temperature = 5.0)
             }
 
-            if (cmdAggregatedScores.isEmpty()) {
+            val queryEmbedding = embedText(normalized)
+            val wordCount = normalized.split(' ').size
+
+            // Динамический порог
+            val (threshold, marginThreshold) = getThresholds(wordCount)
+
+            // Сравниваем со всеми паттернами
+            val allMatches = mutableListOf<PatternMatch>()
+
+            for ((cmdId, patternText, patternEmbedding) in patternData) {
+
+                var score = cosineSimilarity(queryEmbedding, patternEmbedding)
+                // Штраф за антонимы
+                if (hasAntonymConflict(normalized, patternText)) {
+                    score *= ANTONYMS_PENALTY
+                }
+
+                allMatches.add(PatternMatch(cmdId, patternText, score))
+            }
+
+            // Агрегация по командам
+            val cmdScores = aggregateByCommand(allMatches, wordCount)
+
+            if (cmdScores.isEmpty()) {
                 Log.d(TAG, "❌ No match for: '$text'")
                 return null
             }
 
-            // Сортируем команды по агрегированному скору
-            val sorted = cmdAggregatedScores.entries.sortedByDescending { it.value }
+            // === МЯГКИЙ КОНТЕКСТ: бонус для команд из вопроса ===
+            val adjustedScores = cmdScores.mapValues { (cmdId, score) ->
+                if (cmdId in contextCmd) score + CONTEXT_BONUS else score
+            }
+
+            val sorted = adjustedScores.entries.sortedByDescending { it.value }
             val bestId = sorted[0].key
             val bestScore = sorted[0].value
+            val secondId = if (sorted.size > 1) sorted[1].key else "none"
+            val secondScore = if (sorted.size > 1) sorted[1].value else 0.0
+            val margin = bestScore - secondScore
 
-            val secondBestScore = if (sorted.size > 1) sorted[1].value else 0.0
-            val secondBestId = if (sorted.size > 1) sorted[1].key else "none"
-
-            val margin = bestScore - secondBestScore
-
-            if (bestScore >= SIMILARITY_THRESHOLD && margin >= MARGIN_THRESHOLD) {
-                Log.d(TAG,"✅ Matched: '$text' → $bestId (agg: ${String.format("%.3f", bestScore)}, margin vs $secondBestId: ${String.format("%.3f", margin)})")
-                val commandConfig = configManager.getCommandById(bestId)
-                if(commandConfig == null) {
-                    null
-                }
-                else {
-                    CommandData(data = commandConfig, phrase = text)
+            // Для 1 слова без exact match — проверяем глобальную неоднозначность
+            var ambiguous = false
+            if (wordCount == 1) {
+                val top2Global = allMatches.sortedByDescending { it.score }.take(2)
+                if (top2Global.size > 1) {
+                    val globalMargin = top2Global[0].score - top2Global[1].score
+                    if (globalMargin < marginThreshold) {
+                        ambiguous = true
+                    }
                 }
             }
+
+            val matched = (bestScore >= threshold && margin >= marginThreshold && !ambiguous)
+
+            if (matched) {
+                Log.d(TAG,
+                      "✅ MATCH: '$text' → $bestId (score: ${"%.3f".format(bestScore)}, margin vs $secondId: ${
+                          "%.3f".format(margin)
+                      })")
+                val commandConfig = configManager.getCommandById(bestId)
+                commandConfig?.let { CommandData(data = it, phrase = text) }
+            }
+            else if (bestScore >= threshold && margin < marginThreshold && secondScore >= threshold) { // Неоднозначность — нужно уточнение
+                CommandData(data = CommandConfig.Empty, phrase = text, listOf(bestId, secondId))
+            }
             else {
-                Log.d(TAG,"❌ Ambiguous/No match: '$text' (agg: $bestId=${String.format("%.3f", bestScore)}, 2nd: $secondBestId=${String.format("%.3f", secondBestScore)})")
+                Log.d(TAG,
+                      "❌ REJECT: '$text' (best: $bestId=${"%.3f".format(bestScore)}, 2nd: $secondId=${
+                          "%.3f".format(secondScore)
+                      }, margin=${"%.3f".format(margin)}, threshold=$threshold)")
                 null
             }
         }
@@ -132,26 +181,65 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
-    /**
-     * Softmax-взвешенная агрегация скоров паттернов одной команды.
-     * temperature: 3.0–5.0 → мягкое усреднение, 7.0–10.0 → ближе к max
-     */
-    private fun computeSoftmaxScore(scores: List<Double>, temperature: Double): Double {
+    private fun aggregateByCommand(matches: List<PatternMatch>,
+                                   wordCount: Int): Map<String, Double> { // Группируем по командам
+        val cmdPatterns = mutableMapOf<String, MutableList<Double>>()
+        for (match in matches) {
+            cmdPatterns.getOrPut(match.cmdId) { mutableListOf() }.add(match.score)
+        }
+
+        val result = mutableMapOf<String, Double>()
+        for ((cmdId, scores) in cmdPatterns) {
+            result[cmdId] = when {
+                wordCount == 1 -> { // Exact: просто максимум
+                    scores.maxOrNull() ?: 0.0
+                }
+
+                wordCount in 2..3 -> { // Mean top-3
+                    val top3 = scores.sortedDescending().take(3)
+                    top3.sum() / top3.size
+                }
+
+                else -> { // Softmax с temperature
+                    computeSoftmaxScore(scores)
+                }
+            }
+        }
+        return result
+    }
+
+    private fun computeSoftmaxScore(scores: List<Double>): Double {
         if (scores.isEmpty()) return 0.0
-        val maxScore = scores.maxOrNull() ?: 0.0 // Численная стабилизация: вычитаем max, чтобы exp() не уходил в Infinity
-        val expScores = scores.map { kotlin.math.exp((it - maxScore) * temperature) }
+        val maxScore = scores.maxOrNull() ?: 0.0
+        val expScores = scores.map { kotlin.math.exp((it - maxScore) * TEMPERATURE) }
         val sumExp = expScores.sum()
-        if (sumExp == 0.0) return maxScore // Взвешенное среднее
+        if (sumExp == 0.0) return maxScore
         return scores.zip(expScores).sumOf { (s, w) -> s * (w / sumExp) }
+    }
+
+    private data class PatternMatch(val cmdId: String, val pattern: String, val score: Double)
+
+    private fun getThresholds(wordCount: Int): Pair<Double, Double> {
+        val key = if (wordCount > 4) 4 else wordCount
+        return THRESHOLDS[key] ?: THRESHOLDS[4]!!
+    }
+
+    private fun hasAntonymConflict(query: String, pattern: String): Boolean {
+        val qWords = query.split(' ').toSet()
+        val pWords = pattern.split(' ').toSet()
+
+        for ((word, opposite) in ANTONYMS) {
+            if (qWords.contains(word) && pWords.contains(opposite)) return true
+            if (qWords.contains(opposite) && pWords.contains(word)) return true
+        }
+        return false
     }
 
     private fun embedText(text: String): FloatArray {
         lock.lock()
         return try {
-            val normalize = normalizePhrase(text)
-            val encoding = tokenizer.encode(normalize)
+            val encoding = tokenizer.encode(text)
 
-            // Создаём тензоры
             val inputIds = encoding.ids.map { it }.toLongArray()
             val attentionMask = encoding.attentionMask.map { it }.toLongArray()
             val tokenTypeIds = encoding.typeIds.map { it }.toLongArray()
@@ -184,17 +272,14 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
                 val shape = outputTensor.info.shape
                 val embedding = FloatArray(EMBEDDING_DIM)
 
-                // Вариант 1: Если модель выдает 3D-тензор [1, sequence_length, hidden_size] (Большинство BERT/MiniLM)
                 if (shape.size == 3) {
                     require(shape[2] == EMBEDDING_DIM.toLong()) {
                         "Expected embedding dim $EMBEDDING_DIM, got ${shape[2]}"
                     }
 
-                    // Извлекаем данные как трехмерный массив Float
                     val outputs = outputTensor.value as Array<Array<FloatArray>>
-                    val tokenEmbeddings = outputs[0] // Массив векторов для каждого токена [sequence_length][EMBEDDING_DIM]
+                    val tokenEmbeddings = outputs[0]
 
-                    // Делаем Mean Pooling (усредняем только значащие токены по attention_mask)
                     var validTokensCount = 0
                     for (i in tokenEmbeddings.indices) {
                         if (i < attentionMask.size && attentionMask[i] == 1L) {
@@ -205,13 +290,12 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
                         }
                     }
 
-                    // Делим сумму на количество значащих токенов
                     if (validTokensCount > 0) {
                         for (dim in 0 until EMBEDDING_DIM) {
                             embedding[dim] /= validTokensCount.toFloat()
                         }
                     }
-                } // Вариант 2: Если модель уже имеет встроенный пулинг и сразу выдает 2D [1, EMBEDDING_DIM]
+                }
                 else if (shape.size == 2) {
                     require(shape[1] == EMBEDDING_DIM.toLong()) {
                         "Expected embedding dim $EMBEDDING_DIM, got ${shape[1]}"
@@ -246,24 +330,28 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
-    // Добавьте в класс NLUOrtEngine
-    private fun normalizePhrase(text: String): String {
-        return text.lowercase()
-            .replace(Regex("\\{temp\\}"), "<NUM>")
-            .replace(Regex("\\{contact\\}"), "<NAME>")
-            .replace(Regex("\\{number\\}"), "<PHONE>")
-            .replace(Regex("[^\\w\\s<>/\\-]"), " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
+    private fun normalizeTemplatePattern(pattern: String): String {
+        val replaced = pattern.lowercase()
+            .replace("{temp}", "двадцать два")
+            .replace("{contact}", "иван")
+            .replace("{number}", "одиннадцать")
+        return cleanText(replaced)
+    }
+
+    private fun normalizeUserPhrase(text: String): String {
+        return cleanText(text.lowercase())
+    }
+
+    private fun cleanText(text: String): String {
+        return text.replace(Regex("[^a-zа-я0-9\\s\\-]"), " ").replace(Regex("\\s+"), " ").trim()
     }
 
     private fun cosineSimilarity(a: FloatArray, b: FloatArray): Double {
         var dot = 0.0
         for (i in a.indices) dot += a[i] * b[i]
-        return dot // Вектора уже нормализованы, поэтому dot product == cosine similarity
+        return dot
     }
 
-    // === Интерфейс подтверждения (без изменений) ===
     override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
         return ((commandConfig?.confirmation?.yesPatterns
                  ?: emptyList()) + INLUEngine.DEFAULT_YES).any {
@@ -287,9 +375,6 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
     override fun getConfirmationTimeout(commandConfig: CommandConfig) =
             commandConfig.confirmation.timeoutSec?: 5
 
-    /**
-     * Освободить ресурсы (реализация интерфейса INLUEngine)
-     */
     override fun release() {
         try {
             session.close()
@@ -300,4 +385,3 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 }
-

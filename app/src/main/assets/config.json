@@ -433,7 +433,7 @@
     },
     {
       "id": "phone_call_number",
-      "enabled": true,
+      "enabled": false,
       "show_notification": true,
       "patterns": [
         "позвони {number}",

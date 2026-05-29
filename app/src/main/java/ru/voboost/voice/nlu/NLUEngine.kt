@@ -21,7 +21,7 @@ class NLUEngine(private val configManager: ConfigManager)
      * Распарсить команду из текста
      * @return RecognizedCommand или null если команда не найдена
      */
-    override fun parseCommand(text: String): CommandData? {
+    override fun parseCommand(text: String, contextCmdIds: List<String>): CommandData? {
         val normalizedText = text.lowercase().trim()
         Log.d(TAG, "Parsing command: '$text' -> normalized: '$normalizedText'")
 

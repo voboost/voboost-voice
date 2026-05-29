@@ -86,17 +86,21 @@ dependencies {
     }
 
     // Sherpa-ONNX (офлайн STT + TTS) - основной движок
-    implementation files('libs/sherpa-onnx-v1.12.4-java8.jar')
+    //implementation files('libs/sherpa-onnx-v1.12.4-java8.jar')
+    implementation files('libs/sherpa-onnx-v1.13.2-java8.jar')
     //NLU семантическое распознавание
     implementation('ai.djl.huggingface:tokenizers:0.33.0') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
     implementation "ai.djl.android:tokenizer-native:0.33.0"
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.26.0'
+    //implementation files('libs/onnxruntime-genai-android-0.13.1.aar')
+
+    //implementation 'com.microsoft.onnxruntime:onnxruntime-genai-android:0.5.0'
     // JNA (требуется для Vosk)
     implementation 'net.java.dev.jna:jna:5.13.0@aar'
     //LLM
-    implementation 'com.google.mediapipe:tasks-genai:0.10.35'
+    //implementation 'com.google.mediapipe:tasks-genai:0.10.35'
 
     // ==================== ANDROIDX ====================
     // Kotlin coroutines

@@ -1,7 +1,7 @@
 package ru.voboost.voice.executor.handlers.aidl.airconditioner
 
 import android.util.Log
-import com.qinggan.canbus.AirConditionState
+import ru.voboost.voice.audio.MultiChannelAudioSource
 import ru.voboost.voice.executor.CommandData
 import ru.voboost.voice.executor.handlers.CommandResult
 import ru.voboost.voice.executor.handlers.ICommandHandler
@@ -19,11 +19,16 @@ import ru.voboost.voice.services.canbus.CanBusServiceManager
  *   id: "ac_set_temp", classify: 5, command: 3
  *   params: temperature
  */
-class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
-        AbstractAirConditionerHandler(canBusManager) {
+class AirConditionerSetTempHandler(private val canBusManager: CanBusServiceManager) :
+        ICommandHandler {
 
     companion object {
         private const val TAG = "AirConditionerCmd"
+        private const val PARAM_NAME = "temp"
+        private const val ZONE_NAME = "_zone"
+        private const val MIN_TEMP = 18
+
+        // Оптимизированный словарь (только базовые числительные)
         private val RUSSIAN_NUMBERS = mapOf("ноль" to 0,
                                             "один" to 1,
                                             "два" to 2,
@@ -35,7 +40,8 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
                                             "восемь" to 8,
                                             "девять" to 9,
                                             "десять" to 10,
-                                            "одинадцать" to 11,
+                                            "одиннадцать" to 11,
+                                            "одинадцать" to 11, // Vosk может выдать оба варианта
                                             "двенадцать" to 12,
                                             "тринадцать" to 13,
                                             "четырнадцать" to 14,
@@ -45,50 +51,7 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
                                             "восемнадцать" to 18,
                                             "девятнадцать" to 19,
                                             "двадцать" to 20,
-                                            "двадцать один" to 21,
-                                            "двадцать два" to 22,
-                                            "двадцать три" to 23,
-                                            "двадцать четыре" to 24,
-                                            "двадцать пять" to 25,
-                                            "двадцать шесть" to 26,
-                                            "двадцать семь" to 27,
-                                            "двадцать восемь" to 28,
-                                            "двадцать девять" to 29,
-                                            "тридцать" to 30,
-                                            "тридцать один" to 31,
-                                            "тридцать два" to 32)
-    }
-
-    /**
-     * Распознать число из текста (поддержка русских числительных 0-32)
-     * Также обрабатывает обычные цифры: "24" > 24
-     */
-    private fun parseTemperature(raw: String): Int {
-        val text = raw.lowercase().trim()
-
-        // Прямое совпадение
-        RUSSIAN_NUMBERS[text]?.let { return it }
-
-        // Цифры: "24" или "24.0"
-        text.toFloatOrNull()?.let { return it.toInt() }
-
-        // Комбинации: "двадцать" + " четыре"
-        val parts = text.split(Regex("\\s+"))
-        if (parts.size == 2) {
-            val tens = RUSSIAN_NUMBERS[parts[0]] ?: 0
-            val ones = RUSSIAN_NUMBERS[parts[1]] ?: 0
-            if (tens > 0 || ones > 0) return tens + ones
-        }
-
-        Log.w(TAG, "Unknown temperature format: '$text', using default 22")
-        return 22
-    }
-
-    override fun getAirConditionStateAndValue(voiceParams: Map<String, String>): Pair<AirConditionState, Int> {
-        val rawTemp = voiceParams["temp"]?: "22"
-        val temperature = parseTemperature(rawTemp)
-        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp')")
-        return AirConditionState.AC_LEFT_TEMP to temperature
+                                            "тридцать" to 30)
     }
 
     override fun execute(commandData: CommandData): CommandResult {
@@ -97,14 +60,42 @@ class AirConditionerSetTempHandler(canBusManager: CanBusServiceManager) :
             return ICommandHandler.NEGATIVE_RESULT
         }
         val parsParams = parsParams(commandData)
-        val rawTemp = parsParams["temp"]?: "22"
-        val temperature = parseTemperature(rawTemp)
-        val zone = parsParams["_zone"]
-        Log.d(TAG, "Set temperature: $temperature°C (raw='$rawTemp', zone=$zone)")
+        val temperature = parsParams[PARAM_NAME]?.toIntOrNull()
+        if (temperature == null || temperature < MIN_TEMP) {
+            return ICommandHandler.NEGATIVE_RESULT
+        }
+        val zone = parsParams[ZONE_NAME]
+        Log.d(TAG, "Set temperature: $temperature°C (raw='$temperature', zone=$zone)")
 
         val result = canBusManager.setTemperatureByZone(zone, temperature)
         return CommandResult(result, parsParams)
     }
+
+    /**
+     * Распознать число из текста (поддержка русских числительных)
+     * Также обрабатывает обычные цифры: "24" > 24
+     */
+    private fun parsParams(commandData: CommandData): MutableMap<String, String> {
+        val params = mutableMapOf<String, String>()
+        params[ZONE_NAME] = commandData.zone ?: MultiChannelAudioSource.ZONE_FRONT_LEFT
+
+        val words = commandData.phrase.lowercase().trim().split(Regex("\\s+"))
+        var totalSum = 0
+
+        for (word in words) {
+            val digit = word.toIntOrNull()
+            if (digit != null) {
+                params[PARAM_NAME] = digit.toString()
+                return params
+            }
+            // Если это слово-число ("двадцать")
+            val value = RUSSIAN_NUMBERS[word]
+            if (value != null) {
+                totalSum += value
+            }
+        }
+
+        params[PARAM_NAME] = totalSum.toString()
+        return params
+    }
 }
-
-

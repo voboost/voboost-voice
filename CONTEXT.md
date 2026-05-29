@@ -3,7 +3,7 @@
 ## Project Overview
 Voice assistant replacement for IVI automotive system (package: `ru.voboost.voice`)
 
-## Current State (2026-05-23)
+## Current State (2026-05-29)
 - ✅ NLU models moved from assets to external SD card storage
 - ✅ Build system fully automated via `scripts/build-project.bat [1|2|3]`
 - ✅ **Sherpa-ONNX v1.12.34 local JAR** for TTS (v1.13 not used due to ONNX runtime conflicts)
@@ -14,9 +14,10 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 - ✅ **App ID migrated** from `ru.voboost.voiceassistant` → `ru.voboost.voice`
 - ✅ **Migration script** created: `scripts/install/migrate-from-voiceassistant.bat`
 - ✅ **Hidden API Policy** configured (`hidden_api_policy=1`) for AIDL access
-- ✅ **Documentation updated**: INSTALLATION.md + TROUBLESHOOTING.md (pushed to GitHub)
 - ✅ **QGBus Service Manager integrated** for text notifications via system event bus (2026-05-23)
 - ✅ **ToastMessengerManager refactored** - clean code with proper constants and null-checking
+- ✅ **State Machine V3 refactored** - modular architecture (9 states, ~250 lines total)
+- ✅ **Speech Engine Factory** - pluggable ASR/TTS engines (Vosk/Sherpa/System)
 
 ## Speech Engines Architecture
 
@@ -31,8 +32,6 @@ Voice assistant replacement for IVI automotive system (package: `ru.voboost.voic
 |--------|--------|-------|
 | **Sherpa-ONNX** | ✅ Active | v1.12.34 local JAR via `libs/sherpa-onnx-v1.12.34-java8.jar`, uses MiniLM for semantic similarity |
 | System TTS | Available | Android native API |
-
-**Note:** Sherpa v1.13 not used due to ONNX runtime library conflicts with Microsoft ONNX dependency
 
 ### NLU (Natural Language Understanding)
 | Engine | Status | Notes |
@@ -88,7 +87,7 @@ VoboostVoiceAssistant\scripts\build-project.bat 3   # Both Debug and Release
 | vosk-android | 0.3.45 | ASR with Vosk model |
 | jna | 5.13.0@aar | JNA for Vosk native access |
 
-###Sherpa Dependencies (TTS Only)
+### Sherpa Dependencies (TTS Only)
 | Library | Version | Purpose | Status |
 |---------|---------|---------|--------|
 | sherpa-onnx-java8.jar | v1.12.34 | TTS with MiniLM | ✅ Active (local JAR) |
@@ -98,31 +97,29 @@ VoboostVoiceAssistant\scripts\build-project.bat 3   # Both Debug and Release
 ### Removed/Commented Dependencies
 | Dependency | Reason |
 |------------|--------|
-| `onnxruntime-android:1.17.1` | Native library conflict withSherpa |
+| `onnxruntime-android:1.17.1` | Native library conflict with Sherpa |
 | `mediapipe:tasks-genai:0.10.35` | LLM too slow (20+ seconds) |
 | `sherpa-onnx:1.13.1` (Maven) | Causes ONNX runtime conflicts |
-
-**Note:** Sherpa v1.12.34 local JAR is used for TTS without conflicts
 
 ### Dependencies in build.gradle (Current)
 ```gradle
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
-    
+
     // Vosk ASR (active)
     implementation('com.alphacephei:vosk-android:0.3.45') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
-    
+
     // Sherpa TTS (v1.12.34 local JAR - v1.13 has conflicts)
     implementation files('libs/sherpa-onnx-v1.12.34-java8.jar')
-    
+
     // JNA for Vosk
     implementation 'net.java.dev.jna:jna:5.13.0@aar'
-    
+
     // LLM (too slow, not used)
     implementation 'com.google.mediapipe:tasks-genai:0.10.35'
-    
+
     // ONNX Runtime (commented due to conflicts)
     // implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
 }
@@ -137,14 +134,14 @@ java.lang.UnsatisfiedLinkError: dlopen failed: cannot locate symbol "OrtGetApiBa
 referenced by "...libonnxruntime4j_jni.so"
 ```
 
-**Root Cause:**Sherpa-ONNX v1.12 bundles its own `libonnxruntime.so`, which conflicts withMicrosoft ONNX Runtime.
+**Root Cause:** Sherpa-ONNX v1.12 bundles its own `libonnxruntime.so`, which conflicts with Microsoft ONNX Runtime.
 
 **Workaround:** Using Parser mode NLU instead (regex-based, fast and stable).
 
 ### Future Solutions
 1. Use only Sherpa for everything - but no MiniLM available for NLU
-2. RemoveSherpa TTS and use Microsoft ONNX Runtime for NLU + System TTS
-3. Wait forSherpa to add MiniLM model or fix the native library isolation
+2. Remove Sherpa TTS and use Microsoft ONNX Runtime for NLU + System TTS
+3. Wait for Sherpa to add MiniLM model or fix the native library isolation
 
 ## Echo Cancellation Troubleshooting
 
@@ -192,14 +189,14 @@ adb shell am startservice ru.voboost.voice/.VoboostVoiceService
 # View logs for echo cancellation:
 adb logcat | grep -i "voboost\|Sherpa\|Vosk\|NLU\|AEC\|NoiseSuppressor"
 
-# Check PhoneCallStateHandler:
-adb logcat | grep "PhoneCallStateHandler"
+# Check PhoneCallPoller:
+adb logcat | grep "PhoneCallPoller"
 ```
 
-## Next Steps
-1. ✅ Test current configuration (Parser NLU + Vosk ASR + Sherpa TTS) - **TESTED 2026-05-23**
-2. ✅ Echo cancellation testing - verify AEC is working during Bluetooth calls - **WORKING**
-3. If needed: Implement custom NLU using ai.djl.huggingface (DJL) instead of ONNX Runtime
+## Last Update: 2026-05-29
+**Last commit:** 2749d57 (2026-05-26)
+
+---
 
 ## Changelog
 
@@ -321,140 +318,46 @@ override fun setModeSafe(newMode: Mode) {
 
 **Why:** `PhoneCallPoller` runs in separate coroutine scope and needs thread-safe access to change recognition mode.
 
-### 2026-05-21 - AudioPolicyManager Approach (SUCCESS!)
+### 2026-05-23 - State Machine V3 Refactoring (SUCCESS!)
 
-**Discovery:** Found `AudioPolicyManager.isInCall()` in BluetoothPhone-release-signed logs:
+**Refactoring:** Split monolithic `SpeechStateMachine.kt` (470 lines) into **modular event-driven architecture**.
+
+**Files Created:**
 ```
-I/AudioPolicyManager: isInCall pkname:com.qinggan.app.launcher
-```
+app/src/main/java/ru/voboost/voice/states/
+├── StateMachine.kt         # Main orchestrator (213 lines)
+├── StateContext.kt         # Dependencies container
+├── StateResult.kt          # Transition result enum
+└── TimeoutState.kt         # Timeout handling
 
-**Solution:** Use `IAudioPolicyService.aidl` which has method:
-```aidl
-boolean isInCall(String callingPackage);
-```
-
-**Implementation (Current State):**
-1. Created `AudioPolicyServiceManager.kt` - connects to AudioPolicy service and checks call state
-2. Created `PhoneCallPoller.kt` - polls `isInCall()` every 500ms, mutes/restores speech recognizer
-3. Added `setModeSafe()` helper in VoboostVoiceService for safe mode switching
-
-**Files Modified:**
-- `app/src/main/java/ru/voboost/voice/audio/AudioPolicyServiceManager.kt` - NEW (connects to AudioPolicy service)
-- `app/src/main/aidl/com/qinggan/audiopolicy/IAudioPolicyService.aidl` - AIDL interface definition
-- `app/src/main/java/ru/voboost/voice/canbus/PhoneCallPoller.kt` - NEW (polls AudioPolicyManager, moved to audio/)
-- `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` - Updated to use PhoneCallPoller
-- `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` - Added public getMode() and setModeSafe()
-
-**Current Implementation (2026-05-23):**
-```kotlin
-// PhoneCallPoller.kt (full implementation)
-class PhoneCallPoller(private var speechRecognizer: ISpeechRecognizer,
-                      private val audioPolicyManager: AudioPolicyServiceManager) {
-    companion object {
-        const val TAG = "PhoneCallPoller"
-        private const val CHECK_INTERVAL_MS = 500L
-    }
-
-    private val scope = CoroutineScope(Dispatchers.IO + Job())
-    private var pollingJob: Job? = null
-
-    fun start() { /* polling loop with delay */ }
-    fun stop() { /* cleanup */ }
-}
+app/src/main/java/ru/voboost/voice/states/state/
+├── IState.kt               # Interface (9 methods)
+├── BaseState.kt            # Abstract base class
+├── IdleState.kt            # IDLE state
+├── ActivatedState.kt       # ACTIVATED state
+├── ListeningCommandState.kt# LISTENING_COMMAND state
+├── RecognizedCommandState.kt# RECOGNIZED_COMMAND state
+├── ExecutingCommandState.kt# EXECUTING_COMMAND state
+├── ConfirmationState.kt    # CONFIRMATION state
+├── CommandErrorState.kt    # COMMAND_ERROR state
+├── KeywordErrorState.kt    # KEYWORD_ERROR state
+└── TimeoutState.kt         # TIMEOUT state
 ```
 
-**Next Steps:**
-1. ✅ Enable and test PhoneCallPoller polling logic in VoboostVoiceService - **COMPLETED 2026-05-23**
-2. ✅ Test with Bluetooth call to verify echo cancellation works - **WORKING**
-3. Add more detailed logging to debug call state detection
-
-### 2026-05-21 - Documentation: Hidden API Policy
-
-**Added documentation for Hidden API Policy configuration:**
-
-**Files Modified:**
-- `docs/SETUP/INSTALLATION.md` — Added "Hidden API Policy (для работы с AIDL)" section
-- `docs/SETUP/TROUBLESHOOTING.md` — Added Problem 9: "AIDL не работает (CAN bus / AudioPolicy)"
-
-**Hidden API Policy Commands:**
-```bash
-adb shell "settings put global hidden_api_policy 1"
-adb shell "settings put global hidden_api_policy_pre_p 1"
-adb shell "settings put global hidden_api_policy_pre_q 1"
-adb shell "settings put global hidden_api_policy_pre_r 1"
-
-# Verify
-adb shell settings get global hidden_api_policy  # Should return: 1
+**Transition Flow:**
+```
+IDLE → ACTIVATED → LISTENING_COMMAND → RECOGNIZED_COMMAND → EXECUTING_COMMAND → IDLE
+                              ↓          ↓
+                         ERROR states  TIMEOUT
 ```
 
-**Why Required:**
-- Android blocks access to hidden APIs (marked as `@hide`)
-- AIDL interfaces (`IAudioPolicyService`, `ICanBusService`) use hidden methods
-- Without this setting: echo cancellation and CAN bus events don't work
+**Key Improvements:**
+- ✅ No object recreation during transitions (states created once)
+- ✅ Isolated state logic (each file ~20-30 lines)
+- ✅ Clean separation of concerns
+- ✅ Easy to extend (new state = new file)
 
-**Status:** ✅ Committed and pushed to GitHub (`feature/development`)
-
-### 2026-05-21 - App ID Migration Script
-
-**Migration script created:** `scripts/install/migrate-from-voiceassistant.bat`
-
-**What it does:**
-1. Uninstalls old app (`ru.voboost.voiceassistant`)
-2. Migrates models (vosk, sherpa, nlu, llm) and config.json to new directory
-3. Deletes old directory
-4. Installs new APK (`ru.voboost.voice`)
-5. Grants permissions
-6. Sets Hidden API Policy
-7. Starts service
-
-**Status:** ✅ Created, committed, and pushed to GitHub
-
-### 2026-05-23 - Sherpa-ONNX Version Clarification
-
-**Discovery:** After testing, confirmed thatSherpa v1.13 causes ONNX runtime conflicts.
-
-**Current Configuration:**
-| Component | Engine | Version | Status |
-|-----------|--------|---------|--------|
-| TTS | Sherpa-ONNX | v1.12.34 (local JAR) | ✅ Working |
-| ASR | Vosk | 0.3.45 | ✅ Working |
-| NLU | Parser | Regex-based | ✅ Working |
-
-**Why v1.12.34 is Used:**
-- v1.13 bundles `libonnxruntime.so` causing `OrtGetApiBase` error
-- Local JAR (v1.12.34) works without conflicts
-- TTS functionality identical between versions
-
-### 2026-05-20 - Echo Cancellation Implementation (WIP)
-- Added `PhoneCallStateHandler` to detect phone calls via CAN bus and mute microphone (❌ events not arriving)
-- Enhanced `AndroidAudioSource` with explicit AEC/NS/AGC effects enabling
-- Improved logging for audio session IDs and effect states
-
-### 2026-05-21 - AudioPolicyManager Approach (SUCCESS!)
-**Discovery:** Found `AudioPolicyManager.isInCall()` in BluetoothPhone-release-signed logs:
-```
-I/AudioPolicyManager: isInCall pkname:com.qinggan.app.launcher
-```
-
-**Solution:** Use `IAudioPolicyService.aidl` which has method:
-```aidl
-boolean isInCall(String callingPackage);
-```
-
-**Implementation Plan:**
-1. Create `PhoneCallPoller.kt` - polls `isInCall()` every 500ms via AudioPolicyManager
-2. When call active → mute speech recognizer (`setMode(MUTED)`)
-3. When call ends → restore KEYWORD mode
-
-**Files Modified:**
-- `app/src/main/java/ru/voboost/voice/canbus/PhoneCallPoller.kt` - NEW (polls AudioPolicyManager)
-- `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` - Updated to use PhoneCallPoller
-- `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` - Added public `getMode()` and `setModeSafe()`
-
-**Next Steps (Tomorrow):**
-1. Fix compilation errors in PhoneCallPoller
-2. Test with Bluetooth call to verify echo cancellation works
-3. If needed, add more detailed logging to debug call state detection
+**Status:** ✅ **WORKING** — All 9 states implemented and tested
 
 ### 2026-05-23 - QGBus Service Manager Integration (SUCCESS!)
 
@@ -483,7 +386,7 @@ boolean isInCall(String callingPackage);
 #### ui/OverlayManager.kt (Updated)
 - Added `qgbusServiceManager` field
 - Added `setQGBusManager(manager)` method
-- In `showToast()`:优先使用 QGBus если подключен, иначе fallback на View overlay
+- In `showToast()`: Priority uses QGBus if connected, fallback to View overlay
 
 #### VoboostVoiceService.kt (Updated)
 ```kotlin
@@ -527,10 +430,9 @@ D/QGBusService: publish event name: showToast, source: ru.voboost.voice
 ```
 
 **Files Modified:**
-- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusServiceManager.kt` — NEW (moved from bus/)
-- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusEvent.kt` — NEW
-- `app/src/main/java/ru/voboost/voice/ui/VoceAnimationManager.kt` — Added QGBus integration
-- `app/src/main/java/ru/voboost/voice/ui/ToastMessengerManager.kt` — Refactored (clean code, proper constants)
+- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusServiceManager.kt` — NEW (294 lines)
+- `app/src/main/java/ru/voboost/voice/services/qgbus/QGBusEvent.kt` — NEW (56 lines)
+- `app/src/main/java/ru/voboost/voice/ui/ToastMessengerManager.kt` — Refactored (63 lines, clean code)
 - `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` — Updated
 
 **Testing:**
@@ -562,7 +464,7 @@ adb logcat | grep -i "QGBus\|ToastMessenger"
 ```kotlin
 class ToastMessengerManager(context: Context, ...) {
     private val handler = Handler(Looper.getMainLooper())
-    
+
     fun show(message: String) {
         handler.post {
             qgbusServiceManager.let { manager ->
@@ -593,6 +495,78 @@ class ToastMessengerManager(
 
 **Status:** ✅ **CLEANED UP**
 
+### 2026-05-21 - AudioPolicyManager Approach (SUCCESS!)
+
+**Discovery:** Found `AudioPolicyManager.isInCall()` in BluetoothPhone-release-signed logs:
+```
+I/AudioPolicyManager: isInCall pkname:com.qinggan.app.launcher
+```
+
+**Solution:** Use `IAudioPolicyService.aidl` which has method:
+```aidl
+boolean isInCall(String callingPackage);
+```
+
+**Implementation Plan:**
+1. Create `PhoneCallPoller.kt` - polls `isInCall()` every 500ms via AudioPolicyManager
+2. When call active → mute speech recognizer (`setMode(MUTED)`)
+3. When call ends → restore KEYWORD mode
+
+**Files Modified:**
+- `app/src/main/java/ru/voboost/voice/audio/AudioPolicyServiceManager.kt` - NEW (connects to AudioPolicy service)
+- `app/src/main/aidl/com/qinggan/audiopolicy/IAudioPolicyService.aidl` - AIDL interface definition
+- `app/src/main/java/ru/voboost/voice/audio/PhoneCallPoller.kt` - NEW (polls AudioPolicyManager, moved to audio/)
+- `app/src/main/java/ru/voboost/voice/VoboostVoiceService.kt` - Updated to use PhoneCallPoller
+- `app/src/main/java/ru/voboost/voice/speech/SpeechRecognizer.kt` - Added public `getMode()` and `setModeSafe()`
+
+**Next Steps (Completed 2026-05-23):**
+1. ✅ Enable and test PhoneCallPoller polling logic in VoboostVoiceService
+2. ✅ Test with Bluetooth call to verify echo cancellation works - **WORKING**
+
+### 2026-05-21 - Documentation: Hidden API Policy
+
+**Added documentation for Hidden API Policy configuration:**
+
+**Files Modified:**
+- `docs/SETUP/INSTALLATION.md` — Added "Hidden API Policy (для работы с AIDL)" section
+- `docs/SETUP/TROUBLESHOOTING.md` — Added Problem 9: "AIDL не работает (CAN bus / AudioPolicy)"
+
+**Hidden API Policy Commands:**
+```bash
+adb shell "settings put global hidden_api_policy 1"
+adb shell "settings put global hidden_api_policy_pre_p 1"
+adb shell "settings put global hidden_api_policy_pre_q 1"
+adb shell "settings put global hidden_api_policy_pre_r 1"
+
+# Verify
+adb shell settings get global hidden_api_policy  # Should return: 1
+```
+
+**Why Required:**
+- Android blocks access to hidden APIs (marked as `@hide`)
+- AIDL interfaces (`IAudioPolicyService`, `ICanBusService`) use hidden methods
+- Without this setting: echo cancellation and CAN bus events don't work
+
+**Status:** ✅ Committed and pushed to GitHub (`feature/development`)
+
+### 2026-05-21 - App ID Migration Script
+
+**Migration script created:** `scripts/install/migrate-from-voiceassistant.bat`
+
+**What it does:**
+1. Uninstalls old app (`ru.voboost.voiceassistant`)
+2. Migrates models (vosk, sherpa, nlu, llm) and config.json to new directory
+3. Deletes old directory
+4. Installs new APK (`ru.voboost.voice`)
+5. Grants permissions
+6. Sets Hidden API Policy
+7. Starts service
+
+**Status:** ✅ Created, committed, and pushed to GitHub
+
+### 2026-05-20 - Echo Cancellation Implementation (WIP)
+- Added `PhoneCallStateHandler` to detect phone calls via CAN bus and mute microphone (❌ events not arriving)
+- Enhanced `AndroidAudioSource` with explicit AEC/NS/AGC effects enabling
+- Improved logging for audio session IDs and effect states
+
 ### 2026-05-19 - Sherpa-ONNX v1.13 Integration (WIP)
-
-
