@@ -169,6 +169,8 @@ class ConfigManager private constructor(context: Context) {
                     ?: "Произошла ошибка"
                 PhraseType.NOT_UNDERSTOOD -> phrases.notUnderstood.takeUnless { it.isNullOrEmpty() }
                     ?: "Не понял"
+                PhraseType.NOT_UNDERSTOOD_RETRY -> phrases.notUnderstoodRetry.takeUnless { it.isNullOrEmpty() }
+                    ?: "Не понял, повторите команду"
                 PhraseType.CONFIRM_QUESTION -> phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() }
                     ?: "Вы уверены?"
                 PhraseType.LISTENING -> phrases.listening.takeUnless { it.isNullOrEmpty() }
@@ -184,6 +186,7 @@ class ConfigManager private constructor(context: Context) {
                 PhraseType.SUCCESS -> "Выполнено"
                 PhraseType.FAILURE -> "Произошла ошибка"
                 PhraseType.NOT_UNDERSTOOD -> "Не понял"
+                PhraseType.NOT_UNDERSTOOD_RETRY -> "Не понял, повторите команду"
                 PhraseType.CONFIRM_QUESTION -> "Вы уверены?"
                 PhraseType.LISTENING -> "Слушаю"
                 PhraseType.CANCEL -> "Отмена"
@@ -195,6 +198,7 @@ class ConfigManager private constructor(context: Context) {
         SUCCESS,
         FAILURE,
         NOT_UNDERSTOOD,
+        NOT_UNDERSTOOD_RETRY,
         CONFIRM_QUESTION,
         LISTENING,
         CANCEL

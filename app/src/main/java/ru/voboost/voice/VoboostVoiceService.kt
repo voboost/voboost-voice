@@ -145,7 +145,7 @@ class VoboostVoiceService : Service() {
             Log.e(TAG, "Failed to initialize TTS engine", e)
         }
 
-        nluEngine = NLUEngineFactory.create(configManager)
+        nluEngine = NLUEngineFactory.create(this, configManager)
         voceAnimationManager = VoceAnimationManager(this)
         soundEffectManager = SoundEffectManager(this)
         // IAudioSource - создаётся ОДИН раз и передаётся в движок распознавания

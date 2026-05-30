@@ -33,7 +33,8 @@ data class SpeechConfig(@SerializedName("offline") val offline: OfflineSpeechCon
                         @SerializedName("online") val online: OnlineSpeechConfig = OnlineSpeechConfig())
 
 data class OfflineSpeechConfig(@SerializedName("enabled") val enabled: Boolean = true,
-                               @SerializedName("engine") val engine: String = "vosk")
+                               @SerializedName("engine") val engine: String = "vosk",
+                               @SerializedName("max_attempts") val maxAttempts: Int = 3)
 
 data class OnlineSpeechConfig(@SerializedName("enabled") val enabled: Boolean = false,
                               @SerializedName("engine") val engine: String = "yandex",
@@ -73,6 +74,7 @@ data class ConfirmationConfig(@SerializedName("default_timeout_sec") val default
 data class DefaultPhrases(@SerializedName("success") val success: String = "Выполнено",
                           @SerializedName("failure") val failure: String = "Произошла ошибка",
                           @SerializedName("not_understood") val notUnderstood: String = "Не понял",
+                          @SerializedName("not_understood_retry") val notUnderstoodRetry: String = "Не понял, повторите команду",
                           @SerializedName("confirm_question") val confirmQuestion: String = "Вы уверены?",
                           @SerializedName("confirm_yes") val confirmYes: String = "Да",
                           @SerializedName("confirm_no") val confirmNo: String = "Нет",

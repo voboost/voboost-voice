@@ -80,8 +80,20 @@ class ListeningCommandState(private val context: StateContext,
                     }
                     else {
                         Log.w(TAG, "Unrecognized command: '$commandText'")
-                        handleUnrecognizedCommand(commandText)
-                        onComplite(StateResult(StateType.IDLE))
+
+                        // Проверяем лимит попыток
+                        val maxAttempts = configManager.getConfig().speech.offline.maxAttempts
+
+                        if (context.attemptsCount < maxAttempts - 1) {
+                            // Есть ещё попытки → переход в RETRY_COMMAND
+                            Log.i(TAG, "Unrecognized command, retry attempt ${context.attemptsCount + 1}")
+                            onComplite(StateResult(StateType.RETRY_COMMAND))
+                        }
+                        else {
+                            // Попытки исчерпаны → COMMAND_ERROR (через CancelState)
+                            handleUnrecognizedCommand(commandText)
+                            onComplite(StateResult(StateType.COMMAND_ERROR))
+                        }
                     }
                 }
                 else {

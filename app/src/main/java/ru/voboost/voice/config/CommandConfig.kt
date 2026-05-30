@@ -44,9 +44,11 @@ data class ConfirmationCommandConfig(@SerializedName("required") val required: B
 data class CommandPhrases(@SerializedName("success") val success: String,
                           @SerializedName("failure") val failure: String,
                           @SerializedName("confirmed") val confirmed: String? = null,
-                          @SerializedName("cancelled") val cancelled: String? = null) {
+                          @SerializedName("cancelled") val cancelled: String? = null,
+                          @SerializedName("ambiguous") val ambiguous: String? = null) {
     companion object {
         val Empty: CommandPhrases = CommandPhrases("",
+                                                   "",
                                                    "",
                                                    "",
                                                    "")

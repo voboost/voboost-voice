@@ -17,6 +17,7 @@ import ru.voboost.voice.states.state.ExecutingCommandState
 import ru.voboost.voice.states.state.IState
 import ru.voboost.voice.states.state.IdleState
 import ru.voboost.voice.states.state.ListeningCommandState
+import ru.voboost.voice.states.state.RetryCommandState
 import ru.voboost.voice.ui.ToastMessengerManager
 import ru.voboost.voice.ui.VoceAnimationManager
 
@@ -89,6 +90,11 @@ class StateMachine(private val scope: CoroutineScope,
                                                      speechService,
                                                      configManager,
                                                      soundEffectManager)
+        states[StateType.RETRY_COMMAND] = RetryCommandState(stateContext,
+                                                            speechService,
+                                                            configManager,
+                                                            soundEffectManager,
+                                                            toastMessengerManager)
         states[StateType.CANCEL] = CancelState(ConfigManager.PhraseType.CANCEL,
                                                recognitionService,
                                                speechService,
