@@ -27,7 +27,7 @@ class SoundEffectManager(private val context: Context) {
 
     init {
         try {
-            toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+            toneGenerator = ToneGenerator(AudioManager.ERROR, 30)
             Log.d(TAG, "ToneGenerator initialized")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create ToneGenerator", e)

@@ -8,27 +8,19 @@ enum class StateType {
     IDLE,
     ACTIVATED,
     LISTENING_COMMAND,
-    RECOGNIZED_COMMAND,
     EXECUTING_COMMAND,
     CONFIRMATION,
     COMMAND_ERROR,
     KEYWORD_ERROR,
-    TIMEOUT
+    TIMEOUT,
+    AMBIGUOUS,
+    CANCEL
 }
 
 /**
  * Результат завершения состояния.
  * Определяет, куда должен переключиться StateMachine.
  */
-sealed class StateResult {
-    /**
-     * Нормальное завершение > переход к следующему состоянию
-     */
-    data class Next(val stateType: StateType) : StateResult()
-    /**
-     * Отмена пользователем > всегда возврат в IdleState
-     */
-    data class Cancel(val reason: String = "User cancelled") : StateResult()
-}
+data class StateResult(val stateType: StateType)
 
 

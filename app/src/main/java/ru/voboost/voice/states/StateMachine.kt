@@ -2,15 +2,23 @@ package ru.voboost.voice.states
 
 import android.util.Log
 import kotlinx.coroutines.*
+import ru.voboost.voice.SoundEffectManager
+import ru.voboost.voice.audio.VolumeManager
+import ru.voboost.voice.config.ConfigManager
+import ru.voboost.voice.executor.CommandExecutor
+import ru.voboost.voice.nlu.INLUEngine
+import ru.voboost.voice.services.recognition.IRecognitionService
+import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.states.state.ActivatedState
-import ru.voboost.voice.states.state.CommandErrorState
+import ru.voboost.voice.states.state.AmbiguousState
+import ru.voboost.voice.states.state.CancelState
 import ru.voboost.voice.states.state.ConfirmationState
 import ru.voboost.voice.states.state.ExecutingCommandState
 import ru.voboost.voice.states.state.IState
 import ru.voboost.voice.states.state.IdleState
-import ru.voboost.voice.states.state.KeywordErrorState
 import ru.voboost.voice.states.state.ListeningCommandState
-import ru.voboost.voice.states.state.RecognizedCommandState
+import ru.voboost.voice.ui.ToastMessengerManager
+import ru.voboost.voice.ui.VoceAnimationManager
 
 /**
  * State Machine для голосового помощника (Event-driven версия)
@@ -29,28 +37,83 @@ import ru.voboost.voice.states.state.RecognizedCommandState
  * - ? canCancel явно декларирует можно ли отменить
  */
 class StateMachine(private val scope: CoroutineScope,
-                   private val context: StateContext) {
+                   recognitionService: IRecognitionService,
+                   voceAnimationManager: VoceAnimationManager,
+                   volumeManager: VolumeManager,
+                   speechService: ISpeechService,
+                   configManager: ConfigManager,
+                   nluEngine: INLUEngine,
+                   commandExecutor: CommandExecutor,
+                   soundEffectManager: SoundEffectManager,
+                   toastMessengerManager: ToastMessengerManager) {
     companion object {
         const val TAG = "StateMachine"
     }
 
-    private val states = mapOf(
-        StateType.IDLE to IdleState(context),
-        StateType.ACTIVATED to ActivatedState(context),
-        StateType.LISTENING_COMMAND to ListeningCommandState(context),
-        StateType.RECOGNIZED_COMMAND to RecognizedCommandState(context),
-        StateType.EXECUTING_COMMAND to ExecutingCommandState(context),
-        StateType.CONFIRMATION to ConfirmationState(context),
-        StateType.COMMAND_ERROR to CommandErrorState(context),
-        StateType.KEYWORD_ERROR to KeywordErrorState(context),
-        StateType.TIMEOUT to TimeoutState(context),
-    )
-
+    private val states: MutableMap<StateType, IState> = mutableMapOf()
     private var mainJob: Job? = null
-    @Volatile
-    private var currentState: IState = states[StateType.IDLE]!!
-    @Volatile
-    private var executionJob: Job? = null
+    @Volatile private var currentState: IState? = null
+    @Volatile private var executionJob: Job? = null
+
+    init {
+        val stateContext = StateContext()
+
+        states[StateType.IDLE] = IdleState(stateContext,
+                                           recognitionService,
+                                           voceAnimationManager,
+                                           volumeManager)
+        states[StateType.ACTIVATED] = ActivatedState(stateContext,
+                                                     recognitionService,
+                                                     voceAnimationManager,
+                                                     volumeManager,
+                                                     speechService,
+                                                     configManager,
+                                                     soundEffectManager)
+        states[StateType.LISTENING_COMMAND] = ListeningCommandState(stateContext,
+                                                                    recognitionService,
+                                                                    speechService,
+                                                                    configManager,
+                                                                    nluEngine,
+                                                                    toastMessengerManager)
+
+        states[StateType.CONFIRMATION] = ConfirmationState(stateContext,
+                                                           recognitionService,
+                                                           speechService,
+                                                           configManager,
+                                                           nluEngine)
+        states[StateType.EXECUTING_COMMAND] = ExecutingCommandState(stateContext,
+                                                                    recognitionService,
+                                                                    commandExecutor)
+        states[StateType.AMBIGUOUS] = AmbiguousState(stateContext,
+                                                     recognitionService,
+                                                     speechService,
+                                                     configManager,
+                                                     soundEffectManager)
+        states[StateType.CANCEL] = CancelState(ConfigManager.PhraseType.CANCEL,
+                                               recognitionService,
+                                               speechService,
+                                               configManager,
+                                               soundEffectManager,
+                                               toastMessengerManager)
+        states[StateType.COMMAND_ERROR]  = CancelState(ConfigManager.PhraseType.FAILURE,
+                                                       recognitionService,
+                                                       speechService,
+                                                       configManager,
+                                                       soundEffectManager,
+                                                       toastMessengerManager)
+        states[StateType.KEYWORD_ERROR]  = CancelState(ConfigManager.PhraseType.NOT_UNDERSTOOD,
+                                                       recognitionService,
+                                                       speechService,
+                                                       configManager,
+                                                       soundEffectManager,
+                                                       toastMessengerManager)
+        states[StateType.TIMEOUT] = CancelState(ConfigManager.PhraseType.CANCEL,
+                                                recognitionService,
+                                                speechService,
+                                                configManager,
+                                                soundEffectManager,
+                                                toastMessengerManager)
+    }
 
     /**
      * Запустить State Machine
@@ -61,8 +124,8 @@ class StateMachine(private val scope: CoroutineScope,
             return
         }
         mainJob = scope.launch {
-            Log.i(TAG, "Starting State Machine from: ${currentState::class.simpleName}")
             transitionTo(StateType.IDLE)
+            Log.i(TAG, "Starting State Machine from: ${StateType.IDLE}")
         }
     }
 
@@ -79,7 +142,7 @@ class StateMachine(private val scope: CoroutineScope,
     /**
      * Текущее состояние
      */
-    fun getCurrentState(): IState = currentState
+    fun getCurrentState(): IState? = currentState
 
     /**
      * Получить состояние по типу
@@ -97,28 +160,14 @@ class StateMachine(private val scope: CoroutineScope,
         executionJob = null
 
         val nextState = getState(stateType)
-        nextState.reset()
 
         currentState = nextState
         Log.d(TAG, "Transition to: ${nextState::class.simpleName}")
 
         // Подписываемся на колбэки
         nextState.setCompletionCallback { result ->
-            when (result) {
-                is StateResult.Next -> {
-                    Log.d(TAG, "Completion > ${result.stateType}")
-                    transitionTo(result.stateType)
-                }
-                is StateResult.Cancel -> {
-                    Log.d(TAG, "Completion with Cancel > IDLE")
-                    transitionTo(StateType.IDLE)
-                }
-            }
-        }
-
-        nextState.setCancellationCallback { reason ->
-            Log.d(TAG, "Cancellation: $reason > IDLE")
-            transitionTo(StateType.IDLE)
+             Log.d(TAG, "Completion > ${result.stateType}")
+             transitionTo(result.stateType)
         }
 
         // Запускаем execute() в фоне
@@ -137,69 +186,19 @@ class StateMachine(private val scope: CoroutineScope,
     }
 
     /**
-     * Обработать нажатие кнопки.
-     * Если состояние можно отменить > вызывает cancel().
-     */
-    suspend fun onButtonPressed() {
-        val current = currentState
-
-        if (!current.canCancel) {
-            Log.d(TAG, "Button ignored in ${current::class.simpleName}")
-            return
-        }
-        if (context.isCancelling.get()) {
-            Log.d(TAG, "Cancellation already in progress, ignoring")
-            return
-        }
-        Log.i(TAG, "Button pressed > cancelling ${current::class.simpleName}")
-        // Отменяем текущее выполнение
-        executionJob?.cancel()
-        executionJob = null
-        // Вызываем cancel() состояния
-        current.cancel()
-    }
-
-    /**
      * Активировать помощник (кнопка или keyword).
      * Если можно отменить > onButtonPressed(), иначе активирует.
      */
     suspend fun activate() {
-        val current = currentState
+        val current = currentState ?: return
 
-        if (current.canCancel) {
-            onButtonPressed()
-        }
-        else {
-            Log.i(TAG, "Activate from non-cancellable state: ${current::class.simpleName}")
-            val nextState = current.activate()
-            if (nextState != null && nextState !== current) { // activate() возвращает IState — используем его напрямую
-                executionJob?.cancel()
-                executionJob = null
-                currentState = nextState
-                currentState.reset()
-                currentState.setCompletionCallback { result ->
-                    when (result) {
-                        is StateResult.Next -> transitionTo(result.stateType)
-                        is StateResult.Cancel -> transitionTo(StateType.IDLE)
-                    }
-                }
-                currentState.setCancellationCallback { reason ->
-                    Log.d(TAG, "Cancellation: $reason > IDLE")
-                    transitionTo(StateType.IDLE)
-                }
-                executionJob = scope.launch {
-                    try {
-                        currentState.execute()
-                    }
-                    catch (e: CancellationException) {
-                        Log.d(TAG, "State execution cancelled")
-                    }
-                    catch (e: Exception) {
-                        Log.e(TAG, "State execution error", e)
-                        transitionTo(StateType.IDLE)
-                    }
-                }
-            }
+        if (!current.isCancelling.get()) {
+            Log.i(TAG,
+                  "Button pressed > cancelling ${current::class.simpleName}") // Отменяем текущее выполнение
+            executionJob?.cancel()
+            executionJob = null // Вызываем cancel() состояния
+            current.cancel()
+            return
         }
     }
 }

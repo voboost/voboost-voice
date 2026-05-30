@@ -1,6 +1,12 @@
 package ru.voboost.voice.states.state
 
+import android.util.Log
+import kotlinx.coroutines.CancellationException
+import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.states.StateResult
+import ru.voboost.voice.states.StateType
+import ru.voboost.voice.states.state.ExecutingCommandState.Companion.TAG
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Базовый класс состояния с поддержкой колбэков.
@@ -9,35 +15,44 @@ import ru.voboost.voice.states.StateResult
  */
 abstract class BaseState : IState {
 
+    override val isCancelling: AtomicBoolean = AtomicBoolean(false)
+    protected open val executeError: StateResult =StateResult(StateType.COMMAND_ERROR)
+
     private var completionCallback: ((StateResult) -> Unit)? = null
-    private var cancellationCallback: ((String) -> Unit)? = null
 
     override fun setCompletionCallback(callback: (StateResult) -> Unit) {
         completionCallback = callback
     }
-
-    override fun setCancellationCallback(callback: (String) -> Unit) {
-        cancellationCallback = callback
-    }
     /**
      * Вызывается когда состояние завершилось нормально.
      */
-    protected fun finish(result: StateResult) {
+    protected fun onComplite(result: StateResult) {
         completionCallback?.invoke(result) ?: run {
             throw IllegalStateException("completionCallback not set in ${this::class.simpleName}")
         }
     }
-    /**
-     * Вызывается когда состояние отменено (пользователь/таймаут/ошибка).
-     */
-    protected fun cancelled(reason: String = "User cancelled") {
-        cancellationCallback?.invoke(reason) ?: run {
-            throw IllegalStateException("cancellationCallback not set in ${this::class.simpleName}")
+
+    override suspend fun execute() {
+        try {
+            entering()
+        }
+        catch (e: CancellationException) {
+            Log.d(TAG, "Cancelled")
+        }
+        catch (e: Exception) { // Очищаем контекст при ошибке
+            Log.e(TAG, "Error: ", e)
+            onComplite(executeError)
         }
     }
-    /**
-     * Сбросить состояние по умолчанию — ничего не делает.
-     * Переопределите если нужно сбросить внутренние поля.
-     */
-    override fun reset() { }
+
+    protected abstract suspend fun entering()
+
+    override suspend fun cancel() {
+        if (isCancelling.compareAndSet(false, true)) {
+            canceled()
+            isCancelling.set(false)
+        }
+    }
+
+    protected abstract suspend fun canceled()
 }

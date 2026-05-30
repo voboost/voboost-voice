@@ -23,7 +23,6 @@ import ru.voboost.voice.ui.VoceAnimationManager
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.services.canbus.handlers.TSRSpeedLimitHandler
 import ru.voboost.voice.states.StateMachine
-import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.state.IdleState
 import kotlinx.coroutines.*
 import android.Manifest
@@ -85,7 +84,7 @@ class VoboostVoiceService : Service() {
     // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
     private lateinit var phoneCallPoller: PhoneCallPoller
     // Volume Manager - управление громкостью
-    private var volumeManager: VolumeManager? = null
+    private lateinit var volumeManager: VolumeManager
     // QGBus Service Manager для отправки уведомлений через шину событий
     private lateinit var qgbusServiceManager: QGBusServiceManager
     private lateinit var toastMessengerManager: ToastMessengerManager
@@ -98,7 +97,6 @@ class VoboostVoiceService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ACTION_CANCEL) {
                 Log.i(TAG, "Cancel request received from Frida")
-                cancelRecognition()
             }
         }
     }
@@ -147,7 +145,7 @@ class VoboostVoiceService : Service() {
             Log.e(TAG, "Failed to initialize TTS engine", e)
         }
 
-        nluEngine = NLUEngineFactory.create(this, configManager)
+        nluEngine = NLUEngineFactory.create(configManager)
         voceAnimationManager = VoceAnimationManager(this)
         soundEffectManager = SoundEffectManager(this)
         // IAudioSource - создаётся ОДИН раз и передаётся в движок распознавания
@@ -155,7 +153,7 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "IAudioSource created: ${audioSource::class.simpleName}")
         // Volume Manager - управление громкостью
         volumeManager = VolumeManager(this)
-        volumeManager?.connect()
+        volumeManager.connect()
         Log.i(TAG, "VolumeManager connected - can duck/restore media volume")
         // Voice Button Handler - регистрация обработчика кнопки на руле
         voiceButtonHandler = VoiceButtonHandler(serviceScope, configManager)
@@ -189,20 +187,17 @@ class VoboostVoiceService : Service() {
         Log.i(TAG, "SpeechRecognizer initialized")
         // Phone Call Poller - поллинг состояния телефона через AudioPolicyManager
         phoneCallPoller = PhoneCallPoller(recognitionService, audioPolicyManager)
-
-
-        
         // State Machine - управление состояниями
-        val context = StateContext(soundEffectManager = soundEffectManager,
-                                   recognitionService = recognitionService,
-                                   voceAnimationManager = voceAnimationManager,
-                                   volumeManager = volumeManager,
-                                   speechService = speechService,
-                                   configManager = configManager,
-                                   nluEngine = nluEngine,
-                                   commandExecutor = commandExecutor)
-
-        stateMachine = StateMachine(serviceScope, context)
+        stateMachine = StateMachine(scope = serviceScope,
+                                    soundEffectManager = soundEffectManager,
+                                    recognitionService = recognitionService,
+                                    voceAnimationManager = voceAnimationManager,
+                                    volumeManager = volumeManager,
+                                    speechService = speechService,
+                                    configManager = configManager,
+                                    nluEngine = nluEngine,
+                                    commandExecutor = commandExecutor,
+                                    toastMessengerManager = toastMessengerManager)
         Log.i(TAG, "IState Machine initialized")
         voiceButtonHandler?.stateMachine = stateMachine
 
@@ -247,11 +242,9 @@ class VoboostVoiceService : Service() {
         when (intent?.action) {
             ACTION_ACTIVATE -> {
                 Log.i(TAG, "Activate request received from button")
-                activateVoiceAssistant()
             }
             ACTION_CANCEL -> {
                 Log.i(TAG, "Cancel request received from button")
-                cancelRecognition()
             }
             else -> {
                 Log.d(TAG, "Service started, keyword spotting active")
@@ -279,8 +272,7 @@ class VoboostVoiceService : Service() {
         }
 
         // Отключаем Volume Manager
-        volumeManager?.disconnect()
-        volumeManager = null
+        volumeManager.disconnect()
         Log.d(TAG, "VolumeManager disconnected")
 
         // Освобождаем IAudioSource (если инициализирован)
@@ -353,7 +345,6 @@ class VoboostVoiceService : Service() {
      */
     private fun startKeywordSpotting() {
         Log.d(TAG, "startKeywordSpotting called")
-        Log.d(TAG, "  IState=${stateMachine.getCurrentState()::class.simpleName}")
 
         if (stateMachine.getCurrentState() !is IdleState) {
             Log.w(TAG, "Not in IdleState, skipping keyword spotting")
@@ -387,27 +378,6 @@ class VoboostVoiceService : Service() {
                     // delay() может быть отменён при onDestroy()
                     Log.w(TAG, "Retry cancelled", retryException)
                 }
-            }
-        }
-    }
-
-    /**
-     * Активировать голосовой помощник (после ключевой фразы или кнопки)
-     */
-    private fun activateVoiceAssistant() {}
-
-    /**
-     * Отменить распознавание (повторное нажатие кнопки или от Frida)
-     */
-    fun cancelRecognition() {
-        Log.i(TAG, "? Cancelling recognition...")
-        serviceScope.launch {
-            try { // IState Machine сам обработает отмену в текущем IState
-                stateMachine.onButtonPressed()
-                Log.i(TAG, "? Recognition cancelled")
-            }
-            catch (e: Exception) {
-                Log.e(TAG, "Error cancelling recognition", e)
             }
         }
     }

@@ -1,14 +1,18 @@
 package ru.voboost.voice.states.state
 
 import android.util.Log
-import kotlinx.coroutines.CancellationException
+import ru.voboost.voice.SoundEffectManager
+import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.config.ConfigManager
+import ru.voboost.voice.config.ConfigManager.PhraseType
+import ru.voboost.voice.services.recognition.IRecognitionService
 import ru.voboost.voice.services.recognition.RecognitionService
+import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.StateResult
 import ru.voboost.voice.states.StateType
-import java.util.concurrent.atomic.AtomicBoolean
+import ru.voboost.voice.ui.VoceAnimationManager
 
 /**
  * Состояние: Активация (после ключевого слова)
@@ -19,77 +23,41 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 3. Добавить "Слушаю вас" в очередь (низкий приоритет)
  * 4. > finish(StateResult.Next(StateType.LISTENING_COMMAND))
  */
-class ActivatedState(private val context: StateContext) : BaseState() {
+class ActivatedState(private val context: StateContext,
+                     private var recognitionService: IRecognitionService,
+                     private var voceAnimationManager: VoceAnimationManager,
+                     private var volumeManager: VolumeManager,
+                     private var speechService: ISpeechService,
+                     private var configManager: ConfigManager,
+                     private var soundEffectManager: SoundEffectManager)
+    : BaseState() {
 
     companion object {
         const val TAG = "ActivatedState"
     }
 
-    override val canCancel = true
-    private val isCancelling = AtomicBoolean(false)
-
-    override suspend fun execute() {
-        Log.i(TAG, "Entering ACTIVATED IState")
-
-        try { // Звук начала распознавания
-            context.soundEffectManager?.playStartSoundAsync()
-            // Показать анимацию и приглушить музыку
-            context.voceAnimationManager?.show()
-            context.volumeManager?.duckMedia(targetVolume = 1)
-            // ОТКЛЮЧИТЬ распознавание пока TTS говорит (чтобы не было ЭХО)
-            context.recognitionService?.setMode(RecognitionService.Mode.MUTED)
-            // Сказать что слушаем (опционально)
-            val listeningPhrase = context.configManager?.getConfig()?.phrases?.listening
-            if (!listeningPhrase.isNullOrEmpty()) { // Низкий приоритет, так как это обычная фраза
-                context.speechService?.enqueueAsync(listeningPhrase, SpeechService.Companion.PRIOR_LOW)
-            }
-            else {
-                Log.w(TAG, "Listening phrase is null or empty")
-            }
-            // ВКЛЮЧИТЬ распознавание команд
-            context.recognitionService?.setMode(RecognitionService.Mode.COMMAND)
-            // Переходим к слушанию команды
-            finish(StateResult.Next(StateType.LISTENING_COMMAND))
+    override suspend fun entering() {
+        Log.i(TAG, "Entering state")
+        context.attemptsCount = 0
+        // ОТКЛЮЧИТЬ распознавание пока TTS говорит (чтобы не было ЭХО)
+        recognitionService.setMode(RecognitionService.Mode.MUTED)
+        // Звук начала распознавания
+        soundEffectManager.playStartSoundAsync()
+        // Показать анимацию и приглушить музыку
+        voceAnimationManager.show()
+        volumeManager.duckMedia(targetVolume = 1)
+        // Сказать что слушаем (опционально)
+        val listeningPhrase = configManager.getDefaultPhrase(PhraseType.LISTENING)
+        if (listeningPhrase.isNotEmpty()) { // Низкий приоритет, так как это обычная фраза
+            speechService.enqueueAsync(listeningPhrase, SpeechService.PRIOR_LOW)
         }
-        catch (e: CancellationException) {
-            Log.d(TAG, "ActivatedState cancelled (rapid button press)")
-            context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
-            finish(StateResult.Next(StateType.IDLE))
+        else {
+            Log.w(TAG, "Listening phrase is null or empty")
         }
-        catch (e: Exception) {
-            Log.e(TAG, "Error in ActivatedState", e)
-            context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
-            finish(StateResult.Next(StateType.COMMAND_ERROR))
-        }
+        // Переходим к слушанию команды
+        onComplite(StateResult(StateType.LISTENING_COMMAND))
     }
 
-    override suspend fun cancel() {
-        if (isCancelling.compareAndSet(false, true)) {
-            Log.i(TAG, "ActivatedState cancelled (button pressed)")
-
-            try { // Одинаковый звук отмены с TimeoutState
-                context.soundEffectManager?.playEndSoundAsync()
-                // Говорим "Отмена" с высоким приоритетом
-                val cancelPhrase = context.configManager?.getDefaultPhrase(ConfigManager.PhraseType.CANCEL)
-                if(!cancelPhrase.isNullOrEmpty())
-                {
-                    context.speechService?.enqueueAsync(cancelPhrase, SpeechService.Companion.PRIOR_HIGH)
-                }
-                Log.d(TAG, "Cancel speech initiated")
-            }
-            finally {
-                isCancelling.set(false)
-            }
-
-            context.voceAnimationManager?.hide()
-            context.volumeManager?.restoreMedia()
-            context.recognitionService?.setMode(RecognitionService.Mode.KEYWORD)
-
-            cancelled("ActivatedState cancelled by user")
-        }
-    }
-
-    override fun reset() {
-        isCancelling.set(false)
-    }
+    override suspend fun canceled() = onComplite(StateResult(StateType.CANCEL))
 }
+
