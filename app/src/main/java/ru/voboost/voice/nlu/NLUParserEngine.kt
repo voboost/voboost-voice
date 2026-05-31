@@ -49,33 +49,20 @@ class NLUParserEngine(private val configManager: ConfigManager)
      * Проверить, является ли текст подтверждением "Да"
      */
     override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
-        val normalizedText = text.lowercase().trim()
-
-        // Проверяем паттерны из конфига команды
-        commandConfig?.confirmation?.yesPatterns?.forEach { pattern ->
-            if (normalizedText == pattern.lowercase().trim()) {
-                return true
-            }
-        }
-        // Используем дефолтные паттерны из ConfigManager
         val yesPatterns = configManager.getYesPatterns()
-        return yesPatterns.any { normalizedText == it.lowercase().trim() }
+        return ((commandConfig?.confirmation?.yesPatterns ?: emptyList()) + yesPatterns).any {
+            text.lowercase().trim() == it.lowercase().trim()
+        }
     }
 
     /**
      * Проверить, является ли текст отменой "Нет"
      */
     override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
-        val normalizedText = text.lowercase().trim()
-        // Проверяем паттерны из конфига команды
-        commandConfig.confirmation.noPatterns?.forEach { pattern ->
-            if (normalizedText == pattern.lowercase().trim()) {
-                return true
-            }
-        }
-        // Используем дефолтные паттерны из ConfigManager
         val noPatterns = configManager.getNoPatterns()
-        return noPatterns.any { normalizedText == it.lowercase().trim() }
+        return ((commandConfig.confirmation.noPatterns ?: emptyList()) + noPatterns).any {
+            text.lowercase().trim() == it.lowercase().trim()
+        }
     }
 
     /**
