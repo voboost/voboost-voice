@@ -110,8 +110,8 @@ class ConfigManager private constructor(context: Context) {
                                                   failure = "Произошла ошибка",
                                                   notUnderstood = "Не понял команду",
                                                   confirmQuestion = "Вы уверены?",
-                                                  confirmYes = "Да",
-                                                  confirmNo = "Нет"),
+                                                  yesPatterns = listOf("да", "ага", "угу"),
+                                                  noPatterns = listOf("нет", "отмена")),
                          commands = emptyList())
     }
 
@@ -200,6 +200,40 @@ class ConfigManager private constructor(context: Context) {
                 PhraseType.LISTENING -> "Слушаю"
                 PhraseType.CANCEL -> "Отмена"
             }
+        }
+    }
+
+    /**
+     * Получить паттерны для подтверждения "Да" (из конфига или дефолтные)
+     */
+    fun getYesPatterns(): List<String> {
+        return try {
+            val config = getConfig()
+            if (config.phrases.yesPatterns.isNotEmpty()) {
+                config.phrases.yesPatterns
+            } else {
+                listOf("да", "ага", "угу")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting yes patterns", e)
+            listOf("да", "ага", "угу")
+        }
+    }
+
+    /**
+     * Получить паттерны для подтверждения "Нет" (из конфига или дефолтные)
+     */
+    fun getNoPatterns(): List<String> {
+        return try {
+            val config = getConfig()
+            if (config.phrases.noPatterns.isNotEmpty()) {
+                config.phrases.noPatterns
+            } else {
+                listOf("нет", "отмена")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting no patterns", e)
+            listOf("нет", "отмена")
         }
     }
 

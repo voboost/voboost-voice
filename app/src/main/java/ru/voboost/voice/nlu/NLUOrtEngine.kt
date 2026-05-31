@@ -340,15 +340,15 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
     }
 
     override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
-        return ((commandConfig?.confirmation?.yesPatterns
-                 ?: emptyList()) + INLUEngine.DEFAULT_YES).any {
+        val yesPatterns = configManager.getYesPatterns()
+        return ((commandConfig?.confirmation?.yesPatterns ?: emptyList()) + yesPatterns).any {
             text.lowercase().trim() == it.lowercase().trim()
         }
     }
 
     override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
-        return ((commandConfig.confirmation.noPatterns
-                 ?: emptyList()) + INLUEngine.DEFAULT_NO).any {
+        val noPatterns = configManager.getNoPatterns()
+        return ((commandConfig.confirmation.noPatterns ?: emptyList()) + noPatterns).any {
             text.lowercase().trim() == it.lowercase().trim()
         }
     }

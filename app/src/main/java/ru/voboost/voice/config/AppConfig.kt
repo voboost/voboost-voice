@@ -83,8 +83,9 @@ data class DefaultPhrases(@SerializedName("success") val success: String = "Вы
                           @SerializedName("not_understood") val notUnderstood: String = "Не понял",
                           @SerializedName("not_understood_retry") val notUnderstoodRetry: String = "Не понял, повторите",
                           @SerializedName("confirm_question") val confirmQuestion: String = "Вы уверены?",
-                          @SerializedName("confirm_yes") val confirmYes: String = "Да",
-                          @SerializedName("confirm_no") val confirmNo: String = "Нет",
+                          // Паттерны подтверждения (массивы для гибкости)
+                          @SerializedName("yes_patterns") val yesPatterns: List<String> = listOf("да", "ага", "угу"),
+                          @SerializedName("no_patterns") val noPatterns: List<String> = listOf("нет", "отмена"),
                           @SerializedName("listening") val listening: String = "Слушаю",
                           @SerializedName("cancel") val cancel: String = "Отмена")
 

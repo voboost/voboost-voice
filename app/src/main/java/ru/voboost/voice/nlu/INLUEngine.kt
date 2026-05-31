@@ -5,28 +5,6 @@ import ru.voboost.voice.executor.CommandData
 
 interface INLUEngine {
 
-    companion object {
-        val DEFAULT_YES = listOf("да",
-                                 "ага",
-                                 "угу",
-                                 "подтверждаю",
-                                 "ок",
-                                 "открывай",
-                                 "давай",
-                                 "конечно",
-                                 "yes",
-                                 "yeah")
-        val DEFAULT_NO = listOf("нет",
-                                "не надо",
-                                "отмена",
-                                "отмени",
-                                "не",
-                                "отбой",
-                                "стоп",
-                                "no",
-                                "nah")
-    }
-
     fun parseCommand(text: String, contextCmd: List<String> = emptyList()): CommandData?
     fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean
     fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean

@@ -57,7 +57,9 @@ class NLUParserEngine(private val configManager: ConfigManager)
                 return true
             }
         }
-        return INLUEngine.DEFAULT_YES.any { normalizedText == it }
+        // Используем дефолтные паттерны из ConfigManager
+        val yesPatterns = configManager.getYesPatterns()
+        return yesPatterns.any { normalizedText == it.lowercase().trim() }
     }
 
     /**
@@ -71,7 +73,9 @@ class NLUParserEngine(private val configManager: ConfigManager)
                 return true
             }
         }
-        return INLUEngine.DEFAULT_NO.any { normalizedText == it }
+        // Используем дефолтные паттерны из ConfigManager
+        val noPatterns = configManager.getNoPatterns()
+        return noPatterns.any { normalizedText == it.lowercase().trim() }
     }
 
     /**

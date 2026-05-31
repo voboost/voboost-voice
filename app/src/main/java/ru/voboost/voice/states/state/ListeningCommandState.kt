@@ -1,19 +1,15 @@
 package ru.voboost.voice.states.state
 
 import android.util.Log
-import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.recognition.RecognitionServiceResult
 import kotlinx.coroutines.flow.first
 import ru.voboost.voice.config.ConfigManager
-import ru.voboost.voice.config.ConfigManager.PhraseType
 import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.services.recognition.IRecognitionService
-import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.StateResult
 import ru.voboost.voice.states.StateType
-import ru.voboost.voice.ui.ToastMessengerManager
 
 /**
  * Состояние: Слушание команды
@@ -24,10 +20,8 @@ import ru.voboost.voice.ui.ToastMessengerManager
  */
 class ListeningCommandState(private val context: StateContext,
                             private var recognitionService: IRecognitionService,
-                            private var speechService: ISpeechService,
                             private var configManager: ConfigManager,
-                            private var nluEngine: INLUEngine,
-                            private val toastMessengerManager: ToastMessengerManager)
+                            private var nluEngine: INLUEngine)
     : BaseState() {
 
     companion object {
@@ -84,8 +78,8 @@ class ListeningCommandState(private val context: StateContext,
                             onComplite(StateResult(StateType.RETRY_COMMAND))
                         }
                         else {
-                            // Попытки исчерпаны → COMMAND_ERROR (через CancelState)
-                            handleUnrecognizedCommand(commandText)
+                            // Попытки исчерпаны → COMMAND_ERROR (фразу выдаст CommandErrorState)
+                            context.commandData = null
                             onComplite(StateResult(StateType.COMMAND_ERROR))
                         }
                     }
@@ -117,21 +111,5 @@ class ListeningCommandState(private val context: StateContext,
     }
 
     override suspend fun canceled() = onComplite(StateResult(StateType.CANCEL))
-
-    /**
-     * Обработать нераспознанную команду
-     */
-    suspend fun handleUnrecognizedCommand(text: String) {
-        Log.w(TAG, "Command not recognized: $text")
-        val notUnderstoodPhrase = configManager.getDefaultPhrase(PhraseType.NOT_UNDERSTOOD) // Показывать уведомление для нераспознанных команд (по умолчанию true)
-        if (notUnderstoodPhrase.isNotEmpty()) {
-            speechService.enqueueAsync(notUnderstoodPhrase, SpeechService.PRIOR_MEDIUM)
-            toastMessengerManager.show(notUnderstoodPhrase)
-        }
-        else {
-            Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
-            toastMessengerManager.show("Команда не распознана")
-        }
-    }
 }
 
