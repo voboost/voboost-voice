@@ -72,10 +72,8 @@ class StateMachine(private val scope: CoroutineScope,
                                                      soundEffectManager)
         states[StateType.LISTENING_COMMAND] = ListeningCommandState(stateContext,
                                                                     recognitionService,
-                                                                    speechService,
                                                                     configManager,
-                                                                    nluEngine,
-                                                                    toastMessengerManager)
+                                                                    nluEngine)
 
         states[StateType.CONFIRMATION] = ConfirmationState(stateContext,
                                                            recognitionService,
