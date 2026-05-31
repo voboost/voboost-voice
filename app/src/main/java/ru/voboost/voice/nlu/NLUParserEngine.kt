@@ -1,7 +1,6 @@
 package ru.voboost.voice.nlu
 
 import android.util.Log
-import ru.voboost.voice.config.CommandConfig
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.executor.CommandData
 import java.util.regex.Pattern
@@ -10,8 +9,8 @@ import java.util.regex.Pattern
  * NLU Engine - парсинг и понимание команд
  * Сопоставляет распознанный текст с шаблонами команд из конфига
  */
-class NLUParserEngine(private val configManager: ConfigManager)
-    : INLUEngine {
+class NLUParserEngine(configManager: ConfigManager)
+    : BaseNluEngine(configManager) {
 
     companion object {
         const val TAG = "NLUEngine"
@@ -19,9 +18,9 @@ class NLUParserEngine(private val configManager: ConfigManager)
 
     /**
      * Распарсить команду из текста
-     * @return RecognizedCommand или null если команда не найдена
+     * @return CommandData или null если команда не найдена
      */
-    override fun parseCommand(text: String, contextCmdIds: List<String>): CommandData? {
+    override fun doParseCommand(text: String, contextCmdIds: List<String>): CommandData? {
         val normalizedText = text.lowercase().trim()
         Log.d(TAG, "Parsing command: '$text' -> normalized: '$normalizedText'")
 
@@ -33,9 +32,7 @@ class NLUParserEngine(private val configManager: ConfigManager)
             }
 
             for (pattern in commandConfig.patterns) {
-                val matchResult = matchPattern(normalizedText, pattern)
-
-                if (matchResult != null) { // Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
+                if (matchPattern(normalizedText, pattern)) { // Log.i(TAG, "Matched command '${commandConfig.id}' with pattern '$pattern'")
                     return CommandData(data = commandConfig, phrase = text)
                 }
             }
@@ -46,49 +43,10 @@ class NLUParserEngine(private val configManager: ConfigManager)
     }
 
     /**
-     * Проверить, является ли текст подтверждением "Да"
-     */
-    override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
-        val yesPatterns = configManager.getYesPatterns()
-        return ((commandConfig?.confirmation?.yesPatterns ?: emptyList()) + yesPatterns).any {
-            text.lowercase().trim() == it.lowercase().trim()
-        }
-    }
-
-    /**
-     * Проверить, является ли текст отменой "Нет"
-     */
-    override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
-        val noPatterns = configManager.getNoPatterns()
-        return ((commandConfig.confirmation.noPatterns ?: emptyList()) + noPatterns).any {
-            text.lowercase().trim() == it.lowercase().trim()
-        }
-    }
-
-    /**
-     * Проверить, требует ли команда подтверждения
-     */
-    override fun requiresConfirmation(commandConfig: CommandConfig): Boolean =
-        commandConfig.confirmation.required
-
-    /**
-     * Получить вопрос для подтверждения
-     */
-    override fun getConfirmationQuestion(commandConfig: CommandConfig?): String =
-        commandConfig?.confirmation?.question ?: "Подтверждаете выполнение команды?"
-
-    /**
-     * Получить таймаут подтверждения
-     */
-    override fun getConfirmationTimeout(commandConfig: CommandConfig): Int =
-        commandConfig.confirmation.timeoutSec ?: 5
-
-    /**
      * Сопоставить текст с шаблоном
-     * @return Map с извлеченными параметрами или null если нет совпадения
+     * @return true если есть совпадение
      */
-    private fun matchPattern(text: String,
-                             pattern: String): Boolean { // Простое точное совпадение
+    private fun matchPattern(text: String, pattern: String): Boolean { // Простое точное совпадение
         if (text == pattern.lowercase().trim()) {
             return false
         }
@@ -117,9 +75,7 @@ class NLUParserEngine(private val configManager: ConfigManager)
      * Освободить ресурсы (для совместимости с интерфейсом)
      * Пустая реализация, т.к. парсер не использует внешние ресурсы
      */
-    override fun release() {
-        // Нет ресурсов для освобождения
-    }
+    override fun release() {}
 }
 
 

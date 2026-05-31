@@ -15,7 +15,7 @@ import java.nio.LongBuffer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.sqrt
 
-class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
+class NLUOrtEngine(configManager: ConfigManager) : BaseNluEngine(configManager) {
 
     companion object {
         private const val TAG = "OnnxNluEngine"
@@ -81,69 +81,68 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         }
     }
 
-    override fun parseCommand(text: String,
-                              contextCmd: List<String>)
+    override fun doParseCommand(text: String,
+                                contextCmd: List<String>)
     : CommandData? {
+        val normalized = normalizeUserPhrase(text)
+        Log.i(TAG, "parseCommand normalized: '$normalized'")
 
-        return try {
-            val normalized = normalizeUserPhrase(text)
-            Log.i(TAG, "parseCommand normalized: '$normalized'")
+        for ((cmdId, patternText, _) in patternData) {
+            // Проверяем exact match
+            if (patternText == normalized) {
+                val commandConfig = configManager.getCommandById(cmdId)
+                return commandConfig?.let { CommandData(data = it, phrase = text) }
+            }
+        }
 
-            for ((cmdId, patternText, _) in patternData) {
-                // Проверяем exact match
-                if (patternText == normalized) {
-                    val commandConfig = configManager.getCommandById(cmdId)
-                    return commandConfig?.let { CommandData(data = it, phrase = text) }
-                }
+        val wordCount = normalized.split(' ').size
+        Log.i(TAG, "parseCommand words count: $wordCount")
+        if(wordCount == 1) return null
+
+        val queryEmbedding = embedText(normalized)
+
+        // Динамический порог
+        val (threshold, marginThreshold) = getThresholds(wordCount)
+
+        // Сравниваем со всеми паттернами
+        val allMatches = mutableListOf<PatternMatch>()
+
+        for ((cmdId, patternText, patternEmbedding) in patternData) {
+
+            var score = cosineSimilarity(queryEmbedding, patternEmbedding)
+            // Штраф за антонимы (получаем из конфига)
+            val antonymPenalty = configManager.getConfig().nlu.penaltyForAntonyms
+            if (hasAntonymConflict(normalized, patternText)) {
+                score *= antonymPenalty
             }
 
-            val wordCount = normalized.split(' ').size
-            Log.i(TAG, "parseCommand words count: $wordCount")
-            if(wordCount == 1) return null
+            allMatches.add(PatternMatch(cmdId, patternText, score))
+        }
 
-            val queryEmbedding = embedText(normalized)
+        // Агрегация по командам
+        val cmdScores = aggregateByCommand(allMatches, wordCount)
 
-            // Динамический порог
-            val (threshold, marginThreshold) = getThresholds(wordCount)
+        if (cmdScores.isEmpty()) {
+            Log.d(TAG, "❌ No match for: '$text'")
+            return null
+        }
 
-            // Сравниваем со всеми паттернами
-            val allMatches = mutableListOf<PatternMatch>()
+        // === МЯГКИЙ КОНТЕКСТ: бонус для команд из вопроса ===
+        val adjustedScores = cmdScores.mapValues { (cmdId, score) ->
+            if (cmdId in contextCmd) score + CONTEXT_BONUS else score
+        }
 
-            for ((cmdId, patternText, patternEmbedding) in patternData) {
+        val sorted = adjustedScores.entries.sortedByDescending { it.value }
+        val bestId = sorted[0].key
+        val bestScore = sorted[0].value
+        val secondId = if (sorted.size > 1) sorted[1].key else "none"
+        val secondScore = if (sorted.size > 1) sorted[1].value else 0.0
+        val margin = bestScore - secondScore
 
-                var score = cosineSimilarity(queryEmbedding, patternEmbedding)
-                // Штраф за антонимы (получаем из конфига)
-                val antonymPenalty = configManager.getConfig().nlu.penaltyForAntonyms
-                if (hasAntonymConflict(normalized, patternText)) {
-                    score *= antonymPenalty
-                }
+        val matched = (bestScore >= threshold && margin >= marginThreshold)
 
-                allMatches.add(PatternMatch(cmdId, patternText, score))
-            }
-
-            // Агрегация по командам
-            val cmdScores = aggregateByCommand(allMatches, wordCount)
-
-            if (cmdScores.isEmpty()) {
-                Log.d(TAG, "❌ No match for: '$text'")
-                return null
-            }
-
-            // === МЯГКИЙ КОНТЕКСТ: бонус для команд из вопроса ===
-            val adjustedScores = cmdScores.mapValues { (cmdId, score) ->
-                if (cmdId in contextCmd) score + CONTEXT_BONUS else score
-            }
-
-            val sorted = adjustedScores.entries.sortedByDescending { it.value }
-            val bestId = sorted[0].key
-            val bestScore = sorted[0].value
-            val secondId = if (sorted.size > 1) sorted[1].key else "none"
-            val secondScore = if (sorted.size > 1) sorted[1].value else 0.0
-            val margin = bestScore - secondScore
-
-            val matched = (bestScore >= threshold && margin >= marginThreshold)
-
-            if (matched) {
+        return when {
+            matched -> {
                 Log.d(TAG,
                       "✅ MATCH: '$text' → $bestId (score: ${"%.3f".format(bestScore)}, margin vs $secondId: ${
                           "%.3f".format(margin)
@@ -151,20 +150,17 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
                 val commandConfig = configManager.getCommandById(bestId)
                 commandConfig?.let { CommandData(data = it, phrase = text) }
             }
-            else if (bestScore >= threshold && margin < marginThreshold && secondScore >= threshold) { // Неоднозначность — нужно уточнение
+            bestScore >= threshold && margin < marginThreshold && secondScore >= threshold -> {
+                // Неоднозначность — нужно уточнение
                 CommandData(data = CommandConfig.Empty, phrase = text, listOf(bestId, secondId))
             }
-            else {
+            else -> {
                 Log.d(TAG,
                       "❌ REJECT: '$text' (best: $bestId=${"%.3f".format(bestScore)}, 2nd: $secondId=${
                           "%.3f".format(secondScore)
                       }, margin=${"%.3f".format(margin)}, threshold=$threshold)")
                 null
             }
-        }
-        catch (e: Exception) {
-            Log.e(TAG, "NLU inference failed", e)
-            null
         }
     }
 
@@ -338,29 +334,6 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         for (i in a.indices) dot += a[i] * b[i]
         return dot
     }
-
-    override fun isConfirmationYes(text: String, commandConfig: CommandConfig?): Boolean {
-        val yesPatterns = configManager.getYesPatterns()
-        return ((commandConfig?.confirmation?.yesPatterns ?: emptyList()) + yesPatterns).any {
-            text.lowercase().trim() == it.lowercase().trim()
-        }
-    }
-
-    override fun isConfirmationNo(text: String, commandConfig: CommandConfig): Boolean {
-        val noPatterns = configManager.getNoPatterns()
-        return ((commandConfig.confirmation.noPatterns ?: emptyList()) + noPatterns).any {
-            text.lowercase().trim() == it.lowercase().trim()
-        }
-    }
-
-    override fun requiresConfirmation(commandConfig: CommandConfig) =
-            commandConfig.confirmation.required
-
-    override fun getConfirmationQuestion(commandConfig: CommandConfig?) =
-            commandConfig?.confirmation?.question?: "Подтверждаете?"
-
-    override fun getConfirmationTimeout(commandConfig: CommandConfig) =
-            commandConfig.confirmation.timeoutSec?: 5
 
     override fun release() {
         try {
