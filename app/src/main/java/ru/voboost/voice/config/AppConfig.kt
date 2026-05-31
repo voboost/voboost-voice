@@ -47,7 +47,14 @@ data class OnlineSpeechConfig(@SerializedName("enabled") val enabled: Boolean = 
 data class TtsConfig(@SerializedName("offline") val offline: OfflineTtsConfig = OfflineTtsConfig(),
                      @SerializedName("online") val online: OnlineTtsConfig = OnlineTtsConfig())
 
-data class NLUConfig(@SerializedName("engine") val engine: String = "llm")
+/**
+ * Конфигурация NLU
+ */
+data class NLUConfig(
+    @SerializedName("engine") val engine: String = "onnx",
+    @SerializedName("antonyms") val antonyms: List<AntonymPair> = emptyList(),
+    @SerializedName("penalty_for_antonyms") val penaltyForAntonyms: Float = 0.5f
+)
 
 
 data class OfflineTtsConfig(@SerializedName("enabled") val enabled: Boolean = true,

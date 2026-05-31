@@ -19,10 +19,9 @@ import java.io.File
  *     ├── vosk/
  *     │   └── vosk-model-small-ru-0.22/
  *     ├── sherpa/
- *     │   ├── asr-ru-model/       # Sherpa STT модель
- *     │   └── tts-ru-model/       # Sherpa TTS модель
- *     └── llm/
- *         └── Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task  # MediaPipe LLM
+ *         ├── asr-ru-model/       # Sherpa STT модель
+ *         └── tts-ru-model/       # Sherpa TTS модель
+
  */
 object ExternalStoragePaths {
     
@@ -57,14 +56,6 @@ object ExternalStoragePaths {
     val configFile: File
         get() = File(baseDir, "config.json")
 
-    // Директория LLM моделей
-    val llmModelDir: File
-        get() = File(modelsDir, "llm")
-
-    // MediaPipe LLM модель (в формате .task)
-    val llmModelFile: File
-        get() = File(llmModelDir, "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task")
-
     // NLU ONNX модель для распознавания команд
     val nluModelDir: File
         get() = File(modelsDir, "nlu")
@@ -86,8 +77,7 @@ object ExternalStoragePaths {
             "tokenizer" to tokenizerFile.exists(),
             "vosk-model" to voskModelDir.exists(),
             "sherpa-asr" to sherpaAsrModelDir.exists(),
-            "sherpa-tts" to sherpaTtsModelDir.exists(),
-            "llm-model" to llmModelFile.exists()
+            "sherpa-tts" to sherpaTtsModelDir.exists()
         )
     }
     
@@ -101,7 +91,6 @@ object ExternalStoragePaths {
             File(modelsDir, "nlu").mkdirs()
             File(modelsDir, "vosk").mkdirs()
             File(modelsDir, "sherpa").mkdirs()
-            llmModelDir.mkdirs()
             true
         } catch (e: Exception) {
             android.util.Log.e("ExternalStoragePaths", "Failed to create directories", e)

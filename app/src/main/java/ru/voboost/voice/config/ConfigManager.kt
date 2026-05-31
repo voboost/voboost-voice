@@ -130,6 +130,15 @@ class ConfigManager private constructor(context: Context) {
     }
 
     /**
+     * Получить список антонимов из конфига
+     * @return Map<word, opposite>
+     */
+    fun getAntonyms(): Map<String, String> {
+        val config = getConfig()
+        return config.nlu.antonyms.associate { it.word to it.opposite }
+    }
+
+    /**
      * Проверить, является ли текст кодовой фразой
      */
     fun isActivationKeyword(text: String): Boolean {

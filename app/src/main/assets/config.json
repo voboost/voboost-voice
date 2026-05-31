@@ -39,7 +39,19 @@
     }
   },
   "nlu": {
-    "engine": "onnx"
+    "engine": "onnx",
+    "antonyms": [
+      {"word": "открой", "opposite": "закрой"},
+      {"word": "закрой", "opposite": "открой"},
+      {"word": "подними", "opposite": "опусти"},
+      {"word": "опусти", "opposite": "подними"},
+      {"word": "включи", "opposite": "выключи"},
+      {"word": "выключи", "opposite": "включи"},
+      {"word": "отключи", "opposite": "включи"},
+      {"word": "повысь", "opposite": "понизь"},
+      {"word": "понизь", "opposite": "повысь"}
+    ],
+    "penalty_for_antonyms": 0.5
   },
   "confirmation": {
     "default_timeout_sec": 5,

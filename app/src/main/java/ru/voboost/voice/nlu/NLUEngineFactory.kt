@@ -9,7 +9,7 @@ object NLUEngineFactory {
     const val TAG = "NLUEngineFactory"
 
     enum class NLUEngineType {
-        PARSER, LLM, ONNX
+        PARSER, ONNX
     }
 
     fun create(context: Context, configManager: ConfigManager): INLUEngine {
@@ -27,13 +27,12 @@ object NLUEngineFactory {
 
             else -> {
                 Log.i(TAG, "NLU engine from config: LLM")
-                NLUEngineType.LLM
+                NLUEngineType.PARSER
             }
         }
 
         return when (nluEngineType) {
-            NLUEngineType.PARSER -> NLUEngine(configManager)
-            NLUEngineType.LLM -> NLUEngine(configManager)
+            NLUEngineType.PARSER -> NLUParserEngine(configManager)
             NLUEngineType.ONNX -> NLUOrtEngine(configManager)
         }
     }

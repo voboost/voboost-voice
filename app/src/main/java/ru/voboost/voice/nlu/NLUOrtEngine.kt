@@ -21,29 +21,21 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         private const val TAG = "OnnxNluEngine"
         private const val EMBEDDING_DIM = 384
         private const val TEMPERATURE = 3.0
-        private const val ANTONYMS_PENALTY = 0.5
         private const val CONTEXT_BONUS = 0.1
         // Динамические пороги: (scoreThreshold, marginThreshold)
         private val THRESHOLDS = mapOf(1 to Pair(0.75, 0.10),   // 1 слово: высокий score, маленький margin
                                        2 to Pair(0.65, 0.10),   // 2-3 слова: средний
                                        3 to Pair(0.60, 0.08),
                                        4 to Pair(0.55, 0.05))    // 4+ слова: низкий score, маленький margin
-        // Антонимы: word -> opposite
-        private val ANTONYMS = mapOf("открой" to "закрой",
-                                     "закрой" to "открой",
-                                     "подними" to "опусти",
-                                     "опусти" to "подними",
-                                     "включи" to "выключи",
-                                     "выключи" to "включи",
-                                     "отключи" to "включи",
-                                     "повысь" to "понизь",
-                                     "понизь" to "повысь")
     }
 
     private val ortEnv = OrtEnvironment.getEnvironment()
     private val session: OrtSession
     private val tokenizer: HuggingFaceTokenizer
     private val lock = ReentrantLock()
+
+    // Антонимы из конфига (word -> opposite)
+    private val antonyms: Map<String, String> get() = configManager.getAntonyms()
 
     // Храним пары: (cmdId, patternText, embedding)
     private val patternData = mutableListOf<Triple<String, String, FloatArray>>()
@@ -120,9 +112,10 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
             for ((cmdId, patternText, patternEmbedding) in patternData) {
 
                 var score = cosineSimilarity(queryEmbedding, patternEmbedding)
-                // Штраф за антонимы
+                // Штраф за антонимы (получаем из конфига)
+                val antonymPenalty = configManager.getConfig().nlu.penaltyForAntonyms
                 if (hasAntonymConflict(normalized, patternText)) {
-                    score *= ANTONYMS_PENALTY
+                    score *= antonymPenalty
                 }
 
                 allMatches.add(PatternMatch(cmdId, patternText, score))
@@ -222,7 +215,7 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
         val qWords = query.split(' ').toSet()
         val pWords = pattern.split(' ').toSet()
 
-        for ((word, opposite) in ANTONYMS) {
+        for ((word, opposite) in antonyms) {
             if (qWords.contains(word) && pWords.contains(opposite)) return true
             if (qWords.contains(opposite) && pWords.contains(word)) return true
         }

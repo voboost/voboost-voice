@@ -10,7 +10,7 @@ import java.util.regex.Pattern
  * NLU Engine - парсинг и понимание команд
  * Сопоставляет распознанный текст с шаблонами команд из конфига
  */
-class NLUEngine(private val configManager: ConfigManager)
+class NLUParserEngine(private val configManager: ConfigManager)
     : INLUEngine {
 
     companion object {
