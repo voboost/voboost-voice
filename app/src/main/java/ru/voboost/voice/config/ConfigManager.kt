@@ -170,7 +170,7 @@ class ConfigManager private constructor(context: Context) {
                 PhraseType.NOT_UNDERSTOOD -> phrases.notUnderstood.takeUnless { it.isNullOrEmpty() }
                     ?: "Не понял"
                 PhraseType.NOT_UNDERSTOOD_RETRY -> phrases.notUnderstoodRetry.takeUnless { it.isNullOrEmpty() }
-                    ?: "Не понял, повторите команду"
+                    ?: "Не понял, повторите"
                 PhraseType.CONFIRM_QUESTION -> phrases.confirmQuestion.takeUnless { it.isNullOrEmpty() }
                     ?: "Вы уверены?"
                 PhraseType.LISTENING -> phrases.listening.takeUnless { it.isNullOrEmpty() }

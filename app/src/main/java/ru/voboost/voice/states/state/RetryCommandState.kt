@@ -4,6 +4,7 @@ import android.util.Log
 import ru.voboost.voice.SoundEffectManager
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.services.recognition.IRecognitionService
+import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.speech.ISpeechService
 import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.states.StateContext
@@ -21,6 +22,7 @@ import ru.voboost.voice.ui.ToastMessengerManager
  * 4. Возвращаемся в LISTENING_COMMAND для новой попытки
  */
 class RetryCommandState(private val context: StateContext,
+                        private var recognitionService: IRecognitionService,
                         private var speechService: ISpeechService,
                         private var configManager: ConfigManager,
                         private var soundEffectManager: SoundEffectManager,
@@ -51,9 +53,9 @@ class RetryCommandState(private val context: StateContext,
             return
         }
 
+        recognitionService.setMode(RecognitionService.Mode.MUTED)
         // Звук перед фразой повтора (как в AmbiguousState)
         soundEffectManager.playStartSoundAsync()
-
         // Говорим фразу повтора
         val retryPhrase = configManager.getDefaultPhrase(ConfigManager.PhraseType.NOT_UNDERSTOOD_RETRY)
         speechService.enqueueAsync(retryPhrase, SpeechService.PRIOR_MEDIUM)

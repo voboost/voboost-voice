@@ -11,6 +11,7 @@ import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.StateResult
 import ru.voboost.voice.states.StateType
+import ru.voboost.voice.ui.ToastMessengerManager
 
 /**
  * Состояние: Неоднозначность в распознавании
@@ -24,7 +25,8 @@ class AmbiguousState(private val context: StateContext,
                      private var recognitionService: IRecognitionService,
                      private var speechService: ISpeechService,
                      private var configManager: ConfigManager,
-                     private var soundEffectManager: SoundEffectManager)
+                     private var soundEffectManager: SoundEffectManager,
+                     private val toastMessengerManager: ToastMessengerManager)
     : BaseState() {
     companion object {
         const val TAG = "AmbiguousState"
@@ -49,6 +51,7 @@ class AmbiguousState(private val context: StateContext,
         // Проигрываем звук "дважды" перед вопросом
         soundEffectManager.playStartSoundAsync()
         // Говорим через TTS
+        toastMessengerManager.show(ambiguousPhrase)
         speechService.enqueueAsync(ambiguousPhrase, SpeechService.PRIOR_HIGH)
         // Сохраняем контекст команд в StateContext для передачи в NLU
         Log.i(TAG, "Returning to LISTENING_COMMAND with context: $cmdIds")

@@ -4,13 +4,9 @@ import android.util.Log
 import ru.voboost.voice.services.speech.SpeechService
 import ru.voboost.voice.services.recognition.RecognitionService
 import ru.voboost.voice.services.recognition.RecognitionServiceResult
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
-import ru.voboost.voice.SoundEffectManager
-import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.config.ConfigManager.PhraseType
-import ru.voboost.voice.executor.CommandExecutor
 import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.services.recognition.IRecognitionService
 import ru.voboost.voice.services.speech.ISpeechService
@@ -18,8 +14,6 @@ import ru.voboost.voice.states.StateContext
 import ru.voboost.voice.states.StateResult
 import ru.voboost.voice.states.StateType
 import ru.voboost.voice.ui.ToastMessengerManager
-import ru.voboost.voice.ui.VoceAnimationManager
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Состояние: Слушание команды
@@ -135,7 +129,7 @@ class ListeningCommandState(private val context: StateContext,
             toastMessengerManager.show(notUnderstoodPhrase)
         }
         else {
-            Log.w(CommandExecutor.Companion.TAG, "No phrase for NOT_UNDERSTOOD")
+            Log.w(TAG, "No phrase for NOT_UNDERSTOOD")
             toastMessengerManager.show("Команда не распознана")
         }
     }

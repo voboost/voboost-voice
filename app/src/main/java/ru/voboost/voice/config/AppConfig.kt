@@ -74,7 +74,7 @@ data class ConfirmationConfig(@SerializedName("default_timeout_sec") val default
 data class DefaultPhrases(@SerializedName("success") val success: String = "Выполнено",
                           @SerializedName("failure") val failure: String = "Произошла ошибка",
                           @SerializedName("not_understood") val notUnderstood: String = "Не понял",
-                          @SerializedName("not_understood_retry") val notUnderstoodRetry: String = "Не понял, повторите команду",
+                          @SerializedName("not_understood_retry") val notUnderstoodRetry: String = "Не понял, повторите",
                           @SerializedName("confirm_question") val confirmQuestion: String = "Вы уверены?",
                           @SerializedName("confirm_yes") val confirmYes: String = "Да",
                           @SerializedName("confirm_no") val confirmNo: String = "Нет",

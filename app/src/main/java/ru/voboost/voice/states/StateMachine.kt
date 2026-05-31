@@ -5,7 +5,7 @@ import kotlinx.coroutines.*
 import ru.voboost.voice.SoundEffectManager
 import ru.voboost.voice.audio.VolumeManager
 import ru.voboost.voice.config.ConfigManager
-import ru.voboost.voice.executor.CommandExecutor
+import ru.voboost.voice.executor.IVehicleCommandExecutor
 import ru.voboost.voice.nlu.INLUEngine
 import ru.voboost.voice.services.recognition.IRecognitionService
 import ru.voboost.voice.services.speech.ISpeechService
@@ -44,7 +44,7 @@ class StateMachine(private val scope: CoroutineScope,
                    speechService: ISpeechService,
                    configManager: ConfigManager,
                    nluEngine: INLUEngine,
-                   commandExecutor: CommandExecutor,
+                   vehicleCommandExecutor: IVehicleCommandExecutor,
                    soundEffectManager: SoundEffectManager,
                    toastMessengerManager: ToastMessengerManager) {
     companion object {
@@ -84,13 +84,18 @@ class StateMachine(private val scope: CoroutineScope,
                                                            nluEngine)
         states[StateType.EXECUTING_COMMAND] = ExecutingCommandState(stateContext,
                                                                     recognitionService,
-                                                                    commandExecutor)
+                                                                    configManager,
+                                                                    speechService,
+                                                                    toastMessengerManager,
+                                                                    vehicleCommandExecutor)
         states[StateType.AMBIGUOUS] = AmbiguousState(stateContext,
                                                      recognitionService,
                                                      speechService,
                                                      configManager,
-                                                     soundEffectManager)
+                                                     soundEffectManager,
+                                                     toastMessengerManager)
         states[StateType.RETRY_COMMAND] = RetryCommandState(stateContext,
+                                                            recognitionService,
                                                             speechService,
                                                             configManager,
                                                             soundEffectManager,
@@ -144,11 +149,6 @@ class StateMachine(private val scope: CoroutineScope,
         mainJob = null
         executionJob = null
     }
-
-    /**
-     * Текущее состояние
-     */
-    fun getCurrentState(): IState? = currentState
 
     /**
      * Получить состояние по типу

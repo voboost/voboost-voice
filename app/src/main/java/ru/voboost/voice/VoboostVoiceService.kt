@@ -18,7 +18,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import ru.voboost.voice.config.ConfigManager
 import ru.voboost.voice.services.speech.SpeechServiceFactory
-import ru.voboost.voice.executor.CommandExecutor
 import ru.voboost.voice.ui.VoceAnimationManager
 import ru.voboost.voice.services.canbus.CanBusServiceManager
 import ru.voboost.voice.services.canbus.handlers.TSRSpeedLimitHandler
@@ -67,7 +66,6 @@ class VoboostVoiceService : Service() {
     private lateinit var stateMachine: StateMachine  // < IState Machine
     private lateinit var recognitionService: IRecognitionService  // < Распознавание речи
     private lateinit var nluEngine: INLUEngine
-    private lateinit var commandExecutor: CommandExecutor
     private lateinit var voceAnimationManager: VoceAnimationManager
     private lateinit var speechService: ISpeechService  // < Интерфейс
     private lateinit var soundEffectManager: SoundEffectManager
@@ -174,10 +172,6 @@ class VoboostVoiceService : Service() {
         audioPolicyManager = AudioPolicyServiceManager(this)
         // Создаём VehicleCommandExecutor через фабрику
         val vehicleCommandExecutor = VehicleCommandExecutor(this, canBusManager)
-        commandExecutor = CommandExecutor(speechService = speechService,
-                                          toastMessengerManager = toastMessengerManager,
-                                          vehicleCommandExecutor = vehicleCommandExecutor,
-                                          configManager = configManager)
         Log.i(TAG, "CommandHandler initialized")
         // SpeechRecognizer - распознавание речи (утилита без состояний)
         // Зона определяется автоматически через MultiChannelAudioSource или TDOA
@@ -196,9 +190,9 @@ class VoboostVoiceService : Service() {
                                     speechService = speechService,
                                     configManager = configManager,
                                     nluEngine = nluEngine,
-                                    commandExecutor = commandExecutor,
+                                    vehicleCommandExecutor = vehicleCommandExecutor,
                                     toastMessengerManager = toastMessengerManager)
-        Log.i(TAG, "IState Machine initialized")
+        Log.i(TAG, "State Machine initialized")
         voiceButtonHandler?.stateMachine = stateMachine
 
         canBusManager.connect()
@@ -345,11 +339,6 @@ class VoboostVoiceService : Service() {
      */
     private fun startKeywordSpotting() {
         Log.d(TAG, "startKeywordSpotting called")
-
-        if (stateMachine.getCurrentState() !is IdleState) {
-            Log.w(TAG, "Not in IdleState, skipping keyword spotting")
-            return
-        }
 
         serviceScope.launch {
             // Сохраняем ссылку на сервис для проверки в withContext

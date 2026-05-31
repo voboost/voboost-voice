@@ -35,7 +35,9 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
                                      "опусти" to "подними",
                                      "включи" to "выключи",
                                      "выключи" to "включи",
-                                     "отключи" to "включи" )
+                                     "отключи" to "включи",
+                                     "повысь" to "понизь",
+                                     "понизь" to "повысь")
     }
 
     private val ortEnv = OrtEnvironment.getEnvironment()
@@ -93,6 +95,7 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
 
         return try {
             val normalized = normalizeUserPhrase(text)
+            Log.i(TAG, "parseCommand normalized: '$normalized'")
 
             for ((cmdId, patternText, _) in patternData) {
                 // Проверяем exact match
@@ -102,8 +105,11 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
                 }
             }
 
-            val queryEmbedding = embedText(normalized)
             val wordCount = normalized.split(' ').size
+            Log.i(TAG, "parseCommand words count: $wordCount")
+            if(wordCount == 1) return null
+
+            val queryEmbedding = embedText(normalized)
 
             // Динамический порог
             val (threshold, marginThreshold) = getThresholds(wordCount)
@@ -142,19 +148,7 @@ class NLUOrtEngine(private val configManager: ConfigManager) : INLUEngine {
             val secondScore = if (sorted.size > 1) sorted[1].value else 0.0
             val margin = bestScore - secondScore
 
-            // Для 1 слова без exact match — проверяем глобальную неоднозначность
-            var ambiguous = false
-            if (wordCount == 1) {
-                val top2Global = allMatches.sortedByDescending { it.score }.take(2)
-                if (top2Global.size > 1) {
-                    val globalMargin = top2Global[0].score - top2Global[1].score
-                    if (globalMargin < marginThreshold) {
-                        ambiguous = true
-                    }
-                }
-            }
-
-            val matched = (bestScore >= threshold && margin >= marginThreshold && !ambiguous)
+            val matched = (bestScore >= threshold && margin >= marginThreshold)
 
             if (matched) {
                 Log.d(TAG,
